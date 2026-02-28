@@ -1,7 +1,7 @@
 ﻿
 // GM Name Tag
-// by sage [people-2033 / steamcommunity.com/profiles/76561198090038842]
-// Designed for my GMBody.as originally, now gutted into its own public class for sharing
+// by sage [ https://github.com/Sage64/Whirled ]
+// Designed for my GMBody.as originally, converted into its own class
 
 /*
 
@@ -12,7 +12,7 @@ nametag.SetBaseColor( 0xFFFFFF );   // White text
 nametag.SetBaseOutline( 0x000000 ); // Black outline
 nametag.SetSleepColor( -1 );        // no sleep text
 nametag.SetSize( 16 );              // default is 12
-nametag.SetFont( "The /Font Name/ of a Font", true ); // default is "_sans"
+nametag.SetFont( "The /Font Name/ of a Font" ); // default is "_sans"
 nametag.MainCode();
 
 if you want to force certain text rather than your name
@@ -23,12 +23,12 @@ if you change the nametag in any way after "creating" it:
 
 for regular windows fonts
 	use nametag.SetFont( "Font Name" );
-	
 
 for custom fonts
 	import it into the libray ( right click, "New Font...")
 	check Export for ActionScript (and Export in frame 1) under the ActionScript tab
-	make sure the second argument of "SetFont is true"
+	make sure the second argument of SetFont is true e.g
+	nametag.SetFont( "My Font", true );
 
 */
 
@@ -60,6 +60,7 @@ public class GMNameTag extends Sprite
 	public var outlineStrength = 40;
 	
 	public var customFont = false;
+	public var upper = false;
 	
 	public var textInit = {
 		textColor: baseColor,
@@ -71,14 +72,16 @@ public class GMNameTag extends Sprite
 	
 	public var textFormat = new TextFormat();
 	public var textObj;
+	public var textW = 0;
+	public var textH = 0;
 	
 	public var gotName = false;
 	
-	public function GMNameTag( ctrl, media )
+	public function GMNameTag( ctrl, container )
 	{
 		this.visible = false;
 		this.ctrl = ctrl;
-		this.container = media;
+		this.container = container;
 		
 		this.textFormat.font = "_sans";
 		this.textFormat.size = 12.25;
@@ -104,8 +107,8 @@ public class GMNameTag extends Sprite
 	{
 		var transformMatrix = container.transform.concatenatedMatrix;
 		// also shrink to fit if the canvas becomes too small
-		// make false if not desired
-		if ( true )
+		// saw it break with certain avatars so im disabling it though
+		if ( false )
 		{
 			this.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
 			this.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
@@ -134,8 +137,11 @@ public class GMNameTag extends Sprite
 				visible = show && true;
 				textObj.textColor = sleepColor;
 				
-				glowFilter = new GlowFilter( uint( sleepOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
-				textObj.filters = [ glowFilter ];
+				if ( textInit.outlineWidth > 0 )
+				{
+					glowFilter = new GlowFilter( uint( sleepOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
+					textObj.filters = [ glowFilter ];
+				}
 			}
 		}
 		else
@@ -146,14 +152,19 @@ public class GMNameTag extends Sprite
 			{
 				visible = show && true;
 				textObj.textColor = baseColor;
-				glowFilter = new GlowFilter( uint( baseOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
-				textObj.filters =[ glowFilter ];
+				if ( textInit.outlineWidth > 0 )
+				{
+					glowFilter = new GlowFilter( uint( baseOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
+					textObj.filters =[ glowFilter ];
+				}
 			}
 		}
 		if ( visible )
 		{
-			textObj.x = 0 - ( textObj.width / 2 );
-			textObj.y = 0 - ( textObj.height );
+			textW = textObj.width / 2;
+			textH = textObj.height;
+			textObj.x = 0 - ( textW );
+			textObj.y = 0 - ( textH );
 			container.setChildIndex( this, container.numChildren - 1 );
 		}
 	}
@@ -221,6 +232,8 @@ public class GMNameTag extends Sprite
 	
 	public function SetText( text = null )
 	{
+		if ( upper && text != null )
+			text = text.toUpperCase();
 		this.gotName = true;
 		this.textInit.text = String( text );
 		if ( this.textObj )
@@ -244,6 +257,7 @@ public class GMNameTag extends Sprite
 		this.addChild( textObj );
 		this.textObj.embedFonts = this.customFont;
 		this.textObj.setTextFormat( this.textFormat );
+		this.textObj.antiAliasType = AntiAliasType.ADVANCED;
 		// 
 		UpdateLook();
 		UpdatePosition();
@@ -285,6 +299,7 @@ public class GMNameTag extends Sprite
 	{
 		this.textFormat.size = _size;
 	}
+	
 }
 
 } // package
