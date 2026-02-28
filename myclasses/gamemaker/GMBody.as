@@ -332,6 +332,7 @@ public class GMBody extends Sprite
 	// Registers states and makes sure it looks correct immediately
 	public function Ready()
 	{
+		GMControl.debugTracker = "GMBody.Ready()";
 		GMControl.Log( "Ready()" );
 		
 		timescale = timescale_fps / 30;
@@ -700,7 +701,10 @@ public class GMBody extends Sprite
 	{
 		var State = GetState( statename );
 		if ( !State )
+		{
+			GMControl.Log( "SetState invalid" );
 			return;
+		}
 		ctrl.setState( State.name );
 		var event = new ControlEvent( ControlEvent.STATE_CHANGED, State.name );
 		GMStateChanged( event );
@@ -736,7 +740,7 @@ public class GMBody extends Sprite
 			var _state = State;
 			if ( typeof _state == "object" )
 				_state = _state.name;
-			if ( curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
+			if ( curState && curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
 				continue;
 			GMControl.Log( i + ": " + _state );
 			names.push( _state );
