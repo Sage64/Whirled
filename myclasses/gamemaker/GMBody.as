@@ -16,6 +16,7 @@
 	talking to you and just linked it
 	
 	Basic usage relies on extending your own body class from it
+	
 	see GM_ExampleBody.as
 */
 
@@ -140,7 +141,7 @@ public class GMBody extends Sprite
 	public var _usenametag;
 	
 	// Avatar common
-	public var scale = 3;
+	public var scale = 1;
 	
 	// Gamemaker
 	
@@ -522,6 +523,7 @@ public class GMBody extends Sprite
 	
 	public function SetScale ( amount )
 	{
+		scale = amount;
 		return GMControl.SetScale( amount );
 	}
 	

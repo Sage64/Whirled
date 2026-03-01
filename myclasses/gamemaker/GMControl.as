@@ -147,6 +147,7 @@ public class GMControl extends ActorControl
 			// Always run in debug mode if not connected to whirled
 			GMControl.Log( "Debug Mode" );
 			debug = true;
+			// AddEventListener( root, KeyboardEvent.KEY_DOWN, DebugKeyDown );
 		}
 		
 		entityID = ctrl.getMyEntityId();
@@ -345,6 +346,11 @@ public class GMControl extends ActorControl
 	/*
 		DEBUG
 	*/
+	
+	public static function DebugKeyDown( ev )
+	{
+		
+	}
 	
 	public static function Log( text = "" )
 	{
@@ -645,8 +651,8 @@ public class GMControl extends ActorControl
 			container.x = baseXOffset;
 			container.y = baseYOffset;
 			
-			media.x -= container.x;
-			media.y -= container.y;
+			media.x -= container.x * _scale;
+			media.y -= container.y * _scale;
 		}
 		
 		ctrl.setHotSpot( xx - offx, yy - offy, hh );
