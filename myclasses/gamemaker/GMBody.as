@@ -64,10 +64,7 @@ public class GMBody extends Sprite
 	
 	public var configFlags = GMBody.CONFIG_CUSTOM_NAMETAG | GMBody.CONFIG_DYNAMIC_MOVESPEED;
 	
-	public var entityID = null;
 	public var isLoaded = false;
-	public var isWhirled = false;
-	public var isControl = false;
 	public var isMoving = false;
 	public var wasMoving = false;
 	public var isSleeping = false;
@@ -176,15 +173,6 @@ public class GMBody extends Sprite
 		this.media = GMControl.media; 
 		this.container = GMControl.container;
 		
-		GMControl.body = this;
-		
-		this.entityID = ctrl.getMyEntityId();
-		this.isWhirled = ctrl.isConnected();
-		this.isControl = ctrl.hasControl();
-		
-		if ( !isWhirled )
-			GMControl.debug = true;
-		
 		GMControl.Log( "Creating" );
 		
 		this.stepStartTime = getTimer();
@@ -192,36 +180,9 @@ public class GMBody extends Sprite
 		
 		this.timescale_fps = base_fps;
 		
-		if ( !isWhirled )
-		{
-			this.isControl = true;
-		}
-		
 		SetOrigin( GMControl.stageW / 2, GMControl.stageH / 2 );
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
-		 
-		AddEventListener( ctrl, "GMBodyReady", null );
-		
-		// CANT USE STAGE IN WHIRLED!
-		// AddEventListener( stage, KeyboardEvent.KEY_DOWN, GMKeyDown );
-		// AddEventListener( stage, KeyboardEvent.KEY_UP, GMKeyUp );
-		
-		// Whirled events
-		AddEventListener( ctrl, ControlEvent.CHAT_RECEIVED, GMGotChat );
-		AddEventListener( ctrl, ControlEvent.CONTROL_ACQUIRED, GMGotControl );
-		AddEventListener( ctrl, ControlEvent.ENTITY_MOVED, GMEntityMoved );
-		AddEventListener( ctrl, ControlEvent.ENTITY_ENTERED, GMEntityJoined );
-		AddEventListener( ctrl, ControlEvent.ENTITY_LEFT, GMEntityLeft );
-		// AddEventListener( ctrl, ControlEvent.MEMORY_CHANGED, GMMemoryChanged );
-		AddEventListener( ctrl, ControlEvent.MESSAGE_RECEIVED, GMReceiveMessage );
-		AddEventListener( ctrl, ControlEvent.SIGNAL_RECEIVED, GMReceiveMessage );
-		
-		// Specific to this avatar
-		AddEventListener( ctrl, ControlEvent.ACTION_TRIGGERED, GMActionTriggered );
-		AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
-		AddEventListener( ctrl, ControlEvent.AVATAR_SPOKE, GMAvatarSpoke );
-		AddEventListener( ctrl, ControlEvent.STATE_CHANGED, GMStateChanged );
 		
 		AddState( "DevMode", true );
 		AddAction("GMSentChat", GMSentChat, true );
@@ -287,47 +248,13 @@ public class GMBody extends Sprite
 	}
 	
 	// Unsorted Events
-	private function GMAvatarSpoke( event ) { OnSpeak(); }
 	public function OnSpeak() {}
-	private function GMEntityJoined( event )
-	{
-		var Entity = GMControl.GetEntity( event.name );
-		
-	}
-	private function GMEntityLeft( event )
-	{
-		var Entity = GMControl.GetEntity( event.name );
-		
-	}
-	private function GMGotChat( event )
-	{
-		var Entity = GMControl.GetEntity( event.name );
-		if ( event.name == entityID )
-		{
-			// I spoke
-			TriggerAction( "GMSentChat", event.value );
-		}
-		else
-		{
-			
-		}
-		
-		OnChat( event.name, event.value );
-	}
 	public function OnChat( speaker_id, message ) {}
 	public function GMSentChat( message )
 	{
 		OnSentChat( message );
 	}
 	public function OnSentChat( message ) {}
-	
-	
-	private function GMGotControl( event )
-	{
-		isControl = true;
-		OnControl();
-	};
-	public function OnControl() {}
 	
 	// Initialize the body after defining it
 	// Registers states and makes sure it looks correct immediately
@@ -352,7 +279,7 @@ public class GMBody extends Sprite
 		
 		GMControl.Log( "Ready!" );
 		
-		ctrl.dispatchEvent( new ControlEvent( "GMBodyReady", name, isControl ) );
+		ctrl.dispatchEvent( new ControlEvent( "GMBodyReady", name ) );
 	}
 	
 	/*
@@ -365,11 +292,11 @@ public class GMBody extends Sprite
 	
 	public function GetName()
 	{
-		if ( entityID == null )
-			entityID == ctrl.getMyEntityId();
-		if ( entityID != null )
+		if ( GMControl.entityID == null )
+			GMControl.entityID == ctrl.getMyEntityId();
+		if ( GMControl.entityID != null )
 		{
-			var _get = ctrl.getEntityProperty( EntityControl.PROP_NAME, entityID )
+			var _get = ctrl.getEntityProperty( EntityControl.PROP_NAME, GMControl.entityID )
 			if ( _get != null )
 			{
 				name = String( _get );
@@ -421,7 +348,7 @@ public class GMBody extends Sprite
 	// Triggered upon first appearing, moving, sleeping, walking, changing states, etc
 	// assume it can happen anytime, and not just
 	// reset an animation from it
-	private function GMUpdateLook( event = null )
+	public function GMUpdateLook( event = null )
 	{
 		GMControl.Log( "GMUpdateLook" );
 		wasMoving = isMoving;
@@ -571,8 +498,9 @@ public class GMBody extends Sprite
 		GMControl.debugTracker = "GMEntityMoved";
 		if ( event == null )
 			return;
-		if ( event.name == entityID )
+		if ( event.name == GMControl.entityID )
 		{
+			GMControl.debugTracker = "GMEntityMoved - self";
 			// I started to move
 			++movePathClicks;
 			currentPosition = GetPosition();
@@ -580,12 +508,16 @@ public class GMBody extends Sprite
 			
 			movePathStart = currentPosition;
 			movePathStartReal = movePathStart;
-			if ( movePathStart != null )
+			
+			if ( currentPosition != null )
 			{
 				movePathStartReal = ctrl.getRoomBounds();
-				movePathStartReal[0] *= currentPosition[0];
-				movePathStartReal[1] *= currentPosition[1];
-				movePathStartReal[2] *= currentPosition[2];
+				if ( movePathStartReal != null )
+				{
+					movePathStartReal[0] *= currentPosition[0];
+					movePathStartReal[1] *= currentPosition[1];
+					movePathStartReal[2] *= currentPosition[2];
+				}
 			}
 			
 			movePathDest = null;
@@ -604,16 +536,26 @@ public class GMBody extends Sprite
 				// so the OnMoveStart event is fired in its own check
 				// as an appearance update rather than here
 				movePathDest = event.value;
-				movePathDestReal = [ movePathDest[0], movePathDest[1], movePathDest[2] ];
+				movePathDestReal = ctrl.getRoomBounds();
+				if ( movePathDestReal != null )
+				{
+					movePathDestReal[0] *= movePathDest[0];
+					movePathDestReal[1] *= movePathDest[1];
+					movePathDestReal[2] *= movePathDest[2];
+				}
 				var x1 = movePathStartReal[0];
 				var y1 = movePathStartReal[2];
 				var x2 = movePathDestReal[0];
 				var y2 = movePathDestReal[2];
 				GMMoved( x1, y1, x2, y2 );
 			}
+			
+			GMControl.Log( "startPos = " + movePathStartReal );
+			GMControl.Log( "destPos = " + movePathDestReal );
 		}
 		else
 		{
+			GMControl.debugTracker = "GMEntityMoved - Other";
 			// Someone else moved
 			if ( event.value == null )
 			{
@@ -626,6 +568,7 @@ public class GMBody extends Sprite
 				OnOtherMoveStart( event.name, event.value );
 			}
 		}
+		GMControl.debugTracker = "GMEntityMoved - After";
 	}
 	
 	public function OnOtherStartMove( _id ) {}
@@ -649,13 +592,13 @@ public class GMBody extends Sprite
 	
 	public function GetPosition()
 	{
-		currentPosition = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_LOGICAL, entityID );
+		currentPosition = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_LOGICAL, GMControl.entityID );
 		return currentPosition;
 	}
 	
 	public function GetPositionReal()
 	{
-		currentPositionReal = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_PIXEL, entityID );
+		currentPositionReal = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_PIXEL, GMControl.entityID );
 		return currentPositionReal;
 	}
 	
@@ -715,7 +658,11 @@ public class GMBody extends Sprite
 	public function GetState( statename = null )
 	{
 		if ( statename == null )
-			return;
+		{
+			if ( stateList.length < 1 )
+				return null;
+			return stateList[0] ;
+		}
 		return states[ statename.toLowerCase() ];
 	}
 	
@@ -753,13 +700,14 @@ public class GMBody extends Sprite
 	public function GMStateChanged( event )
 	{
 		stateName = event.name;
-		if ( stateName == null )
-			stateName = "Default";
 		GMControl.Log( "State Changed to " + stateName );
 		prevState = curState;
 		curState = GetState( stateName );
-		if ( curState.func )
-			curState.func();
+		if ( curState != null )
+		{
+			if ( curState.func )
+				curState.func();
+		}
 		OnStateChanged();
 		OnUpdateLook();
 	}
@@ -772,8 +720,6 @@ public class GMBody extends Sprite
 	public function ApplyState()
 	{
 		stateName = GetStateName();
-		if ( stateName == null )
-			return;
 		curState = GetState( stateName );
 		stateName = curState.name;
 		
@@ -825,14 +771,6 @@ public class GMBody extends Sprite
 	public function TriggerAction( _action = "", _data = null )
 	{
 		ctrl.triggerAction( _action, _data );
-	}
-	
-	private function GMActionTriggered( event = null )
-	{
-		if ( !event )
-			return;
-		action_name = event.name;
-		OnTriggerAction( event.name, event.value );
 	}
 	
 	public function OnTriggerAction( actionname = null, actiondata = null )
@@ -1107,16 +1045,6 @@ public class GMBody extends Sprite
 	public function BroadcastMessage( message = "", data = null )
 	{
 		ctrl.sendMessage( message, data );
-	}
-	
-	private function GMReceiveMessage( event )
-	{
-		var message = event.name;
-		
-		if ( event.type == ControlEvent.SIGNAL_RECEIVED )
-			OnReceiveSignal( message );
-		if ( event.type == ControlEvent.MESSAGE_RECEIVED )
-			OnReceiveMessage( message );
 	}
 	
 	public function OnReceiveSignal( message )

@@ -30,6 +30,7 @@ public class GMControl extends ActorControl
 	
 	public static var isBitmap = true;
 	
+	public static var curCharacter;
 	public static var characterList = [];
 	public static var characters = {};
 	public static var characterInit = 0;
@@ -38,6 +39,8 @@ public class GMControl extends ActorControl
 	public static var container;
 	public static var ctrl; // the specific instance of GMControl created for the actor
 	public static var body;
+	
+	public static var isControl = false;
 	
 	public static var entityID;
 	public static var isAvatar = false;
@@ -50,6 +53,7 @@ public class GMControl extends ActorControl
 	protected static var _isSleeping;
 	
 	
+	// 
 	public static var _eventlisteners = {
 		list: [],
 		func: {}
@@ -168,15 +172,27 @@ public class GMControl extends ActorControl
 				break;
 		}
 		
-		ctrl.setMemory( "GMControl", true );
+		ctrl.setMemory( "GMControl", 1 );
 		
+		AddEventListener( ctrl, "GMBodyReady", null );
+		
+		AddEventListener( ctrl, ControlEvent.CONTROL_ACQUIRED, GMGotControl );
+		
+		AddEventListener( ctrl, ControlEvent.CHAT_RECEIVED, GMGotChat );
+		
+		AddEventListener( ctrl, ControlEvent.ENTITY_MOVED, GMEntityMoved );
 		AddEventListener( ctrl, ControlEvent.ENTITY_ENTERED, GMEntityJoined );
 		AddEventListener( ctrl, ControlEvent.ENTITY_LEFT, GMEntityLeft );
 		
 		AddEventListener( ctrl, ControlEvent.MEMORY_CHANGED, GMMemoryChanged );
 		
-		// AddEventListener( ctrl, ControlEvent.MESSAGE_RECEIVED, GMReceiveMessage );
-		// AddEventListener( ctrl, ControlEvent.SIGNAL_RECEIVED, GMReceiveMessage );
+		AddEventListener( ctrl, ControlEvent.MESSAGE_RECEIVED, GMReceiveMessage );
+		AddEventListener( ctrl, ControlEvent.SIGNAL_RECEIVED, GMReceiveMessage );
+		
+		AddEventListener( ctrl, ControlEvent.ACTION_TRIGGERED, GMActionTriggered );
+		AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
+		AddEventListener( ctrl, ControlEvent.AVATAR_SPOKE, GMAvatarSpoke );
+		AddEventListener( ctrl, ControlEvent.STATE_CHANGED, GMStateChanged );
 		
 		Init( media );
 		
@@ -193,7 +209,7 @@ public class GMControl extends ActorControl
 			GMControl.Log( "Character " + scenename + " already exists" );
 			return;
 		}
-		GMControl.Log( "Adding character '" + dispname + "' from scene " + scenename );
+		GMControl.Log( "Adding character " + scenename +  " (" + dispname + ")" );
 		
 		var NewChar = {};
 		characters[scenename] = NewChar;
@@ -208,16 +224,22 @@ public class GMControl extends ActorControl
 	}
 	
 	// Add a Body class
-	public static function AddBody( dispname, scenename, _body )
+	public static function AddBody( dispname, scenename, bodyclass )
 	{
 		var NewChar = characters[scenename];
 		if ( NewChar == null )
 			NewChar = AddCharacter( dispname, scenename );
 		GMControl.Log( "Adding Body for character '" + dispname + "'" );
-		body = _body;
-		NewChar.body = _body;
+		body = new bodyclass();
+		NewChar.body = body;
 		
-		container.addChild( _body );
+		container.addChild( body );
+	}
+	
+	public static function AddSprites( spriteclass )
+	{
+		var spr = new spriteclass();
+		PrepareSymbols( spr );
 	}
 	
 	// Add the symbols within an object as sprites
@@ -235,6 +257,7 @@ public class GMControl extends ActorControl
 		var _symbols = [];
 		var Child;
 		var i;
+		GMControl.Log( media.numChildren + " symbols" );
 		for ( i = 0; i < media.numChildren; ++i )
 		{
 			Child = media.getChildAt( i );
@@ -246,10 +269,16 @@ public class GMControl extends ActorControl
 		{
 			Child = _symbols[i];
 			var sprname = Child.name;
-			// sprname = getQualifiedClassName( sprname );
+			// getQualifiedClassName( Child );
 			GMControl.Log( "Found symbol \"" + sprname + "\" with " + Child.totalFrames + " frames" );
 			if ( Child )
 			{
+				if ( internalstageitems[sprname] != null )
+				{
+					GMControl.Log( "already exists" );
+					continue;
+				}
+				
 				internalstageitems[sprname] = Child;
 				var _bitmap = isBitmap;
 				if ( Child["isBitmap"] == false )
@@ -267,17 +296,17 @@ public class GMControl extends ActorControl
 				Child.y = 0;
 				Child.alpha = 0;
 				
+				var InternalSprite = new GMInternalSprite( Child );
+				internalspritelist.push( InternalSprite );
+				
+				internalspritemap[sprname] = Child;
+				
 				var Parent = Child.parent;
 				Parent.removeChild( Child );
 				if ( container )
 					container.addChild( Child );
 				
 				Child.gotoAndStop( 1 );
-				
-				var InternalSprite = new GMInternalSprite( Child );
-				internalspritelist.push( InternalSprite );
-				
-				internalspritemap[sprname] = Child;
 				
 				continue;
 			}
@@ -324,11 +353,35 @@ public class GMControl extends ActorControl
 		}
 	}
 	
-	// Unsorted Events
-	private static function GMAvatarSpoke( event )
-	{ 
-		
+	private static function GMGotControl( event )
+	{
+		isControl = true;
 	}
+	
+	private static function GMGotChat( event )
+	{
+		var Entity = GMControl.GetEntity( event.name );
+		if ( !body )
+			return;
+		if ( event.name == entityID )
+		{
+			// I spoke
+			body.TriggerAction( "GMSentChat", event.value );
+		}
+		else
+		{
+			
+		}
+		
+		body.OnChat( event.name, event.value );
+	}
+	
+	private static function GMEntityMoved( event )
+	{
+		if ( body )
+			body.GMEntityMoved( event );
+	}
+	
 	private static function GMEntityJoined( event )
 	{
 		var Entity = GMControl.GetEntity( event.name );
@@ -337,11 +390,54 @@ public class GMControl extends ActorControl
 	{
 		var Entity = GMControl.GetEntity( event.name );
 	}
-	private static function GMGotChat( event )
+	
+	public static function GMMemoryChanged( event )
 	{
-		var Entity = GMControl.GetEntity( event.name );
-		
+		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
+		OnMemoryGot( event.name, event.value );
 	}
+	
+	
+	private static function GMReceiveMessage( event )
+	{
+		if ( !body )
+			return;
+		var message = event.name;
+		if ( event.type == ControlEvent.SIGNAL_RECEIVED )
+			body.OnReceiveSignal( message );
+		if ( event.type == ControlEvent.MESSAGE_RECEIVED )
+			body.OnReceiveMessage( message );
+	}
+	
+	
+	
+	private static function GMActionTriggered( event )
+	{
+		if ( !event || !body )
+			return;
+		body.action_name = event.name;
+		body.OnTriggerAction( event.name, event.value );
+	}
+	
+	private static function GMAvatarSpoke( event )
+	{ 
+		if ( !body )
+			return;
+		body.OnSpeak();
+	}
+	
+	private static function GMUpdateLook( event )
+	{
+		if ( body )
+			body.GMUpdateLook( event );
+	}
+	
+	private static function GMStateChanged( event )
+	{
+		if ( body )
+			body.GMStateChanged( event );
+	}
+	
 	
 	/*
 		DEBUG
@@ -461,33 +557,19 @@ public class GMControl extends ActorControl
 	{
 		Log( "CharacterInitStep" );
 		debugTracker = "Characters Init";
+		// 
 		var char = characterList[characterInit];
 		if ( characterInit == 0 )
 		{
 			body = char.body;
 		}
-		if ( char.body == null )
-		{
-			Log( "goto scene " + char.scenename );
-			media.gotoAndPlay( 1, char.scenename );
-		}
-		else
-			Log( "has body" );
-		
-		PrepareSymbols( media );
+		// PrepareSymbols( media );
 		
 		++characterInit;
 		if ( characterInit >= characterList.length )
 		{
 			body = characterList[0].body;
 			debugTracker = "Character Init Ready";
-			for ( var i = 0; i < media.scenes.length; ++i )
-			{
-				if ( media.scenes[i].name != "main" )
-					continue;
-				media.gotoAndPlay( 1, "main" );
-				break;
-			}
 			CharacterInitDone();
 		}
 	}
@@ -497,6 +579,20 @@ public class GMControl extends ActorControl
 		Log( "CharacterInitDone" );
 		// GMControl.media.addChild( container );
 		body.Ready();
+	}
+	
+	public static function SwitchCharacter( char )
+	{
+		if ( body )
+		{
+			
+		}
+		if ( char )
+		{
+			ctrl.setState( "Default" );
+			body = char.body;
+			body.Ready();
+		}
 	}
 	
 	public static function Loop( event = null )
@@ -556,23 +652,25 @@ public class GMControl extends ActorControl
 		}
 		catch (e)
 		{
-			media.alpha = 0.5;
-			Log( "ERROR CAUGHT - please share this with the avatar creator!" );
-			Log( "tracker: " + debugTracker );
-			Log( e.errorID  );
-			Log( e.name  );
-			Log( e.message  );
-			Log( e.prototype  );
-			Log( e.getStackTrace() );
-			if ( !hasErrored )
+			if ( true )
 			{
-				hasErrored = true;
-				OpenControlPanel();
+				media.alpha = 0.5;
+				Log( "*************************************************************" );
+				Log( "ERROR CAUGHT - please share this with the avatar creator!" );
+				Log( "tracker: " + debugTracker );
+				Log( e.errorID  );
+				Log( e.name  );
+				Log( e.message  );
+				Log( e.prototype  );
+				Log( e.getStackTrace() );
+				Log( "*************************************************************" );
+				if ( !hasErrored )
+				{
+					hasErrored = true;
+					OpenControlPanel();
+				}
 			}
-			
-			// media.transform.colorTransform.redMultiplier = 1.25;
-			// media.transform.colorTransform.greenMultiplier = 0.5;
-			// media.transform.colorTransform.blueMultiplier = 0.5;
+			hasErrored = true;
 		}
 		media.gotoAndPlay( 2 );
 	}
@@ -679,12 +777,6 @@ public class GMControl extends ActorControl
 	{
 		var val = ctrl.getMemory( key, defaultval );
 		return val;
-	}
-	
-	public static function GMMemoryChanged( event )
-	{
-		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
-		OnMemoryGot( event.name, event.value );
 	}
 	
 	public static function OnMemoryGot( key, value )
@@ -862,7 +954,9 @@ public class GMControl extends ActorControl
 	
 	public static function InternalSpriteGet( sprname )
 	{
-		return internalspritemap[ sprname ];
+		if ( typeof sprname == "string" )
+			return internalspritemap[ sprname ];
+		return internalspritemap[ sprname.name ];
 	}
 	
 }
