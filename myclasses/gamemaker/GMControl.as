@@ -589,7 +589,6 @@ public class GMControl extends ActorControl
 		}
 		if ( char )
 		{
-			ctrl.setState( "Default" );
 			body = char.body;
 			body.Ready();
 		}

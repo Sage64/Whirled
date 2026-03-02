@@ -657,18 +657,24 @@ public class GMBody extends Sprite
 	
 	public function GetState( statename = null )
 	{
-		if ( statename == null )
+		var _getstate = states[ statename.toLowerCase() ];
+		
+		if ( _getstate == null )
 		{
 			if ( stateList.length < 1 )
 				return null;
 			return stateList[0] ;
 		}
-		return states[ statename.toLowerCase() ];
+		return _getstate;
 	}
 	
 	public function GetStateName()
 	{
 		var _get = ctrl.getState();
+		var _getstate = GetState( _get );
+		trace( "getstate: " + _getstate );
+		if ( _getstate != null )
+			return _getstate.name;
 		return _get;
 	}
 	
@@ -699,6 +705,7 @@ public class GMBody extends Sprite
 	
 	public function GMStateChanged( event )
 	{
+		GMControl.debugTracker = "GMStateChanged (did you forget to account for curState being null?)";
 		stateName = event.name;
 		GMControl.Log( "State Changed to " + stateName );
 		prevState = curState;
