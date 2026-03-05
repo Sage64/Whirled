@@ -657,6 +657,8 @@ public class GMBody extends Sprite
 	
 	public function GetState( statename = null )
 	{
+		if ( typeof statename == "object" )
+			statename = statename.name;
 		var _getstate = states[ statename.toLowerCase() ];
 		
 		if ( _getstate == null )
@@ -672,7 +674,7 @@ public class GMBody extends Sprite
 	{
 		var _get = ctrl.getState();
 		var _getstate = GetState( _get );
-		trace( "getstate: " + _getstate );
+		// trace( "getstate: " + _getstate );
 		if ( _getstate != null )
 			return _getstate.name;
 		return _get;
@@ -856,7 +858,7 @@ public class GMBody extends Sprite
 		// hide previous sprite incase we're not using it this frame
 		if ( _lastsprite != null )
 		{
-			_lastsprite.visible = false;
+			_lastsprite.symbol.visible = false;
 			_lastsprite = null;
 		}
 		
@@ -969,68 +971,8 @@ public class GMBody extends Sprite
 		return GMControl.SetViewOffset( xx, yy );
 	}
 	
-	// Sprite
-	
-	// Return a sprite
-	public function GetSprite( sprite )
-	{
-		if ( typeof sprite == "string" )
-			sprite = GMControl.internalstageitems[sprite]; //.get( sprite );
-		// 
-		return sprite;
-	}
-	
-	public function SetSprite( sprite = "", subimage = null )
-	{
-		if ( sprite == -1 )
-			sprite = null;
-		sprite = GetSprite( sprite );
-		if ( sprite == sprite_current )
-			return;
-		if ( sprite_current == null && sprite == null )
-			return;
-		//if ( sprite_index && sprite && ( sprite_index.name == sprite.name ) )
-		//	return
-		
-		// Hide old sprite
-		if ( sprite_current )
-		{
-			// _media.removeChild( sprite_index );
-			sprite_current.x = 0;
-			sprite_current.y = 0;
-			sprite_current.rotation = 0;
-			//
-			sprite_current.gotoAndStop( 1 );
-			sprite_current.visible = false;
-			//
-			sprite_current = null;
-			sprite_index = null;
-		}
-		
-		if ( subimage != null )
-			image_index = subimage;
+	// 
 
-		// Enable new sprite
-		if ( sprite )
-		{
-			GMControl.Log( "sprite_current = " + sprite.name );
-			sprite_index = sprite;
-			sprite_current = sprite;
-			// 
-			image_number = sprite_current.totalFrames;
-			//
-			// sprite_index.visible = true;
-			// 
-			sprite_current.x = this.x;
-			sprite_current.y = this.y;
-			sprite_current.rotation = this.image_angle;
-			sprite_current.scaleX = image_xscale;
-			sprite_current.scaleY = image_yscale;
-			sprite_current.gotoAndStop( Math.floor( image_index % image_number ) + 1 );
-		}
-		
-		OnSpriteChanged();
-	}
 	
 	public function OnSpriteChanged()
 	{
@@ -1097,7 +1039,7 @@ public class GMBody extends Sprite
 	
 	public static function draw_sprite_ext( _sprite, _image = null,
 	_x = null, _y = null, _xscale = 1, _yscale = 1,
-	_rot = 0, _col = -1, _alpha = 1 )
+	_rot = 0, _col = 0xFFFFFF, _alpha = 1 )
 	{
 		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
 	}
@@ -1119,7 +1061,7 @@ public class GMBody extends Sprite
 		
 		if ( sprite_current )
 		{
-			sprite_current.visible = false;
+			sprite_current.symbol.visible = false;
 			sprite_current = null;
 		}
 		
@@ -1127,7 +1069,7 @@ public class GMBody extends Sprite
 		{
 			trace( "sprite = " + sprite_ref.name );
 			sprite_current = sprite_ref;
-			image_number = sprite_current.totalFrames;
+			image_number = sprite_current.count;
 		}
 	}
 	

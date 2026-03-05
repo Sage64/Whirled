@@ -195,7 +195,7 @@ public class GMNameTag extends Sprite
 			ctrl.setHotSpot( hotspot[0], hotspot[1], 1<<31 );
 		}
 		else
-			trace( "ent = " + ent );
+			trace( "Whirled entity: " + ent );
 		ctrl.addEventListener( ControlEvent.APPEARANCE_CHANGED, MainCodeAppearance );
 		container.addEventListener( Event.EXIT_FRAME, MainCodeFrame );
 		Apply();

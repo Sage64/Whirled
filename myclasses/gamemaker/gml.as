@@ -1,6 +1,6 @@
 ﻿
 // GML Common Functions
-// by sage [ https://github.com/Sage64/Whirled ]
+// 
 // 
 
 package gamemaker
@@ -11,6 +11,11 @@ public class gml
 	/*
 		Math
 	*/
+	
+	public static function lerp( _val1, _val2, _amount )
+	{
+		return _val1 + ( ( _val2 - _val1 ) * _amount );
+	}
 	
 	public static function clamp( _val, _min, _max )
 	{

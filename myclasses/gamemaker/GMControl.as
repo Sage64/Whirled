@@ -90,6 +90,9 @@ public class GMControl extends ActorControl
 	public static var internalstageitems = {};
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
+	public static var internalspritecur = null;
+	public static var drawcolor = 0xFFFFFF;
+	public static var drawalpha = 1;
 	
 	public function GMControl( media )
 	{
@@ -122,6 +125,12 @@ public class GMControl extends ActorControl
 		{
 			var Inst = instances.shift();
 			Inst.GMCleanup();
+		}
+		
+		while ( internalspritelist.length > 0 )
+		{
+			var spr = internalspritelist.shift();
+			spr.Cleanup();
 		}
 	}
 	
@@ -252,8 +261,6 @@ public class GMControl extends ActorControl
 			GMControl.Log( "Invalid media" );
 			return;
 		}
-		
-		
 		var _symbols = [];
 		var Child;
 		var i;
@@ -267,56 +274,57 @@ public class GMControl extends ActorControl
 		}
 		for ( i = 0; i < _symbols.length; ++i )
 		{
-			Child = _symbols[i];
-			var sprname = Child.name;
-			// getQualifiedClassName( Child );
-			GMControl.Log( "Found symbol \"" + sprname + "\" with " + Child.totalFrames + " frames" );
-			if ( Child )
-			{
-				if ( internalstageitems[sprname] != null )
-				{
-					GMControl.Log( "already exists" );
-					continue;
-				}
-				
-				internalstageitems[sprname] = Child;
-				var _bitmap = isBitmap;
-				if ( Child["isBitmap"] == false )
-				{
-					GMControl.Log( "isBitmap = false" );
-					_bitmap = false;
-				}
-				if ( _bitmap )
-				{
-					Child.cacheAsBitmap = true;
-				}
-				Child.visible = false;
-				Child.gotoAndStop( 1 );
-				Child.x = 0;
-				Child.y = 0;
-				Child.alpha = 0;
-				
-				var InternalSprite = new GMInternalSprite( Child );
-				internalspritelist.push( InternalSprite );
-				
-				internalspritemap[sprname] = Child;
-				
-				var Parent = Child.parent;
-				Parent.removeChild( Child );
-				if ( container )
-					container.addChild( Child );
-				
-				Child.gotoAndStop( 1 );
-				
-				continue;
-			}
+			PrepareSymbol( _symbols[i] );
 		}
 	}
 	
 	public static function PrepareSymbol( symbol )
 	{
-		
-		
+		var sprname = symbol.name;
+		GMControl.Log( "Found symbol \"" + sprname + "\" with " + symbol.totalFrames + " frames" );
+		if ( internalstageitems[sprname] != null )
+		{
+			GMControl.Log( "already exists" );
+			return;
+		}
+
+		internalstageitems[sprname] = symbol;
+		var _bitmap = isBitmap;
+		if ( symbol["isBitmap"] == false )
+		{
+			GMControl.Log( "isBitmap = false" );
+			_bitmap = false;
+		}
+		if ( _bitmap )
+		{
+			symbol.cacheAsBitmap = true;
+		}
+		symbol.visible = false;
+		symbol.gotoAndStop( 1 );
+		symbol.x = 0;
+		symbol.y = 0;
+		symbol.alpha = 0;
+
+		var spr = new GMInternalSprite( symbol );
+		internalspritelist.push( spr );
+		internalspritemap[sprname] = spr;
+
+		var Parent = symbol.parent;
+		Parent.removeChild( symbol );
+		if ( container )
+			container.addChild( symbol );
+
+		symbol.gotoAndStop( 1 );
+	}
+	
+	public static function AssignSpriteRefs( to )
+	{
+		for ( var i = 0; i < internalspritelist.length; ++i )
+		{
+			var spr = internalspritelist[i];
+			trace( spr.name );
+			to[spr.name] = spr;
+		}
 	}
 	
 	/*
@@ -920,44 +928,81 @@ public class GMControl extends ActorControl
 	
 	// Sprites
 	
-	public static function InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _angle, _blend, _alpha )
+	public static function InternalSpriteDraw( _sprite, _image, _x, _y, _xscale = 1, _yscale = 1, _angle = 0, _blend = 0xFFFFFF, _alpha = 1 )
 	{
-		if ( !_sprite )
+		if ( !_sprite || ( _sprite < 0 ) )
 			return;
 		//trace( "draw " + _sprite.name + "[" + _image + "] at " + _x + ", " + _y );
 		// real bitmap cached drawing not implemented yet
 		// currently just moves symbols into place and hides them next frame
 		
-		if ( _sprite.constructor != MovieClip && _sprite.visible )
+		var _symbol = _sprite.symbol;
+		
+		if ( _symbol.constructor != MovieClip && _symbol.visible )
 		{
-			_sprite = new _sprite.constructor();
-			container.addChild( _sprite );
-			_tempsymbols.push( _sprite );
+			_symbol = new _symbol.constructor();
+			container.addChild( _symbol );
+			_tempsymbols.push( _symbol );
 		}
 		else
 		{
-			_tempdrawsprites.push( _sprite );
+			_tempdrawsprites.push( _symbol );
 			var pos = container.numChildren;
-			container.setChildIndex( _sprite, pos - 1 );
+			container.setChildIndex( _symbol, pos - 1 );
 		}
 		
-		_sprite.gotoAndStop( Math.floor( _image % _sprite.totalFrames ) + 1 );
-		_sprite.x = _x;
-		_sprite.y = _y;
-		_sprite.scaleX = _xscale;
-		_sprite.scaleY = _yscale;
-		_sprite.rotation = _angle;
-		_sprite.alpha = _alpha;
-		_sprite.visible = true;
+		var color = _symbol.transform.colorTransform;
+		var r = ( ( _blend >> 16 ) & 0xFF ) / 255;
+		var b = ( ( _blend >> 8 ) & 0xFF ) / 255;
+		var g = ( ( _blend ) & 0xFF ) / 255;
+		
+		color.redMultiplier = r;
+		color.greenMultiplier = g;
+		color.blueMultiplier = b;
+		color.alphaMultiplier = 1;
+		_symbol.transform.colorTransform = color;
+		
+		_symbol.gotoAndStop( Math.floor( _image % _symbol.totalFrames ) + 1 );
+		_symbol.x = _x;
+		_symbol.y = _y;
+		_symbol.scaleX = _xscale;
+		_symbol.scaleY = _yscale;
+		_symbol.rotation = -_angle;
+		_symbol.alpha = _alpha;
+		_symbol.visible = true;
 	}
 	
 	public static function InternalSpriteGet( sprname )
 	{
+		var spr;
 		if ( typeof sprname == "string" )
-			return internalspritemap[ sprname ];
-		return internalspritemap[ sprname.name ];
+			spr = internalspritemap[ sprname ];
+		else
+			spr = internalspritemap[ sprname.name ];
+		if ( spr == null )
+			return null;
+		return spr;
 	}
 	
+	// Drawing
+	
+	public static function InternalSetColor( col )
+	{
+		drawcolor = col;
+	}
+	
+	public static function InternalSetAlpha( alpha )
+	{
+		drawalpha = alpha;
+	}
+	
+	public static function InternalDrawLine( x1, y1, x2, y2, w )
+	{
+		var g = container.graphics;
+		g.lineStyle( w, drawcolor, drawalpha );
+		g.moveTo( x1, y1 );
+		g.lineTo( x2, y2 );
+	}
 }
 }
 
@@ -981,20 +1026,83 @@ class GMInternalSprite
 	public var y = 0;
 	public var width = 0;
 	public var height = 0;
+	public var bounds;
 	
 	public var isBitmap = true;
 	
-	public function GMInternalSprite( _symbol = null )
+	public function GMInternalSprite( _symbol = null, _isbitmap = true )
 	{
 		symbol = _symbol;
+		isBitmap = _isbitmap;
+		// 
 		
+		symbol.x = 0;
+		symbol.y = 0;
+		symbol.scaleX = 1; // 5;
+		symbol.scaleY = 1; // 5;
+		
+		var transformMatrix = symbol.transform.concatenatedMatrix;
+		symbol.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
+		symbol.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
+		
+		var getshape = symbol.getChildAt( 0 ) as Shape;
+		
+		bounds = symbol.transform.pixelBounds;
+		
+		name = symbol.name;
+		width = symbol.width;
+		height = symbol.height;
+		
+		x = -bounds.x;
+		y = -bounds.y;
+		width = bounds.width;
+		height = bounds.height;
+		
+		var data = getshape.graphics;
+		trace( data );
+		
+		
+		for ( var i = 0; i < symbol.totalFrames; ++i )
+		{
+			images[i] = CreateBitmap( i );
+			++count;
+		}
 	}
 	
-	public function GetImage( _image )
+	public function Cleanup()
 	{
-		return images[ Math.floor( _image % count ) ];
+		while ( images.length > 0 )
+		{
+			var img = images.pop();
+			if ( img == null )
+				continue;
+			img.bitmap_data.dispose();
+		}
 	}
 	
+	public function GetImage( index )
+	{
+		return images[ Math.floor( index % count ) ];
+	}
+	
+	
+	public function CreateBitmap( ind )
+	{
+		var Image = {};
+		return Image;
+		// 
+		if ( images[ind] != null )
+		{
+			images[ind].bitmap_data.dispose();
+		}
+		images[ind] = Image;
+		if ( width < 1 || height < 1 )
+			return Image;
+		var bmd = new BitmapData( width, height, true, 0x000000 );
+		Image.bitmap_data = bmd;
+		Image.bitmap = new Bitmap( bmd );
+		return Image;
+	}
 	
 }
 
