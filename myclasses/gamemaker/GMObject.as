@@ -52,6 +52,8 @@ public class GMObject extends Sprite
 	public static var dcos = gml.dcos;
 	public static var dsin = gml.dsin;
 	public static var lerp = gml.lerp;
+	public static var lengthdir_x = gml.lengthdir_x;
+	public static var lengthdir_y = gml.lengthdir_y;
 	
 	public function GMObject()
 	{
@@ -112,6 +114,11 @@ public class GMObject extends Sprite
 		return GMControl.InternalInstanceDestroy( _inst );
 	}
 	
+	public function instance_exists( _obj )
+	{
+		return true;
+	}
+	
 	// Sprite
 	
 	public function draw_self()
@@ -136,19 +143,22 @@ public class GMObject extends Sprite
 		if ( sprite_ref == -1 )
 			sprite_ref = null;
 		if ( sprite_ref == sprite_current )
+		{
+			// trace( "no change" );
 			return;
+		}
 		
 		if ( sprite_current )
 		{
 			sprite_current.symbol.visible = false;
 			sprite_current = null;
-			image_number = 1;
 		}
 		
 		if ( sprite_ref )
 		{
+			// trace( "sprite = " + sprite_ref.name );
 			sprite_current = sprite_ref;
-			image_number = sprite_current.totalFrames;
+			image_number = sprite_current.count;
 		}
 	}
 	
@@ -188,9 +198,9 @@ public class GMObject extends Sprite
 		return GMControl.InternalSetColor( col );
 	}
 	
-	public static function draw_line_width( x1, y1, x2, y2, w = 1 )
+	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
 	{
-		return GMControl.InternalDrawLine( x1, y1, x2, y2, w );
+		return GMControl.InternalDrawLine( x1, y1, x2, y2, w, a );
 	}
 	
 	// Sound

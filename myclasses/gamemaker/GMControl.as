@@ -91,6 +91,7 @@ public class GMControl extends ActorControl
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
 	public static var internalspritecur = null;
+	public static var internalclasses = {};
 	public static var drawcolor = 0xFFFFFF;
 	public static var drawalpha = 1;
 	
@@ -160,6 +161,7 @@ public class GMControl extends ActorControl
 			// Always run in debug mode if not connected to whirled
 			GMControl.Log( "Debug Mode" );
 			debug = true;
+			GMGotControl();
 			// AddEventListener( root, KeyboardEvent.KEY_DOWN, DebugKeyDown );
 		}
 		
@@ -202,6 +204,11 @@ public class GMControl extends ActorControl
 		AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
 		AddEventListener( ctrl, ControlEvent.AVATAR_SPOKE, GMAvatarSpoke );
 		AddEventListener( ctrl, ControlEvent.STATE_CHANGED, GMStateChanged );
+		
+		if ( ctrl.hasControl() )
+		{
+			GMGotControl();
+		}
 		
 		Init( media );
 		
@@ -361,8 +368,9 @@ public class GMControl extends ActorControl
 		}
 	}
 	
-	private static function GMGotControl( event )
+	private static function GMGotControl( event = null )
 	{
+		GMControl.Log( "GOT CONTROL" );
 		isControl = true;
 	}
 	
@@ -446,7 +454,6 @@ public class GMControl extends ActorControl
 			body.GMStateChanged( event );
 	}
 	
-	
 	/*
 		DEBUG
 	*/
@@ -473,7 +480,7 @@ public class GMControl extends ActorControl
 		text = "[" + hh + ":" + mm + ":" + ss +  "]" + String( text );
 		trace( "Log: " + text );
 		debug_log.push( text );
-		if ( debug_log.length > 50 )
+		if ( debug_log.length > 64 )
 			debug_log.shift();
 		
 		if ( controlPanel )
@@ -897,7 +904,13 @@ public class GMControl extends ActorControl
 	public static function InternalInstanceCreate( _x, _y, _obj )
 	{
 		debugTracker = "InternalInstanceCreate";
+		//GMControl.Log( "Create instance " + _obj );
+		
+		if ( !_obj )
+			return;
 		var Inst = new _obj();
+		if ( true )
+			debugTracker += " - " + _obj; 
 		Inst.x = _x;
 		Inst.y = _y;
 		Inst.xstart = _x;
@@ -996,10 +1009,12 @@ public class GMControl extends ActorControl
 		drawalpha = alpha;
 	}
 	
-	public static function InternalDrawLine( x1, y1, x2, y2, w )
+	public static function InternalDrawLine( x1, y1, x2, y2, w, a = null )
 	{
 		var g = container.graphics;
-		g.lineStyle( w, drawcolor, drawalpha );
+		if ( a == null )
+			a = drawalpha;
+		g.lineStyle( w, drawcolor, a );
 		g.moveTo( x1, y1 );
 		g.lineTo( x2, y2 );
 	}

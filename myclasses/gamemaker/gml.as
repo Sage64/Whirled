@@ -65,7 +65,7 @@ public class gml
 	{
 		var xx = x2 - x1;
 		var yy = y2 - y1;
-		return Math.floor( ( /*Math.round*/( Math.atan2( yy, xx ) / (2 * Math.PI / 360 ) ) + 360) % 360 );
+		return Math.floor( ( Math.round( Math.atan2( yy, xx ) / (2 * Math.PI / 360 ) ) + 360) % 360 );
 	}
 	
 	public static function point_distance( x1, y1, x2, y2 )
