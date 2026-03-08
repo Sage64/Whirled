@@ -13,6 +13,7 @@ package gamemaker
 import flash.display.*;
 import flash.errors.*;
 import flash.events.*;
+import flash.text.*;
 import flash.utils.*;
 
 import com.whirled.*;
@@ -41,6 +42,8 @@ public class GMControl extends ActorControl
 	public static var body;
 	
 	public static var isControl = false;
+	
+	public static var isConnected = false;
 	
 	public static var entityID;
 	public static var isAvatar = false;
@@ -82,9 +85,6 @@ public class GMControl extends ActorControl
 	public static var controlPanel;
 	public static var popupPanel = null;
 	
-	public static var instances = [];
-	public static var instances_of = {};
-	
 	public static var _tempsymbols = [];
 	public static var _tempdrawsprites = [];
 	public static var internalstageitems = {};
@@ -92,8 +92,19 @@ public class GMControl extends ActorControl
 	public static var internalspritemap = {};
 	public static var internalspritecur = null;
 	public static var internalclasses = {};
+	
+	
+	// Gamemaker stuff 
+	public static var global = {};
+	public static var instances = [];
+	public static var instances_of = {};
+	
 	public static var drawcolor = 0xFFFFFF;
 	public static var drawalpha = 1;
+	public static var drawfont = { name: "_sans", size: 12 };
+	public static var drawhalign = 0;
+	public static var drawvalign = 0;
+	public static var drawtextformat = new TextFormat();
 	
 	public function GMControl( media )
 	{
@@ -102,6 +113,7 @@ public class GMControl extends ActorControl
 		GMControl.container.cacheAsBitmap = true;
 		
 		GMControl.ctrl = this;
+		GMControl.isConnected = ctrl.isConnected();
 		
 		super( media );
 		InitWhirled();
@@ -368,13 +380,13 @@ public class GMControl extends ActorControl
 		}
 	}
 	
-	private static function GMGotControl( event = null )
+	public static function GMGotControl( event = null )
 	{
 		GMControl.Log( "GOT CONTROL" );
 		isControl = true;
 	}
 	
-	private static function GMGotChat( event )
+	public static function GMGotChat( event )
 	{
 		var Entity = GMControl.GetEntity( event.name );
 		if ( !body )
@@ -392,17 +404,17 @@ public class GMControl extends ActorControl
 		body.OnChat( event.name, event.value );
 	}
 	
-	private static function GMEntityMoved( event )
+	public static function GMEntityMoved( event )
 	{
 		if ( body )
 			body.GMEntityMoved( event );
 	}
 	
-	private static function GMEntityJoined( event )
+	public static function GMEntityJoined( event )
 	{
 		var Entity = GMControl.GetEntity( event.name );
 	}
-	private static function GMEntityLeft( event )
+	public static function GMEntityLeft( event )
 	{
 		var Entity = GMControl.GetEntity( event.name );
 	}
@@ -414,7 +426,7 @@ public class GMControl extends ActorControl
 	}
 	
 	
-	private static function GMReceiveMessage( event )
+	public static function GMReceiveMessage( event )
 	{
 		if ( !body )
 			return;
@@ -427,7 +439,7 @@ public class GMControl extends ActorControl
 	
 	
 	
-	private static function GMActionTriggered( event )
+	public static function GMActionTriggered( event )
 	{
 		if ( !event || !body )
 			return;
@@ -435,20 +447,20 @@ public class GMControl extends ActorControl
 		body.OnTriggerAction( event.name, event.value );
 	}
 	
-	private static function GMAvatarSpoke( event )
+	public static function GMAvatarSpoke( event )
 	{ 
 		if ( !body )
 			return;
 		body.OnSpeak();
 	}
 	
-	private static function GMUpdateLook( event )
+	public static function GMUpdateLook( event )
 	{
 		if ( body )
 			body.GMUpdateLook( event );
 	}
 	
-	private static function GMStateChanged( event )
+	public static function GMStateChanged( event )
 	{
 		if ( body )
 			body.GMStateChanged( event );
@@ -714,7 +726,7 @@ public class GMControl extends ActorControl
 		for ( var i = 0; i < instances.length; ++i )
 		{
 			var inst = instances[i];
-			inst.GMDraw();
+			inst.Draw(); //GMDraw();
 		}
 		
 		if ( body )
@@ -908,13 +920,11 @@ public class GMControl extends ActorControl
 		
 		if ( !_obj )
 			return;
+		GMObject._createx = _x;
+		GMObject._createy = _y;
 		var Inst = new _obj();
 		if ( true )
 			debugTracker += " - " + _obj; 
-		Inst.x = _x;
-		Inst.y = _y;
-		Inst.xstart = _x;
-		Inst.ystart = _y;
 		
 		container.addChild( Inst );
 		
@@ -966,8 +976,8 @@ public class GMControl extends ActorControl
 		
 		var color = _symbol.transform.colorTransform;
 		var r = ( ( _blend >> 16 ) & 0xFF ) / 255;
-		var b = ( ( _blend >> 8 ) & 0xFF ) / 255;
-		var g = ( ( _blend ) & 0xFF ) / 255;
+		var g = ( ( _blend >> 8 ) & 0xFF ) / 255;
+		var b = ( ( _blend ) & 0xFF ) / 255;
 		
 		color.redMultiplier = r;
 		color.greenMultiplier = g;
@@ -1017,6 +1027,48 @@ public class GMControl extends ActorControl
 		g.lineStyle( w, drawcolor, a );
 		g.moveTo( x1, y1 );
 		g.lineTo( x2, y2 );
+	}
+	
+	public static function InternalTextDraw( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
+	{
+		var _symbol = new TextField();
+		container.addChild( _symbol );
+		_tempsymbols.push( _symbol );
+		_symbol.x = _x;
+		_symbol.y = _y;
+		_symbol.scaleX = _xscale;
+		_symbol.scaleY = _yscale;
+		_symbol.alpha = drawalpha;
+		_symbol.textColor = drawcolor;
+		
+		if ( drawfont && drawfont != -1 )
+		{
+			drawtextformat.font = drawfont.font;
+			drawtextformat.size = drawfont.size;
+		}
+		else
+		{
+			drawtextformat.font = "_sans";
+			drawtextformat.size = 12;
+		}
+		if ( drawhalign == GMObject.fa_center )
+			drawtextformat.align = TextFormatAlign.CENTER;
+		else if ( drawhalign == GMObject.fa_right )
+			drawtextformat.align = TextFormatAlign.RIGHT;
+		
+		_symbol.text = _text;
+		_symbol.setTextFormat( drawtextformat );
+	}
+	
+	// Sound
+	
+	public static function InternalAudioPlay( _sound, _loop = false, _vol = 1, _pitch = 1 )
+	{
+		if ( _sound == null || _sound == -1 )
+			return null;
+		var aud = {};
+		
+		return aud;
 	}
 }
 }

@@ -31,6 +31,11 @@ public class gml
 		return Math.random() * amnt;
 	}
 	
+	public static function random_range( a, b )
+	{
+		return lerp( a, b, Math.random() );
+	}
+	
     public static function degtorad( rads )
 	{
 		return rads * ( Math.PI / 180 );

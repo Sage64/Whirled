@@ -21,13 +21,15 @@ import com.whirled.*
 
 public class DeltaruneBody extends GMBody
 {
+	public static var spr_battlebg;
+	public static var spr_tiredmark;
+	
+	// 
+	
 	public var darkmode = false;
 	
 	public var bscale = 3;
 	public var darkscale = bscale / 2;
-	
-	public var spr_battlebg;
-	public var spr_tiredmark;
 	
 	public var aqcolor = 0x03a5fc;
 	public var lighty = 0xfff947;
@@ -37,8 +39,15 @@ public class DeltaruneBody extends GMBody
 	
 	public function DeltaruneBody()
 	{
+		var i;
+		
 		spr_battlebg = sprite_get( "spr_battlebg" );
 		spr_tiredmark = sprite_get( "spr_tiredmark" );
+		
+		if ( !global.damagefont )
+		{
+			global.damagefont = { name: "_sans", size: 12 };
+		}
 		
 		super( 30 );
 		
@@ -57,6 +66,13 @@ public class DeltaruneBody extends GMBody
 			nametag.textInit.outlineWidth = _size / 3.5;
 			nametag.textInit.sharpness = 400;
 			nametag.Apply();
+		}
+		
+		if ( global.flag == null )
+		{
+			global.flag = [];
+			for ( i = 0; i < 99; ++i )
+				global.flag[i] = 0;
 		}
 	}
 	
@@ -198,9 +214,9 @@ public class DeltaruneBody extends GMBody
 		return from;
 	}
 	
-	public function snd_play( sound = -1 )
+	public function snd_play( _sound = null )
 	{
-		
+		return GMControl.InternalAudioPlay( _sound, 1, false );
 	}
 	
 	public function c_start()
@@ -211,6 +227,15 @@ public class DeltaruneBody extends GMBody
 		cutscene.owner = this;
 		
 		return cutscene;
+	}
+	
+	public function c_stop()
+	{
+		if ( cutscene )
+		{
+			cutscene.Done();
+			cutscene = instance_destroy( cutscene );
+		}
 	}
 	
 	public function c_cmd( ...args )
@@ -362,7 +387,8 @@ class obj_cutscene extends GMObject
 		{
 			case "state":
 				statename = arg[1];
-				body.SetState( statename );
+				if ( statename != null )
+					body.SetState( statename );
 				break;
 			case "wait":
 				wait_timer = arg[1];

@@ -130,6 +130,10 @@ public class GMBody extends Sprite
 	public var actionList :Array = [];
 	public var action_name = ""; // current action name
 	
+	// structs for simple state references (e.g mystates["default" = AddState( "Just Standing Here" );
+	public var mystates = {};
+	public var myactions = {};
+	
 	// internal sprite manager
 	
 
@@ -141,9 +145,10 @@ public class GMBody extends Sprite
 	public var scale = 1;
 	
 	// Gamemaker
+	public static const global = GMControl.global;
 	
 	// Sprite
-	public var sprite_index = null;
+	//public var sprite_index = null; old.
 	public var sprite_current = null; // the symbol that will be used as the primary sprite
 	public var image_number = 1;
 	public var image_index = 0;
@@ -185,7 +190,7 @@ public class GMBody extends Sprite
 		SetViewOffset( 0, 0 );
 		
 		AddState( "DevMode", true );
-		AddAction("GMSentChat", GMSentChat, true );
+		AddAction("GMSentChat", GMSentChat, true ).hidden = true;
 		
 		AddAction( "[Avatar Control Panel]", Action_OpenControlPanel );
 		
@@ -738,16 +743,17 @@ public class GMBody extends Sprite
 		ACTIONS
 	*/
 	
-	public function AddAction ( actionname :String = "action", method = null, hidden = false )
+	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = false )
 	{
 		GMControl.Log( "Adding action \"" + actionname + "\"" );
 		var Action = {};
 		Action.name = actionname;
-		if ( method )
-			Action.action = method;
+		Action.value = actionvalue;
+		if ( actionfunc )
+			Action.action = actionfunc;
 		actions[ actionname.toLowerCase()] = Action;
-		if ( !hidden )
-			actionList.push( Action );
+		//if ( !hidden )
+		actionList.push( Action );
 		return Action;
 	}
 	
@@ -770,7 +776,11 @@ public class GMBody extends Sprite
 			var Action = _showActions[i];
 			var _action = Action;
 			if ( typeof _action == "object" )
+			{
+				if ( _action.hidden )
+					continue;
 				_action = _action.name;
+			}
 			GMControl.Log( i + ": " + _action );
 			names.push( _action );
 		}
@@ -779,7 +789,12 @@ public class GMBody extends Sprite
 	
 	public function TriggerAction( _action = "", _data = null )
 	{
-		ctrl.triggerAction( _action, _data );
+		if ( typeof _action == "object" )
+			_action = _action.name;
+		if ( ctrl.isConnected() )
+			ctrl.triggerAction( _action, _data );
+		else
+			OnTriggerAction( _action, _data );
 	}
 	
 	public function OnTriggerAction( actionname = null, actiondata = null )

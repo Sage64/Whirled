@@ -7,6 +7,7 @@ package deltarune
 {
 
 import gamemaker.*;
+import deltarune.objects.*;
 
 import flash.display.*;
 import flash.events.*;
@@ -26,7 +27,9 @@ public class MonsterBody extends DeltaruneBody
     public static var hurtsprite;
     public static var sparedsprite;
 	
-    public var monster = null;
+	public var shakex = 0;
+	public var state = 0;
+	public var hurttimer = 0;
     
 	public function MonsterBody()
 	{
@@ -55,6 +58,47 @@ public class MonsterBody extends DeltaruneBody
 		}
         
 		// States
+		
+		myactions["damage_weak"] = AddAction( "Damage (weak)", Action_Hurt, 30 );
+		myactions["damage_strong"] = AddAction( "Damage (strong)", Action_Hurt, 100 );
+	}
+	
+	override public function Draw()
+	{
+		super.Draw();
+	}
+	
+	public function Action_Hurt( data )
+	{
+		trace( "oof!" );
+		var damage = 0;
+		if ( data )
+			damage = data;
+		
+		OnHurt( damage );
+	}
+	
+	public function OnHurt( amount = 0 ) {}
+	
+	
+	
+	public function scr_damage_enemy( target, amount )
+	{
+		var dmgx = target.x;
+		var dmgy = target.y - 20;
+		
+		// var dmg = instance_create( dmgx, dmgy, obj_dmgwriter );
+		
+		if ( target == 0 )
+		{
+			
+		}
+		else
+		{
+			target.shakex = 9;
+			target.state = 3;
+			target.hurttimer = 30;
+		}
 	}
 }
 // 

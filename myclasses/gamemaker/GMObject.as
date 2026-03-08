@@ -18,45 +18,76 @@ import com.whirled.*;
 
 public class GMObject extends Sprite
 {
-	public var body;
+	public static const global = GMControl.global;
 	
+	public static var _createx;
+	public static var _createy;
+	
+	public var body;
 	public var id = 0;
 	
 	public var xstart;
 	public var ystart;
-	
 	public var depth = 0;
 	
-	public var sprite_index = null;
+	//public var sprite_index = null;
 	public var sprite_current = null;
-	
 	public var image_number = 1;
 	public var image_index = 0;
-	public var image_speed = 0;
+	public var image_speed = 1;
 	public var image_xscale = 1;
 	public var image_yscale = 1;
 	public var image_angle = 0;
 	public var image_blend = 0xFFFFFF;
 	public var image_alpha = 1;
 	
+	// Movement
 	public var hspeed = 0;
 	public var vspeed = 0;
 	public var gravity = 0;
 	
+	// Color consants
 	public static const c_white = 0xFFFFFF;
 	public static const c_black = 0x000000;
+	//
+	public static const c_aqua = c_white;
+	public static const c_blue = 0x0000FF;
+	public static const c_lime = 0x00FF00;
+	public static const c_ltgray = 0xCCCCCC;
+	public static const c_purple = 0x800080;
+	public static const c_red = 0xFF0000;
+	public static const c_yellow = 0xFFFF00;
 	
-	public static var abs = Math.abs;
-	public static var sin = Math.sin;
-	public static var cos = Math.cos;
-	public static var dcos = gml.dcos;
-	public static var dsin = gml.dsin;
-	public static var lerp = gml.lerp;
-	public static var lengthdir_x = gml.lengthdir_x;
-	public static var lengthdir_y = gml.lengthdir_y;
+	// Function constants
+	public static const string = String;
+	
+	public static const pi = Math.PI;
+	public static const abs = Math.abs;
+	public static const sin = Math.sin;
+	public static const cos = Math.cos;
+	public static const dcos = gml.dcos;
+	public static const dsin = gml.dsin;
+	public static const lerp = gml.lerp;
+	public static const lengthdir_x = gml.lengthdir_x;
+	public static const lengthdir_y = gml.lengthdir_y;
+	public static const clamp = gml.clamp;
+	
+	//
+	public static const fa_left = 0;
+	public static const fa_center = 1;
+	public static const fa_right = 2;
+	public static const fa_top = 0;
+	public static const fa_middle = 1;
+	public static const fa_bottom = 2;
+	
 	
 	public function GMObject()
 	{
+		this.x = _createx;
+		this.y = _createy;
+		xstart = x;
+		ystart = y;
+		
 		GMControl.debugTracker = "GMObject";
 		this.body = GMControl.body;
 	}
@@ -77,9 +108,14 @@ public class GMObject extends Sprite
 		
 		Step();
 		
-		if ( image_speed != 0 )
+		if ( image_speed != 0 && ( image_number > 1 ) )
 		{
-			
+			image_index += ( image_speed );
+			if ( image_index >= image_number )
+			{
+				OnAnimationEnd();
+			}
+			image_index = ( image_index % image_number );
 		}
 		
 	}
@@ -96,9 +132,20 @@ public class GMObject extends Sprite
 		draw_self();
 	}
 	
+	public function OnAnimationEnd() {}
+	
 	/*
 		GM Functions
 	*/
+	
+	public function random( val )
+	{
+		return Math.random() * val;
+	}
+	public function random_range( a, b )
+	{
+		return gml.lerp( a, b, Math.random() );
+	}
 	
 	// Instance
 	
@@ -193,9 +240,19 @@ public class GMObject extends Sprite
 		return GMControl.InternalSetAlpha( alpha );
 	}
 	
+	public static function draw_get_alpha()
+	{
+		return GMControl.drawalpha;
+	}
+	
 	public static function draw_set_color( col )
 	{
 		return GMControl.InternalSetColor( col );
+	}
+	
+	public static function draw_get_color()
+	{
+		return GMControl.drawcolor;
 	}
 	
 	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
@@ -203,8 +260,35 @@ public class GMObject extends Sprite
 		return GMControl.InternalDrawLine( x1, y1, x2, y2, w, a );
 	}
 	
+	// Text
+	
+	public static function draw_set_font( _fnt )
+	{
+		GMControl.drawfont = _fnt;
+	}
+	
+	public static function draw_set_halign( _h = fa_left )
+	{
+		GMControl.drawhalign = _h;
+	}
+	public static function draw_set_valign( _v = fa_top )
+	{
+		GMControl.drawvalign = _v;
+	}
+	
+	public function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
+	{
+		GMControl.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
+		return;
+	}
+	
+	
 	// Sound
 	
+	public static function audio_play_sound( _sound, _loop = false, _vol = 1, _pitch = 1 )
+	{
+		return GMControl.InternalAudioPlay( _sound, _loop, _vol, _pitch );
+	}
 	
 	
 }
