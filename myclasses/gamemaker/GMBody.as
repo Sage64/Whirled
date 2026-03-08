@@ -9,7 +9,8 @@
 	
 	It may be useful to you if you wish to make an avatar primarily through code
 	
-	Currently very WIP
+	Currently very WIP, a lot of stuff is very messy as this started as just this body
+	but im slowly moving everything over to the be handled by GMControl instead 
 	
 	kinda just sharing it on a whim without properly
 	planning for it, but it's usable if you can interpret it or I am currently
@@ -745,7 +746,7 @@ public class GMBody extends Sprite
 	
 	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = false )
 	{
-		GMControl.Log( "Adding action \"" + actionname + "\"" );
+		GMControl.Log( "Adding action \"" + actionname + "\" with data " + actionvalue );
 		var Action = {};
 		Action.name = actionname;
 		Action.value = actionvalue;
@@ -804,6 +805,8 @@ public class GMBody extends Sprite
 		var Action = actions[ actionname.toLowerCase() ];
 		if ( Action )
 		{
+			if ( actiondata == null )
+				actiondata = Action.value;
 			if ( Action.action )
 				Action.action( actiondata );
 		}
