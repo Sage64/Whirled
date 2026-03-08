@@ -25,6 +25,7 @@ public class GMObject extends Sprite
 	
 	public var body;
 	public var id = 0;
+	public var exists = true;
 	
 	public var xstart;
 	public var ystart;
@@ -94,6 +95,8 @@ public class GMObject extends Sprite
 	
 	public function Cleanup() {}
 	
+	public function Create() {} // called after being instance_create'd after construction
+	
 	public function GMStep()
 	{
 		if ( gravity != 0 )
@@ -142,9 +145,20 @@ public class GMObject extends Sprite
 	{
 		return Math.random() * val;
 	}
+	
 	public function random_range( a, b )
 	{
 		return gml.lerp( a, b, Math.random() );
+	}
+	
+	public function irandom( val )
+	{
+		return Math.round( Math.random() * val );
+	}
+	
+	public function round( val )
+	{
+		return Math.round( val );
 	}
 	
 	// Instance
@@ -163,7 +177,11 @@ public class GMObject extends Sprite
 	
 	public function instance_exists( _obj )
 	{
-		return true;
+		if ( _obj )
+		{
+			return _obj.exists;
+		}
+		return false;
 	}
 	
 	// Sprite

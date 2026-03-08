@@ -68,8 +68,8 @@ public class GMControl extends ActorControl
 	
 	public static var stageW = 600;
 	public static var stageH = 450;
-	public static var originX = stageW / 2;
-	public static var originY = stageH / 2;
+	public static var originX = 0;//stageW / 2;
+	public static var originY = 0;//stageH / 2;
 	
 	public static var viewXOffset = 0;
 	public static var viewYOffset = 0;
@@ -777,6 +777,9 @@ public class GMControl extends ActorControl
 			
 			media.x -= container.x * _scale;
 			media.y -= container.y * _scale;
+			
+			container.x += stageW / 2;
+			container.y += stageH / 2;
 		}
 		
 		ctrl.setHotSpot( xx - offx, yy - offy, hh );
@@ -925,10 +928,10 @@ public class GMControl extends ActorControl
 		var Inst = new _obj();
 		if ( true )
 			debugTracker += " - " + _obj; 
-		
 		container.addChild( Inst );
-		
 		instances.push( Inst );
+		
+		Inst.Create();
 		
 		return Inst;
 	}
@@ -936,12 +939,15 @@ public class GMControl extends ActorControl
 	
 	public static function InternalInstanceDestroy( _inst )
 	{
+		if ( !_inst )
+			return;
 		// Remove from GMControl
 		var pos = instances.indexOf( _inst );
 		if ( pos < 0 )
 			return;
 		instances.splice( pos, 1 );
 		_inst.Cleanup();
+		_inst.exists = false;
 		// Remove from container
 		pos = container.getChildIndex( _inst )
 		if ( pos < 0 )

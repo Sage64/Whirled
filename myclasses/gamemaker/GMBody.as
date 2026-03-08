@@ -186,7 +186,9 @@ public class GMBody extends Sprite
 		
 		this.timescale_fps = base_fps;
 		
-		SetOrigin( GMControl.stageW / 2, GMControl.stageH / 2 );
+		// SetOrigin( GMControl.stageW / 2, GMControl.stageH / 2 );
+		SetOrigin( 0, 0 );
+		
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
 		
