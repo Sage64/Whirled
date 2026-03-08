@@ -1046,6 +1046,14 @@ public class GMBody extends Sprite
 		return GMControl.InternalInstanceDestroy( _inst );
 	}
 	
+	public function instance_exists( _obj )
+	{
+		if ( _obj )
+		{
+			return _obj.exists;
+		}
+		return false;
+	}
 	
 	/*
 		Sprites

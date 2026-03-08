@@ -780,6 +780,8 @@ public class GMControl extends ActorControl
 			
 			container.x += stageW / 2;
 			container.y += stageH / 2;
+			offx += stageW / 2;
+			offy -= stageH / 2;
 		}
 		
 		ctrl.setHotSpot( xx - offx, yy - offy, hh );

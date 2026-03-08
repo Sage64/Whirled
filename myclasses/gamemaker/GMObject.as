@@ -31,7 +31,7 @@ public class GMObject extends Sprite
 	public var ystart;
 	public var depth = 0;
 	
-	//public var sprite_index = null;
+	public var sprite_index = null; // use sprite_current instead for sprite ref
 	public var sprite_current = null;
 	public var image_number = 1;
 	public var image_index = 0;
@@ -191,15 +191,19 @@ public class GMObject extends Sprite
 		return GMControl.InternalSpriteDraw( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha  );
 	}
 	
-	public static function draw_sprite( _sprite, _image = null, _x = null, _y = null )
+	public function draw_sprite( _sprite, _image = null, _x = null, _y = null )
 	{
+		if ( _sprite == sprite_index )
+			_sprite = sprite_current;
 		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, 1, 1, 0, 0xFFFFFF, 1 );
 	}
 	
-	public static function draw_sprite_ext( _sprite, _image = null,
+	public function draw_sprite_ext( _sprite, _image = null,
 	_x = null, _y = null, _xscale = 1, _yscale = 1,
 	_rot = 0, _col = 0xFFFFFF, _alpha = 1 )
 	{
+		if ( _sprite == sprite_index )
+			_sprite = sprite_current;
 		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
 	}
 	
