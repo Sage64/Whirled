@@ -2,6 +2,18 @@
 // Mizzle
 
 // sharing one of my avis as an example
+// https://www.whirled.club/#shop-l_5_3602
+
+/*
+	While the Body class itself can be used as the character, and has a few
+	of the object methods for convenience, using it to instead create
+	and manage objects is much preferred.
+	This avatar creates/deletes different objects depending on its state
+	
+	The nametag position is based on the body's X/Y position and "characterH"
+	It can be moved around (such as to the relevant object) freely to match it
+	
+*/
 
 package deltarune
 {
