@@ -1,6 +1,9 @@
 wanna use my shit?
 add myclasses to your classpaths
 
+Full avatar for reference:
+https://github.com/Sage64/Whirled/blob/master/myclasses/deltarune/HolyWaterBody.as
+
 Avatars only need 1 scene and 3 frames, you can store multiple in the same flash file to make use of common sprites/etc and export using Test Scene to check it works and publish a .swf to the .fla folder.
 
 I've rebound Test Movie/Test Scene to F5/F6 for convenience
