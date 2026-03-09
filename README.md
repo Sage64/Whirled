@@ -7,7 +7,8 @@ I've rebound Test Movie/Test Scene to F5/F6 for convenience
 
 Keyframe 3 code: GMControl.Loop();
 
-<img width="886" height="667" alt="image" src="https://github.com/user-attachments/assets/6c0d3ad7-aebd-40b5-99d8-f3aab02fdd93" />
+<img width="918" height="538" alt="image" src="https://github.com/user-attachments/assets/8c5b0685-a27c-4790-9e6b-832e2c5ed214" />
+
 
 
 
@@ -19,6 +20,7 @@ third argument of "AddBody" is the body class constructor function
 
 Group common sprites by placing them anywhere within a symbol that is exported for actionscript, and label each sprite within it as neccessary.
 That symbol must be added in the main event to the avatar using "GMControl.AddSprites( <class_name> );"
+any amount of these can be added this way
 
 Currently, any sprite itself that needs to be drawn multiple times must also be exported for actionscript, but this class name cannot be the same as its sprite name. Any workaround for this is fine as the classname itself isnt important, I choose to stick a "c_" infront of it
 e.g spr_watercooler_parts -> c_spr_watercooler_parts
