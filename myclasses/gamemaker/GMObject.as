@@ -24,12 +24,14 @@ public class GMObject extends Sprite
 	public static var _createy;
 	
 	public var body;
-	public var id = 0;
+	public var id = this;
 	public var exists = true;
 	
 	public var xstart;
 	public var ystart;
 	public var depth = 0;
+	
+	public var alarm = new Array( 12 );
 	
 	public var sprite_index = null; // use sprite_current instead for sprite ref
 	public var sprite_current = null;
@@ -61,17 +63,6 @@ public class GMObject extends Sprite
 	
 	// Function constants
 	public static const string = String;
-	
-	public static const pi = Math.PI;
-	public static const abs = Math.abs;
-	public static const sin = Math.sin;
-	public static const cos = Math.cos;
-	public static const dcos = gml.dcos;
-	public static const dsin = gml.dsin;
-	public static const lerp = gml.lerp;
-	public static const lengthdir_x = gml.lengthdir_x;
-	public static const lengthdir_y = gml.lengthdir_y;
-	public static const clamp = gml.clamp;
 	
 	//
 	public static const fa_left = 0;
@@ -141,6 +132,46 @@ public class GMObject extends Sprite
 		GM Functions
 	*/
 	
+	public function script_execute( scr, arg )
+	{
+		var i = 0;
+		switch ( arg.length )
+		{
+			case 1:
+				return scr( arg[i++] );
+			case 2:
+				return scr( arg[i++], arg[i++] );		
+			case 3:
+				return scr( arg[i++], arg[i++], arg[i++] );		
+			case 4:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 5:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 6:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 7:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+		}
+		return scr();
+	}
+	
+	public static const abs = Math.abs;
+	public static const arccos = Math.acos;
+	public static const arcsin = Math.asin;
+	public static const ceil = Math.ceil;
+	public static const clamp = gml.clamp;
+	public static const cos = Math.cos;
+	public static const dcos = gml.dcos;
+	public static const dsin = gml.dsin;
+	public static const floor = Math.floor;
+	public static const lengthdir_x = gml.lengthdir_x;
+	public static const lengthdir_y = gml.lengthdir_y;
+	public static const lerp = gml.lerp;
+	public static const min = Math.min;
+	public static const max = Math.max;
+	public static const power = Math.pow;
+	public static const sqrt = Math.sqrt;
+	
 	public function random( val )
 	{
 		return Math.random() * val;
@@ -151,6 +182,9 @@ public class GMObject extends Sprite
 		return gml.lerp( a, b, Math.random() );
 	}
 	
+	public static const pi = Math.PI;
+	public static const sin = Math.sin;
+	
 	public function irandom( val )
 	{
 		return Math.round( Math.random() * val );
@@ -159,6 +193,16 @@ public class GMObject extends Sprite
 	public function round( val )
 	{
 		return Math.round( val );
+	}
+	
+	public function sqr( val )
+	{
+		return val * val;
+	}
+	
+	public function is_string( val )
+	{
+		return ( typeof val == "String" );
 	}
 	
 	// Instance
@@ -182,6 +226,17 @@ public class GMObject extends Sprite
 			return _obj.exists;
 		}
 		return false;
+	}
+	
+	public function variable_instance_get( inst, varname )
+	{
+		return inst[varname];
+	}
+	
+	public function variable_instance_set( inst, varname, val )
+	{
+		inst[varname] = val;
+		//GMControl.Log( "varinstset: " + varname + " = " + val );
 	}
 	
 	// Sprite

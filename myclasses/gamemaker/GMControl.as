@@ -1011,7 +1011,7 @@ public class GMControl extends ActorControl
 		else
 			spr = internalspritemap[ sprname.name ];
 		if ( spr == null )
-			return null;
+			return -1;
 		return spr;
 	}
 	

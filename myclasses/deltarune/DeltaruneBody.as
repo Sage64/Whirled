@@ -57,7 +57,7 @@ public class DeltaruneBody extends GMBody
 		
 		if ( SetNameTag() )
 		{
-			var _size = 12 * 2;
+			var _size = 24;
 			nametag.SetBaseColor( 0xFFFFFF );
 			nametag.SetBaseOutline( 0x000000 );
 			// nametag.SetFont( "8bitoperator JVE", true );
@@ -70,9 +70,8 @@ public class DeltaruneBody extends GMBody
 		
 		if ( global.flag == null )
 		{
-			global.flag = [];
-			for ( i = 0; i < 99; ++i )
-				global.flag[i] = 0;
+			global.flag = new Array( 100 );
+			global.interact = 0;
 		}
 	}
 	
@@ -189,13 +188,6 @@ public class DeltaruneBody extends GMBody
 	}
 	
 	// Deltarune gamemaker functions
-
-	public function scr_lerpvar( _inst, varname, varstart, varend, time )
-	{
-		var inst = instance_create( 0, 0, obj_lerpvar );
-		
-		return inst;
-	}
 	
 	public function scr_approach( from, to, amount )
 	{
@@ -281,47 +273,12 @@ public class DeltaruneBody extends GMBody
 
 } // Package
 
-
 import gamemaker.*;
+import deltarune.*;
+import deltarune.objects.*;
 
 // 
-class obj_lerpvar extends GMObject
-{
-	public var inst = null;
-	public var varname = "variable";
-	public var startval = 0;
-	public var endval = 0;
-	public var duration = 30;
-	public var time = 0;
-	public var type = "linear";
-	
-	public function obj_lerpvar()
-	{
-		
-	}
-	
-	override public function Step()
-	{
-		if ( !inst )
-			return;
-		time += 1;
-		
-		var amnt = time / duration;
-		var val = gml.lerp( startval, endval, amnt );
-		if ( amnt >= 1 )
-		{
-			val = endval;
-		}
-		
-		inst[varname] = val;
-		
-		if ( val == endval )
-			inst = instance_destroy();
-	}
-}
-
-// 
-class obj_cutscene extends GMObject
+class obj_cutscene extends DeltaruneObject
 {
 	public var owner;
 	public var commands = [];
@@ -404,7 +361,7 @@ class obj_cutscene extends GMObject
 }
 
 // 
-class obj_talkballoon extends GMObject
+class obj_talkballoon extends DeltaruneObject
 {
 	
 }

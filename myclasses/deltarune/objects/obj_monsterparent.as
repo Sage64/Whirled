@@ -11,6 +11,12 @@ public class obj_monsterparent extends DeltaruneObject
 	public var sparedsprite;
 	//
 	
+	public var myself = 0;
+	
+	public var monster = 1;
+	public var mercymod = 0;
+	public var monsterstatus = 0;
+	
 	public var state = 0;
 	public var siner = 0;
 	public var fsiner = 0;
@@ -38,7 +44,6 @@ public class obj_monsterparent extends DeltaruneObject
 	}
 	
 	
-	
 	public function scr_enemy_drawidle_generic( _sinerspd )
 	{
 		if ( state == 0 )
@@ -53,6 +58,13 @@ public class obj_monsterparent extends DeltaruneObject
 			draw_monster_body_part( spr, siner, x, y );
 		}
 	}
+	
+	public function scr_enemy_drawhurt_generic()
+	{
+		if (state == 3 && hurttimer >= 0)
+			draw_sprite_ext(hurtsprite, 0, x + shakex + hurtspriteoffx, y + hurtspriteoffy, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+	}
+
 	
 	public function scr_enemy_hurt()
 	{

@@ -288,13 +288,21 @@ public class GMBody extends Sprite
 		GMControl.Log( "Ready!" );
 		
 		ctrl.dispatchEvent( new ControlEvent( "GMBodyReady", name ) );
+		
+		if ( GMControl.debug )
+		{
+			DoBodyDebug();
+		}
 	}
 	
 	/*
 		DEBUG FUNCTIONS
 	*/
 	
-	
+	public function DoBodyDebug()
+	{
+		
+	}
 	
 	
 	
@@ -959,6 +967,11 @@ public class GMBody extends Sprite
 		}
 		
 		Draw();
+		
+		if ( nametag )
+		{
+			container.setChildIndex( nametag, container.numChildren - 1 )
+		}
 	}
 	
 	public function Draw()

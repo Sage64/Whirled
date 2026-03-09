@@ -23,9 +23,9 @@ import com.whirled.*
 */
 public class MonsterBody extends DeltaruneBody
 {
-    public static var idlesprite;
-    public static var hurtsprite;
-    public static var sparedsprite;
+    public var idlesprite;
+    public var hurtsprite;
+    public var sparedsprite;
 	
 	public var shakex = 0;
 	public var state = 0;
@@ -93,7 +93,7 @@ public class MonsterBody extends DeltaruneBody
 		{
 			
 		}
-		else
+		else if ( instance_exists( target ) )
 		{
 			target.shakex = 9;
 			target.state = 3;
