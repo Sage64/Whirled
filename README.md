@@ -20,6 +20,7 @@ third argument of "AddBody" is the body class constructor function
 
 Group common sprites by placing them anywhere within a symbol that is exported for actionscript, and label each sprite within it as neccessary.
 That symbol must be added in the main event to the avatar using "GMControl.AddSprites( <class_name> );"
+any amount of these can be added this way
 
 Currently, any sprite itself that needs to be drawn multiple times must also be exported for actionscript, but this class name cannot be the same as its sprite name. Any workaround for this is fine as the classname itself isnt important, I choose to stick a "c_" infront of it
 e.g spr_watercooler_parts -> c_spr_watercooler_parts
