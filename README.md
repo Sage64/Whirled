@@ -7,7 +7,8 @@ I've rebound Test Movie/Test Scene to F5/F6 for convenience
 
 Keyframe 3 code: GMControl.Loop();
 
-<img width="886" height="667" alt="image" src="https://github.com/user-attachments/assets/6c0d3ad7-aebd-40b5-99d8-f3aab02fdd93" />
+<img width="918" height="538" alt="image" src="https://github.com/user-attachments/assets/8c5b0685-a27c-4790-9e6b-832e2c5ed214" />
+
 
 
 
