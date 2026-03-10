@@ -1,6 +1,9 @@
 wanna use my shit?
 add myclasses to your classpaths
 
+Full avatar for reference:
+https://github.com/Sage64/Whirled/blob/master/myclasses/deltarune/HolyWaterBody.as
+
 Avatars only need 1 scene and 3 frames, you can store multiple in the same flash file to make use of common sprites/etc and export using Test Scene to check it works and publish a .swf to the .fla folder.
 
 I've rebound Test Movie/Test Scene to F5/F6 for convenience
@@ -19,6 +22,8 @@ third argument of "AddBody" is the body class constructor function
 "Sprites" are symbols, with each keyframe being a sub-image.
 
 Group common sprites by placing them anywhere within a symbol that is exported for actionscript, and label each sprite within it as neccessary.
+Disable "Export in frame 1" to prevent unneccessary images inflating the file size!
+
 That symbol must be added in the main event to the avatar using "GMControl.AddSprites( <class_name> );"
 any amount of these can be added this way
 
