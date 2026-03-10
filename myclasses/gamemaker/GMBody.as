@@ -44,7 +44,6 @@ import com.whirled.*;
 public class GMBody extends Sprite
 {
 	public static const CONFIG_CUSTOM_NAMETAG =  ( 1 << 0 );
-	public static const CONFIG_DYNAMIC_MOVESPEED = ( 1 << 1 );
 	
 	public var timescale_fps = 30; 	// base framerate for timing behaviour
 	public var use_delta = true; 	// compensate for lag by increasing the timescale
@@ -63,9 +62,8 @@ public class GMBody extends Sprite
 	public var _eventqueue :Array = [];
 	public var _lastsprite = null;
 	
-	public var configFlags = GMBody.CONFIG_CUSTOM_NAMETAG | GMBody.CONFIG_DYNAMIC_MOVESPEED;
+	public var configFlags = GMBody.CONFIG_CUSTOM_NAMETAG;
 	
-	public var isLoaded = false;
 	public var isMoving = false;
 	public var wasMoving = false;
 	public var isSleeping = false;
@@ -204,6 +202,9 @@ public class GMBody extends Sprite
 		AddAction( "[Avatar Control Panel]", Action_OpenControlPanel );
 		
 		// ctrl.registerCustomConfig( GMControl.OpenConfig );
+		
+		AddMemory( "gm.character", null, null );
+		AddMemory( "gm.flags", 0, null );
 	}
 	
 	// Clean up
@@ -533,6 +534,12 @@ public class GMBody extends Sprite
 			movePathStart = currentPosition;
 			movePathStartReal = movePathStart;
 			
+			if ( movePathStart == null )
+			{
+				GMControl.Warn( "no start pos! - potentially caused by starting a move immediately before changing rooms" );
+				return;
+			}
+			
 			if ( currentPosition != null )
 			{
 				movePathStartReal = ctrl.getRoomBounds();
@@ -561,7 +568,7 @@ public class GMBody extends Sprite
 				// as an appearance update rather than here
 				movePathDest = event.value;
 				movePathDestReal = ctrl.getRoomBounds();
-				if ( movePathDestReal != null )
+				if ( movePathDestReal != null && movePathDest != null )
 				{
 					movePathDestReal[0] *= movePathDest[0];
 					movePathDestReal[1] *= movePathDest[1];
@@ -872,17 +879,6 @@ public class GMBody extends Sprite
 	
 	public function GMStep()
 	{
-		if ( root && !isLoaded )
-		{
-			if ( root.loaderInfo.bytesLoaded < root.loaderInfo.bytesTotal )
-			{}
-			else
-			{
-				isLoaded = true;
-				GMControl.Log( "Loaded " + root.loaderInfo.bytesTotal + "b" );
-			}
-		}
-		
 		// Timer
 		stepStartTime = getTimer();
 		if ( use_delta )
@@ -948,7 +944,7 @@ public class GMBody extends Sprite
 		if ( !_usenametag )
 			hh = ( ( originY - y ) * scale ) + ( characterH * scale );
 		
-		ctrl.setHotSpot( xx, yy, hh );
+		// ctrl.setHotSpot( xx, yy, hh );
 		
 		GMUpdateView( xx, yy, hh );
 		
@@ -967,10 +963,10 @@ public class GMBody extends Sprite
 	
 	public function GMDraw()
 	{
-		if ( nametag )
+		if ( nametag && _usenametag )
 		{
 			nametag.x = x;
-			nametag.y = ( _usenametag ) ? ( y - characterH ) : ( 1 << 31 );
+			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 1 << 31 );
 			nametag.UpdatePosition();
 		}
 		
@@ -978,7 +974,14 @@ public class GMBody extends Sprite
 		
 		if ( nametag )
 		{
-			container.setChildIndex( nametag, container.numChildren - 1 )
+			if ( _usenametag )
+			{
+				container.setChildIndex( nametag, container.numChildren - 1 )
+			}
+			else
+			{
+				nametag.alpha = 0;
+			}
 		}
 	}
 	
@@ -1063,6 +1066,8 @@ public class GMBody extends Sprite
 	// Set a memory via its AddMemory name
 	public function SetMemory( name, value )
 	{
+		if ( typeof name == "object" )
+			name = name.name;
 		ctrl.setMemory( memories[name].name, value );
 	}
 	

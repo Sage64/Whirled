@@ -36,10 +36,13 @@ public class GMControl extends ActorControl
 	public static var characters = {};
 	public static var characterInit = 0;
 	
+	public static var root;
 	public static var media;
 	public static var container;
 	public static var ctrl; // the specific instance of GMControl created for the actor
 	public static var body;
+	
+	public static var isLoaded = false;
 	
 	public static var isControl = false;
 	
@@ -156,8 +159,9 @@ public class GMControl extends ActorControl
 		Log( "GMControl Init" );
 		
 		GMControl.media = media;
+		GMControl.root = media.root;
 		
-		PrepareSymbols( media );
+		//PrepareSymbols( media );
 		
 		media.addChild( container );
 		
@@ -525,6 +529,11 @@ public class GMControl extends ActorControl
 			controlPanel.Relayout();
 	}
 	
+	public static function Warn( text )
+	{
+		Log( "WARNING at " + debugTracker + ": " + text );
+	}
+	
 	public static function GetControlPanel()
 	{
 		if ( !ctrl.hasControl() )
@@ -652,6 +661,17 @@ public class GMControl extends ActorControl
 		debugTracker = "GMControl.Loop";
 		try
 		{
+			if ( !isLoaded && root )
+			{
+				if ( root.loaderInfo.bytesLoaded < root.loaderInfo.bytesTotal )
+				{}
+				else
+				{
+					GMControl.isLoaded = true;
+					GMControl.Log( "Loaded " + root.loaderInfo.bytesTotal + "b" );
+				}
+			}
+			
 			if ( true && characterInit < characterList.length )
 			{
 				CharacterInitStep();
@@ -778,7 +798,7 @@ public class GMControl extends ActorControl
 		media.x -= ( offx );
 		media.y -= ( offy );
 		
-		if ( true )
+		if ( isLoaded )
 		{
 			container.x = baseXOffset;
 			container.y = baseYOffset;
@@ -788,10 +808,9 @@ public class GMControl extends ActorControl
 			
 			container.x += stageW / 2;
 			container.y += stageH / 2;
-			offx += stageW / 2;
+			offx -= stageW / 2;
 			offy -= stageH / 2;
 		}
-		
 		ctrl.setHotSpot( xx - offx, yy - offy, hh );
 	}
 	
@@ -822,7 +841,10 @@ public class GMControl extends ActorControl
 	{
 		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
 		if ( body )
+		{
 			body.OnMemoryChanged( event.name, event.value );
+			body.OnUpdateLook();
+		}
 	}
 	
 	/*

@@ -509,7 +509,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 			{
 				//mizzle.image_speed = 0;
 				mizzle.sprite_set( spr_holywater_alarm );
-				//mizzle.image_index = ( mizzle.image_index % 9 );
+				mizzle.image_index = ( mizzle.image_index % 9 );
 				mizzle_con = 100;
 				if ( body )
 				{
@@ -544,7 +544,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 					instance_destroy( body.mizzle );
 					body.mizzle = instance_create( body.originX, body.originY - 24, obj_mizzle );
 					body.mizzle.image_index = mizzle.image_index;
-					body.mizzle.siner = body.mizzle.image_index;
+					body.mizzle.siner = 0;//body.mizzle.image_index;
 					body.OnUpdateLook();
 				}
 			}
