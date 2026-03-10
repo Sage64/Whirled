@@ -6,6 +6,8 @@ import gamemaker.*;
 
 public class obj_monsterparent extends DeltaruneObject
 {
+	
+	
 	public var idlesprite;
 	public var hurtsprite;
 	public var sparedsprite;

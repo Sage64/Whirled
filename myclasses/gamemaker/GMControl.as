@@ -362,7 +362,7 @@ public class GMControl extends ActorControl
 		 inst.addEventListener( event, func );
 	}
 	
-	private static function GMControlEvent( event )
+	public static function GMControlEvent( event )
 	{
 		GMControl.Log( "Event: " + event.type + ": \"" + event.name + "\", " + event.value );
 		_eventqueue.push( event );
@@ -372,11 +372,19 @@ public class GMControl extends ActorControl
 	{
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
+			debugTracker = "GMProcessEvents";
 			var event = _eventqueue.shift();
 			var func = _eventlisteners.func[event.type];
 			if ( !func )
 				continue;
-			func( event );
+			try
+			{
+				func( event );
+			}
+			catch ( e )
+			{
+				Caught( e );
+			}
 		}
 	}
 	
@@ -419,12 +427,6 @@ public class GMControl extends ActorControl
 		var Entity = GMControl.GetEntity( event.name );
 	}
 	
-	public static function GMMemoryChanged( event )
-	{
-		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
-		OnMemoryGot( event.name, event.value );
-	}
-	
 	
 	public static function GMReceiveMessage( event )
 	{
@@ -443,7 +445,7 @@ public class GMControl extends ActorControl
 	{
 		if ( !event || !body )
 			return;
-		body.action_name = event.name;
+		body.actionName = event.name;
 		body.OnTriggerAction( event.name, event.value );
 	}
 	
@@ -473,6 +475,30 @@ public class GMControl extends ActorControl
 	public static function DebugKeyDown( ev )
 	{
 		
+	}
+	
+	public static function Caught( e )
+	{
+		if ( true )
+		{
+			if ( media )
+				media.alpha = 0.5;
+			Log( "*************************************************************" );
+			Log( "ERROR CAUGHT - please share this with the avatar creator!" );
+			Log( "tracker: " + debugTracker );
+			Log( e.errorID  );
+			Log( e.name  );
+			Log( e.message  );
+			Log( e.prototype  );
+			Log( e.getStackTrace() );
+			Log( "*************************************************************" );
+			if ( !hasErrored )
+			{
+				hasErrored = true;
+				OpenControlPanel();
+			}
+		}
+		hasErrored = true;
 	}
 	
 	public static function Log( text = "" )
@@ -678,25 +704,7 @@ public class GMControl extends ActorControl
 		}
 		catch (e)
 		{
-			if ( true )
-			{
-				media.alpha = 0.5;
-				Log( "*************************************************************" );
-				Log( "ERROR CAUGHT - please share this with the avatar creator!" );
-				Log( "tracker: " + debugTracker );
-				Log( e.errorID  );
-				Log( e.name  );
-				Log( e.message  );
-				Log( e.prototype  );
-				Log( e.getStackTrace() );
-				Log( "*************************************************************" );
-				if ( !hasErrored )
-				{
-					hasErrored = true;
-					OpenControlPanel();
-				}
-			}
-			hasErrored = true;
+			Caught( e );
 		}
 		media.gotoAndPlay( 2 );
 	}
@@ -810,9 +818,11 @@ public class GMControl extends ActorControl
 		return val;
 	}
 	
-	public static function OnMemoryGot( key, value )
+	public static function GMMemoryChanged( event )
 	{
-		
+		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
+		if ( body )
+			body.OnMemoryChanged( event.name, event.value );
 	}
 	
 	/*
@@ -961,14 +971,15 @@ public class GMControl extends ActorControl
 	
 	public static function InternalSpriteDraw( _sprite, _image, _x, _y, _xscale = 1, _yscale = 1, _angle = 0, _blend = 0xFFFFFF, _alpha = 1 )
 	{
-		if ( !_sprite || ( _sprite < 0 ) )
+		if ( !_sprite || ( _sprite == -1 ) )
 			return;
 		//trace( "draw " + _sprite.name + "[" + _image + "] at " + _x + ", " + _y );
 		// real bitmap cached drawing not implemented yet
 		// currently just moves symbols into place and hides them next frame
 		
-		var _symbol = _sprite.symbol;
-		
+		var _symbol = _sprite.GetImage( _image );
+		if ( !_symbol )
+			return;
 		if ( _symbol.constructor != MovieClip && _symbol.visible )
 		{
 			_symbol = new _symbol.constructor();
@@ -982,11 +993,11 @@ public class GMControl extends ActorControl
 			container.setChildIndex( _symbol, pos - 1 );
 		}
 		
-		var color = _symbol.transform.colorTransform;
 		var r = ( ( _blend >> 16 ) & 0xFF ) / 255;
 		var g = ( ( _blend >> 8 ) & 0xFF ) / 255;
 		var b = ( ( _blend ) & 0xFF ) / 255;
 		
+		var color = _symbol.transform.colorTransform;
 		color.redMultiplier = r;
 		color.greenMultiplier = g;
 		color.blueMultiplier = b;
@@ -1139,7 +1150,8 @@ class GMInternalSprite
 		
 		for ( var i = 0; i < symbol.totalFrames; ++i )
 		{
-			images[i] = CreateBitmap( i );
+			images[i] = {};
+			images[i].sprite = symbol;
 			++count;
 		}
 	}
@@ -1157,26 +1169,11 @@ class GMInternalSprite
 	
 	public function GetImage( index )
 	{
-		return images[ Math.floor( index % count ) ];
-	}
-	
-	
-	public function CreateBitmap( ind )
-	{
-		var Image = {};
-		return Image;
-		// 
-		if ( images[ind] != null )
-		{
-			images[ind].bitmap_data.dispose();
-		}
-		images[ind] = Image;
-		if ( width < 1 || height < 1 )
-			return Image;
-		var bmd = new BitmapData( width, height, true, 0x000000 );
-		Image.bitmap_data = bmd;
-		Image.bitmap = new Bitmap( bmd );
-		return Image;
+		return symbol;
+		var _image = images[ Math.floor( index ) % count ];
+		if ( !_image )
+			return;
+		return _image.sprite;
 	}
 	
 }

@@ -168,6 +168,15 @@ public class HolyWaterBody extends MonsterBody
 		}
 	}
 	
+	override public function OnMercy( amount = 0 )
+	{
+		if ( instance_exists( mizzle ) )
+		{
+			mizzle.mercymod = amount;
+		}
+		OnUpdateLook();
+	}
+	
 	override public function OnHurt( amount = 0 )
 	{
 		if ( instance_exists( mizzle ) )
@@ -178,7 +187,7 @@ public class HolyWaterBody extends MonsterBody
 	
 	override public function DoBodyDebug()
 	{
-		SetState( mystates["watercooler_patrol"].name );
+		//SetState( mystates["watercooler_patrol"].name );
 		//GMControl.GMActionTriggered( myactions["f1"] );
 	}
 	
@@ -218,6 +227,13 @@ class obj_mizzle extends obj_monsterparent
 		idlesprite = spr_holywater_alarm;
 		hurtsprite = spr_holywater_hurt;
 		sparedsprite = spr_holywater_alarm;
+		
+		mercymod = body.GetMemory( "deltarune.monster.mercy" );
+	}
+	
+	override public function Create()
+	{
+		
 	}
 	
 	public function OnUpdateLook()
@@ -491,7 +507,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 			}
 			if ( mizzle_con == 99 )
 			{
-				mizzle.image_speed = 0;
+				//mizzle.image_speed = 0;
 				mizzle.sprite_set( spr_holywater_alarm );
 				//mizzle.image_index = ( mizzle.image_index % 9 );
 				mizzle_con = 100;
@@ -527,6 +543,8 @@ class obj_dw_church_watercooler extends DeltaruneObject
 					//instance_destroy( mizzle );
 					instance_destroy( body.mizzle );
 					body.mizzle = instance_create( body.originX, body.originY - 24, obj_mizzle );
+					body.mizzle.image_index = mizzle.image_index;
+					body.mizzle.siner = body.mizzle.image_index;
 					body.OnUpdateLook();
 				}
 			}

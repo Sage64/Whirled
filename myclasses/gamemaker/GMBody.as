@@ -129,11 +129,17 @@ public class GMBody extends Sprite
 	
 	public var actions = {}; //Maps.newMapOf( String );
 	public var actionList :Array = [];
-	public var action_name = ""; // current action name
+	public var actionName = ""; // current action name
 	
-	// structs for simple state references (e.g mystates["default" = AddState( "Just Standing Here" );
+	public var memories = {};
+	public var memoryList = [];
+	
+	// structs for simple state references, e.g mystates["attacking"] = AddState( "Swinging Sword" );
 	public var mystates = {};
 	public var myactions = {};
+	public var mymemories = {};
+	
+	
 	
 	// internal sprite manager
 	
@@ -284,6 +290,8 @@ public class GMBody extends Sprite
 		
 		// GMStep();
 		// Loop();
+		
+		// get memories
 		
 		GMControl.Log( "Ready!" );
 		
@@ -648,7 +656,7 @@ public class GMBody extends Sprite
 			stateName = statename;
 		}
 		// 
-		states[ statename.toLowerCase() ] = State;
+		states[ statename ] = State;
 		if ( !hidden )
 			stateList.push( State );
 		return State;
@@ -675,7 +683,7 @@ public class GMBody extends Sprite
 	{
 		if ( typeof statename == "object" )
 			statename = statename.name;
-		var _getstate = states[ statename.toLowerCase() ];
+		var _getstate = states[ statename ];
 		
 		if ( _getstate == null )
 		{
@@ -762,7 +770,7 @@ public class GMBody extends Sprite
 		Action.value = actionvalue;
 		if ( actionfunc )
 			Action.action = actionfunc;
-		actions[ actionname.toLowerCase()] = Action;
+		actions[ actionname] = Action;
 		//if ( !hidden )
 		actionList.push( Action );
 		return Action;
@@ -770,7 +778,7 @@ public class GMBody extends Sprite
 	
 	public function GetAction( actionname )
 	{
-		return actions.get( actionname.toLowerCase() );
+		return actions.get( actionname );
 	}
 	
 	public function RegisterActions()
@@ -812,7 +820,7 @@ public class GMBody extends Sprite
 	{
 		if ( actionname == null )
 		return;
-		var Action = actions[ actionname.toLowerCase() ];
+		var Action = actions[ actionname ];
 		if ( Action )
 		{
 			if ( actiondata == null )
@@ -1023,6 +1031,60 @@ public class GMBody extends Sprite
 	}
 	
 	// Interaction
+	
+	
+	public function AddMemory( key, defaultval = null, func = null )
+	{
+		GMControl.Log( "Adding memory \"" + key + "\"" );
+		var Memory = {}
+		Memory.name = key;
+		Memory.value = defaultval;
+		Memory.func = func;
+		
+		defaultval = ctrl.getMemory( key, null );
+		if ( defaultval )
+			Memory.value = defaultval;
+				
+		memories[key] = Memory;
+		memoryList.push( Memory );
+		
+		GMControl.Log( "value = " + Memory.value );
+		
+		var event = {};
+		event.type = ControlEvent.MEMORY_CHANGED;
+		event.name = Memory.name;
+		event.value = Memory.value;
+		
+		GMControl.GMControlEvent( event );
+		
+		return Memory;
+	}
+	
+	// Set a memory via its AddMemory name
+	public function SetMemory( name, value )
+	{
+		ctrl.setMemory( memories[name].name, value );
+	}
+	
+	// Retrieve a memory from its AddMemory name
+	public function GetMemory( name, defaultval = 0 )
+	{
+		var Memory = memories[name];
+		if ( Memory )
+			return Memory.value;
+	}
+	
+	public function OnMemoryChanged( key, value )
+	{
+		var Memory = memories[key];
+		GMControl.Log( "Memory: " + key );
+		if ( Memory )
+		{
+			Memory.value = value;
+			if ( Memory.func )
+				Memory.func( value );
+		}
+	}
 	
 	public function BroadcastMessage( message = "", data = null )
 	{

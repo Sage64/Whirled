@@ -151,6 +151,12 @@ public class GMObject extends Sprite
 				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
 			case 7:
 				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 8:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 9:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
+			case 10:
+				return scr( arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++], arg[i++] );		
 		}
 		return scr();
 	}

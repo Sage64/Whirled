@@ -23,6 +23,8 @@ import com.whirled.*
 */
 public class MonsterBody extends DeltaruneBody
 {
+	public var enemy;
+	
     public var idlesprite;
     public var hurtsprite;
     public var sparedsprite;
@@ -59,8 +61,13 @@ public class MonsterBody extends DeltaruneBody
         
 		// States
 		
-		myactions["damage_weak"] = AddAction( "Damage (weak)", Action_Hurt, 30 );
-		myactions["damage_strong"] = AddAction( "Damage (strong)", Action_Hurt, 100 );
+		myactions["damage_weak"] = AddAction( "Damage 30", Action_Hurt, 30 );
+		myactions["damage_strong"] = AddAction( "Damage 120", Action_Hurt, 120 );
+		
+		myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
+		myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
+		
+		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
 	}
 	
 	override public function Draw()
@@ -78,8 +85,32 @@ public class MonsterBody extends DeltaruneBody
 		OnHurt( damage );
 	}
 	
-	public function OnHurt( amount = 0 ) {}
+	public function OnHurt( amount = 0 )
+	{
+		if ( instance_exists( enemy ) )
+		{
+			scr_damage_enemy( enemy, amount );
+		}
+	}
 	
+	public function Action_SetMercy( data )
+	{
+		if ( !data || data < 0 )
+			data = 0;
+		if ( data > 100 )
+			data = 100;
+		SetMemory( mymemories["mercy"].name, data );
+	}
+	
+	public function MercyChanged( val = 0 )
+	{
+		OnMercy( val );
+	}
+	
+	public function OnMercy( val = 0 )
+	{
+		
+	}
 	
 	
 	public function scr_damage_enemy( target, amount )
