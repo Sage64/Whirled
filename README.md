@@ -1,5 +1,8 @@
+flash actionscript classes for creating/porting stuff based on Gamemaker language
+
 wanna use my shit?
 add myclasses to your classpaths
+
 
 Full avatar for reference:
 https://github.com/Sage64/Whirled/blob/master/myclasses/deltarune/HolyWaterBody.as
