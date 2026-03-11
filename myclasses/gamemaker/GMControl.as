@@ -4,7 +4,8 @@
 // Control object for my GMBody base, combines all control types into one
 
 /*
-	GMControl is used in place of AvatarControl/PetControl without needing to specify
+	GMControl is used in place of AvatarControl/PetControl etc without needing
+	to specify what it is
 */
 
 package gamemaker
@@ -49,6 +50,8 @@ public class GMControl extends ActorControl
 	public static var isConnected = false;
 	
 	public static var entityID;
+	public static var memberID;
+	
 	public static var isAvatar = false;
 	public static var isPet = false;
 	public static var isFurni  = false;
@@ -94,7 +97,9 @@ public class GMControl extends ActorControl
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
 	public static var internalspritecur = null;
-	public static var internalclasses = {};
+	
+	public static var internalsoundlist = [];
+	public static var internalsoundmap = {};
 	
 	
 	// Gamemaker stuff 
@@ -111,6 +116,8 @@ public class GMControl extends ActorControl
 	
 	public function GMControl( media )
 	{
+		AddEventListener( media, Event.UNLOAD, GMCleanup );
+		
 		GMControl.media = media;
 		GMControl.container = new Sprite();
 		GMControl.container.cacheAsBitmap = true;
@@ -126,27 +133,34 @@ public class GMControl extends ActorControl
 	
 	public static function GMCleanup()
 	{
-		GMControl.Log( "Cleaning up" );
-		// Remove the event listeners this body created
-		for ( var i = 0, len = _eventlisteners.length; i < len; ++i )
-		{
-			var _listener = _eventlisteners.pop();
-			var _inst = _listener[0];
-			var _event = _listener[1];
-			var _func = _listener[2];
-			_inst.removeEventListener( _event, _func );
-		}
+		var i, len;
+		var listener, inst, event, func;
 		
+		GMControl.Log( "Cleaning up" );
+		// Remove the event listeners added through AddEventListener
+		for ( i = 0, len = _eventlisteners.length; i < len; ++i )
+		{
+			listener = _eventlisteners.pop();
+			inst = listener[0];
+			event = listener[1];
+			func = listener[2];
+			inst.removeEventListener( event, func );
+		}
+		// 
 		while ( instances.length > 0 )
 		{
-			var Inst = instances.shift();
-			Inst.GMCleanup();
+			inst = instances.shift();
+			inst.GMCleanup();
 		}
-		
 		while ( internalspritelist.length > 0 )
 		{
-			var spr = internalspritelist.shift();
-			spr.Cleanup();
+			inst = internalspritelist.shift();
+			inst.Cleanup();
+		}
+		while ( internalsoundlist.length > 0 )
+		{
+			inst = internalsoundlist.shift();
+			inst.Cleanup();
 		}
 	}
 	
@@ -164,8 +178,6 @@ public class GMControl extends ActorControl
 		//PrepareSymbols( media );
 		
 		media.addChild( container );
-		
-		AddEventListener( media, Event.UNLOAD, GMCleanup );
 	}
 	
 	public static function InitWhirled( ww = 600, hh = 450 )
@@ -183,6 +195,9 @@ public class GMControl extends ActorControl
 		
 		entityID = ctrl.getMyEntityId();
 		Log( "entityID = " + entityID );
+		
+		memberID = ctrl.getEntityProperty( PROP_MEMBER_ID, entityID );
+		Log( "memberID = " + memberID );
 		
 		var _type = ctrl.getEntityProperty( PROP_TYPE, entityID );
 		Log( "PROP_TYPE = " + _type );
@@ -278,16 +293,16 @@ public class GMControl extends ActorControl
 	public static function PrepareSymbols( media )
 	{
 		debugTracker = "PrepareSymbols";
-		GMControl.Log( "Preparing symbols" );
+		//GMControl.Log( "Preparing symbols" );
 		if ( !media )
 		{
-			GMControl.Log( "Invalid media" );
+			GMControl.Warn( "Invalid media" );
 			return;
 		}
 		var _symbols = [];
 		var Child;
 		var i;
-		GMControl.Log( media.numChildren + " symbols" );
+		// GMControl.Log( media.numChildren + " symbols" );
 		for ( i = 0; i < media.numChildren; ++i )
 		{
 			Child = media.getChildAt( i );
@@ -297,14 +312,15 @@ public class GMControl extends ActorControl
 		}
 		for ( i = 0; i < _symbols.length; ++i )
 		{
-			PrepareSymbol( _symbols[i] );
+			AddSprite_Symbol( _symbols[i] );
 		}
 	}
 	
-	public static function PrepareSymbol( symbol )
+	// Add a sprite from a MovieClip symbol
+	public static function AddSprite_Symbol( symbol )
 	{
 		var sprname = symbol.name;
-		GMControl.Log( "Found symbol \"" + sprname + "\" with " + symbol.totalFrames + " frames" );
+		GMControl.Log( "AddSprite \"" + sprname + "\" with " + symbol.totalFrames + " frames" );
 		if ( internalstageitems[sprname] != null )
 		{
 			GMControl.Log( "already exists" );
@@ -331,7 +347,9 @@ public class GMControl extends ActorControl
 		var spr = new GMInternalSprite( symbol );
 		internalspritelist.push( spr );
 		internalspritemap[sprname] = spr;
-
+		
+		global[sprname] = spr;
+		
 		var Parent = symbol.parent;
 		Parent.removeChild( symbol );
 		if ( container )
@@ -340,14 +358,21 @@ public class GMControl extends ActorControl
 		symbol.gotoAndStop( 1 );
 	}
 	
-	public static function AssignSpriteRefs( to )
+	// Add a sound via its class
+	public static function AddSound( audio )
 	{
-		for ( var i = 0; i < internalspritelist.length; ++i )
+		var sndname = getQualifiedClassName( audio );
+		GMControl.Log( "AddSound \"" + sndname + "\"" );
+		if ( internalsoundmap[sndname] != null )
 		{
-			var spr = internalspritelist[i];
-			trace( spr.name );
-			to[spr.name] = spr;
+			GMControl.Warn( sndname + " already exists" );
 		}
+		
+		var snd = new GMInternalSound( audio );
+		internalsoundlist.push( snd );
+		internalsoundmap[sndname] = snd;
+		
+		global[sndname] = snd;
 	}
 	
 	/*
@@ -839,7 +864,7 @@ public class GMControl extends ActorControl
 	
 	public static function GMMemoryChanged( event )
 	{
-		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
+		//Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
 		if ( body )
 		{
 			body.OnMemoryChanged( event.name, event.value );
@@ -891,7 +916,7 @@ public class GMControl extends ActorControl
 		actions = Util.unfuckVarargs( actions );
 		ctrl.verifyActionsOrStates( actions, true );
 		_actions = actions;
-		Log( "Registering actions: " + _actions );
+		// Log( "Registering actions: " + _actions );
 	}
 	
 	public function registerStates( ... states )
@@ -899,7 +924,7 @@ public class GMControl extends ActorControl
 		states = Util.unfuckVarargs( states );
 		ctrl.verifyActionsOrStates( states, false );
 		_states = states;
-		Log( "Registering states: " + _states );
+		// Log( "Registering states: " + _states );
 	}
 	
 	public function isSleeping()
@@ -961,7 +986,8 @@ public class GMControl extends ActorControl
 		GMObject._createy = _y;
 		var Inst = new _obj();
 		if ( true )
-			debugTracker += " - " + _obj; 
+			debugTracker += " - " + _obj;
+		
 		container.addChild( Inst );
 		instances.push( Inst );
 		
@@ -1103,13 +1129,19 @@ public class GMControl extends ActorControl
 	
 	// Sound
 	
-	public static function InternalAudioPlay( _sound, _loop = false, _vol = 1, _pitch = 1 )
+	public static function InternalAudioPlay( _sound, _priority, _loop, _gain, _offset, _pitch )
 	{
 		if ( _sound == null || _sound == -1 )
 			return null;
-		var aud = {};
-		
+		var aud = _sound.Play( _offset, _loop, _gain  );
 		return aud;
+	}
+	
+	public static function InternalAudioStop( _sound )
+	{
+		if ( _sound == null || _sound == -1 )
+			return null;
+		_sound.Stop();
 	}
 }
 }
@@ -1117,6 +1149,7 @@ public class GMControl extends ActorControl
 import gamemaker.*;
 
 import flash.display.*;
+import flash.media.*;
 
 import com.threerings.*;
 import com.whirled.*;
@@ -1167,8 +1200,7 @@ class GMInternalSprite
 		height = bounds.height;
 		
 		var data = getshape.graphics;
-		trace( data );
-		
+		//trace( data );
 		
 		for ( var i = 0; i < symbol.totalFrames; ++i )
 		{
@@ -1200,6 +1232,29 @@ class GMInternalSprite
 	
 }
 
+class GMInternalSound
+{
+	public var audio;
+	public var sound;
+	
+	public function GMInternalSound( _audio )
+	{
+		audio = _audio;
+		sound = new audio();
+	}
+	
+	public function Play( _offset = 0, _loop = false, _gain = 1 )
+	{
+		var chan = sound.play( _offset, _loop, new SoundTransform( _gain ) );
+		return chan;
+	}
+	
+	public function Stop()
+	{
+		sound.close();
+		sound = new audio();
+	}
+}
 
 
 // Another entity that it is in the room

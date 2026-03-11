@@ -20,6 +20,8 @@ public class GMObject extends Sprite
 {
 	public static const global = GMControl.global;
 	
+	public static var current_time = 0;
+	
 	public static var _createx;
 	public static var _createy;
 	
@@ -161,6 +163,11 @@ public class GMObject extends Sprite
 		return scr();
 	}
 	
+	// Misc. constants
+	public static const pi = Math.PI;
+	
+	// Misc. functions, sorted alphabetically
+	
 	public static const abs = Math.abs;
 	public static const arccos = Math.acos;
 	public static const arcsin = Math.asin;
@@ -176,44 +183,38 @@ public class GMObject extends Sprite
 	public static const min = Math.min;
 	public static const max = Math.max;
 	public static const power = Math.pow;
+	public static const round = Math.round;
+	public static const sin = Math.sin;
 	public static const sqrt = Math.sqrt;
 	
-	public function random( val )
-	{
-		return Math.random() * val;
-	}
-	
-	public function random_range( a, b )
-	{
-		return gml.lerp( a, b, Math.random() );
-	}
-	
-	public static const pi = Math.PI;
-	public static const sin = Math.sin;
-	
-	public function irandom( val )
+	public static function irandom( val )
 	{
 		return Math.round( Math.random() * val );
 	}
 	
-	public function round( val )
-	{
-		return Math.round( val );
-	}
-	
-	public function sqr( val )
-	{
-		return val * val;
-	}
-	
-	public function is_string( val )
+	public static function is_string( val )
 	{
 		return ( typeof val == "String" );
 	}
 	
+	public static function random( val )
+	{
+		return Math.random() * val;
+	}
+	
+	public static function random_range( a, b )
+	{
+		return gml.lerp( a, b, Math.random() );
+	}
+	
+	public static function sqr( val )
+	{
+		return val * val;
+	}
+	
 	// Instance
 	
-	public function instance_create( _x, _y, _obj )
+	public static function instance_create( _x, _y, _obj )
 	{
 		return GMControl.InternalInstanceCreate( _x, _y, _obj );
 	}
@@ -225,8 +226,12 @@ public class GMObject extends Sprite
 		return GMControl.InternalInstanceDestroy( _inst );
 	}
 	
-	public function instance_exists( _obj )
+	public static function instance_exists( _obj )
 	{
+		if ( !_obj )
+			return false;
+		if ( _obj == 1 )
+			return true;
 		if ( _obj )
 		{
 			return _obj.exists;
@@ -234,18 +239,48 @@ public class GMObject extends Sprite
 		return false;
 	}
 	
-	public function variable_instance_get( inst, varname )
+	public static function variable_instance_get( inst, varname )
 	{
 		return inst[varname];
 	}
 	
-	public function variable_instance_set( inst, varname, val )
+	public static function variable_instance_set( inst, varname, val )
 	{
 		inst[varname] = val;
-		//GMControl.Log( "varinstset: " + varname + " = " + val );
 	}
 	
 	// Sprite
+	
+	// Retrieve a sprite asset
+	public static function sprite_get( sprite_name )
+	{
+		return GMControl.InternalSpriteGet( sprite_name );
+	}
+	
+	// Set the "current" sprite for this object;
+	public function sprite_set( sprite_ref )
+	{
+		if ( sprite_ref == -1 )
+			sprite_ref = null;
+		if ( sprite_ref == sprite_current )
+		{
+			// trace( "no change" );
+			return;
+		}
+		
+		if ( sprite_current )
+		{
+			//sprite_current.symbol.visible = false;
+			sprite_current = null;
+		}
+		
+		if ( sprite_ref )
+		{
+			// trace( "sprite = " + sprite_ref.name );
+			sprite_current = sprite_ref;
+			image_number = sprite_current.count;
+		}
+	}
 	
 	public function draw_self()
 	{
@@ -268,34 +303,11 @@ public class GMObject extends Sprite
 		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
 	}
 	
-	public function sprite_set( sprite_ref )
+	public function draw_sprite_pos( sprite, subimg, x1, y1, x2, y2, x3, y3, x4, y4, alpha )
 	{
-		if ( sprite_ref == -1 )
-			sprite_ref = null;
-		if ( sprite_ref == sprite_current )
-		{
-			// trace( "no change" );
-			return;
-		}
 		
-		if ( sprite_current )
-		{
-			sprite_current.symbol.visible = false;
-			sprite_current = null;
-		}
-		
-		if ( sprite_ref )
-		{
-			// trace( "sprite = " + sprite_ref.name );
-			sprite_current = sprite_ref;
-			image_number = sprite_current.count;
-		}
 	}
 	
-	public static function sprite_get( sprite_name )
-	{
-		return GMControl.InternalSpriteGet( sprite_name );
-	}
 	
 	// Draw
 	
@@ -368,9 +380,9 @@ public class GMObject extends Sprite
 	
 	// Sound
 	
-	public static function audio_play_sound( _sound, _loop = false, _vol = 1, _pitch = 1 )
+	public static function audio_play_sound( _sound, _priority = 0, _loop = false, _gain = 1, _offset = 0, _pitch = 1 )
 	{
-		return GMControl.InternalAudioPlay( _sound, _loop, _vol, _pitch );
+		return GMControl.InternalAudioPlay( _sound, _priority, _loop, _gain, _offset, _pitch );
 	}
 	
 	

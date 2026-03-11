@@ -86,7 +86,11 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		wspeed = bwspeed;
 		SetMoveSpeed( wspeed );
 		
-		// Actions
+		// 
+		
+		mymemories["autorun"] = AddMemory( "deltarune.autorun", 0, SetAutorun );
+		
+		myactions["autorun_toggle"] = AddActionOption( "[Toggle Autorun]", Action_ToggleAutorun, [false, true] );
 		
 		myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
 		myactions["battlemode"].hidden = true;
@@ -110,14 +114,19 @@ public class DeltarunePlayerBody extends DeltaruneBody
 			dsprite = curState.sprite;
 		}
 		
+		if ( curState.darkzone )
+			global.darkzone = 1;
+		else
+			global.darkzone = 0;
+		
 		canrun = true;
 		
-		if ( curState.run )
+		if ( global.flag[11] == 1 )
 			runheld = true;
 		else
 			runheld = false;
 		
-		if ( curState.darkzone )
+		if ( global.darkzone == 1 )
 			darkmode = 1
 		else
 			darkmode = 0;
@@ -432,6 +441,24 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	public function FollowTarget()
 	{
 		
+	}
+	
+	public function Action_ToggleAutorun( data = null )
+	{
+		SetMemory( "deltarune.autorun", ( global.flag[11] == 1 ) ? 0 : 1 );
+	}
+	
+	public function SetAutorun( data = 0 )
+	{
+		if ( data )
+			global.flag[11] = 1;
+		else
+			global.flag[11] = 0;
+		GMControl.Log( "deltarune flag[11] = " + global.flag[11] );
+		if ( global.flag[11] == 1 )
+			runheld = true;
+		else
+			runheld = false;
 	}
 	
 	public function Action_OpenBattleBox( data = null )

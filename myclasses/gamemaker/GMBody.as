@@ -53,6 +53,7 @@ public class GMBody extends Sprite
 	public var media;
 	public var container;
 	public var ctrl;
+	public var body = this;
 	
 	public var _eventlisteners = {
 		list: [],
@@ -152,6 +153,8 @@ public class GMBody extends Sprite
 	// Gamemaker
 	public static const global = GMControl.global;
 	
+	public static var current_time = 0;
+	
 	// Sprite
 	//public var sprite_index = null; old.
 	public var sprite_current = null; // the symbol that will be used as the primary sprite
@@ -211,39 +214,18 @@ public class GMBody extends Sprite
 	public function GMCleanup()
 	{
 		GMControl.Log( "Cleaning up" );
-		// Remove the event listeners this body created
-		for ( var i = 0, len = _eventlisteners.length; i < len; ++i )
-		{
-			var _listener = _eventlisteners.pop();
-			var _inst = _listener[0];
-			var _event = _listener[1];
-			var _func = _listener[2];
-			_inst.removeEventListener( _event, _func );
-		}
 		media.removeChild( this );
 		Cleanup();
 	}
 	
 	public function Cleanup()
 	{
-		// override
+		// override if needed
 	}
 	
 	/*
 		INIT PROCESS
 	*/
-	
-	// Add an event listener
-	public function AddEventListener( inst, event, func )
-	{
-		GMControl.Log( "Listening for " + event );
-		// the function to be called by this event
-		_eventlisteners.func[event] = func;
-		// the func used in the event listener callback
-		func = GMControlEvent;
-		_eventlisteners.list.push( [ inst, event, func ] );
-		 inst.addEventListener( event, func );
-	}
 	
 	private function GMControlEvent( event )
 	{
@@ -581,8 +563,8 @@ public class GMBody extends Sprite
 				GMMoved( x1, y1, x2, y2 );
 			}
 			
-			GMControl.Log( "startPos = " + movePathStartReal );
-			GMControl.Log( "destPos = " + movePathDestReal );
+			// GMControl.Log( "startPos = " + movePathStartReal );
+			// GMControl.Log( "destPos = " + movePathDestReal );
 		}
 		else
 		{
@@ -738,9 +720,9 @@ public class GMBody extends Sprite
 	
 	public function GMStateChanged( event )
 	{
-		GMControl.debugTracker = "GMStateChanged (did you forget to account for curState being null?)";
+		GMControl.debugTracker = "GMStateChanged (did you forget to account for curState/prevState being null?)";
 		stateName = event.name;
-		GMControl.Log( "State Changed to " + stateName );
+		GMControl.Log( "State set to " + stateName );
 		prevState = curState;
 		curState = GetState( stateName );
 		if ( curState != null )
@@ -748,8 +730,15 @@ public class GMBody extends Sprite
 			if ( curState.func )
 				curState.func();
 		}
-		OnStateChanged();
-		OnUpdateLook();
+		if ( prevState == curState )
+		{
+			GMControl.Log( "No change in state, not executing OnStateChanged" );
+		}
+		else
+		{
+			OnStateChanged();
+			OnUpdateLook();
+		}
 	}
 	
 	public function OnStateChanged()
@@ -769,7 +758,7 @@ public class GMBody extends Sprite
 		ACTIONS
 	*/
 	
-	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = false )
+	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = null )
 	{
 		GMControl.Log( "Adding action \"" + actionname + "\" with data " + actionvalue );
 		var Action = {};
@@ -780,6 +769,18 @@ public class GMBody extends Sprite
 		actions[ actionname] = Action;
 		//if ( !hidden )
 		actionList.push( Action );
+		return Action;
+	}
+	
+	public function AddActionOption( actionname = "option", actionfunc = null, options = null )
+	{
+		if ( !options )
+			options = [ 0, 1 ];
+		
+		var Action = AddAction( actionname, actionfunc, options[0] );
+		Action.option = 0;
+		Action.options = options;
+		
 		return Action;
 	}
 	
@@ -830,6 +831,14 @@ public class GMBody extends Sprite
 		var Action = actions[ actionname ];
 		if ( Action )
 		{
+			if ( Action.options )
+			{
+				++Action.option;
+				if ( Action.option > Action.options.length )
+					Action.option = 0;
+				actiondata = Action.options[Action.option];
+				actions[Action.actionname] = Action;
+			}
 			if ( actiondata == null )
 				actiondata = Action.value;
 			if ( Action.action )
@@ -884,6 +893,9 @@ public class GMBody extends Sprite
 		if ( use_delta )
 			timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
 		lastms = stepStartTime;
+		
+		current_time = stepStartTime / 1000;
+		GMObject.current_time = current_time;
 		
 		GMProcessEvents();
 		
@@ -963,14 +975,14 @@ public class GMBody extends Sprite
 	
 	public function GMDraw()
 	{
+		Draw();
+		
 		if ( nametag && _usenametag )
 		{
 			nametag.x = x;
 			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 1 << 31 );
 			nametag.UpdatePosition();
 		}
-		
-		Draw();
 		
 		if ( nametag )
 		{
@@ -983,11 +995,18 @@ public class GMBody extends Sprite
 				nametag.alpha = 0;
 			}
 		}
+		
+		DrawEnd();
 	}
 	
 	public function Draw()
 	{
 		draw_self();
+	}
+	
+	public function DrawEnd()
+	{
+		
 	}
 	
 	/*
@@ -1038,7 +1057,7 @@ public class GMBody extends Sprite
 	
 	public function AddMemory( key, defaultval = null, func = null )
 	{
-		GMControl.Log( "Adding memory \"" + key + "\"" );
+		GMControl.Log( "Adding memory \"" + key + "\" with value: " + defaultval );
 		var Memory = {}
 		Memory.name = key;
 		Memory.value = defaultval;
@@ -1050,8 +1069,6 @@ public class GMBody extends Sprite
 				
 		memories[key] = Memory;
 		memoryList.push( Memory );
-		
-		GMControl.Log( "value = " + Memory.value );
 		
 		var event = {};
 		event.type = ControlEvent.MEMORY_CHANGED;
@@ -1082,7 +1099,7 @@ public class GMBody extends Sprite
 	public function OnMemoryChanged( key, value )
 	{
 		var Memory = memories[key];
-		GMControl.Log( "Memory: " + key );
+		GMControl.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
 		if ( Memory )
 		{
 			Memory.value = value;
@@ -1128,6 +1145,8 @@ public class GMBody extends Sprite
 	
 	public function instance_exists( _obj )
 	{
+		return GMObject.instance_exists( _obj );
+		
 		if ( _obj )
 		{
 			return _obj.exists;

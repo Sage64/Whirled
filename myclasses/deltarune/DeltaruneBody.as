@@ -65,6 +65,7 @@ public class DeltaruneBody extends GMBody
 			nametag.SetSize( _size * 1 );
 			nametag.textInit.outlineWidth = _size / 3.5;
 			nametag.textInit.sharpness = 400;
+			//nametag.SetScale( 1 );
 			nametag.Apply();
 		}
 		
@@ -152,16 +153,18 @@ public class DeltaruneBody extends GMBody
 	override public function Draw()
 	{
 		draw_self();
-		
+	}
+	
+	override public function DrawEnd()
+	{
+		super.DrawEnd();
 		var tireddraw = ( isSleeping && nametag );
 		if ( tireddraw && spr_tiredmark )
 		{
-			var transformMatrix = container.transform.concatenatedMatrix;
-			var sx = 1 / transformMatrix.a;
-			//var sy = 1 / transformMatrix.d; 
-			var _tagscale = sx;
-			var _sprscale = sx * 1;
-			var xx = nametag.x + ( nametag.textW * _tagscale ) + ( 4 * _sprscale ) + ( 16 * _sprscale / 2 );
+			var _sprscale = GMControl.unscaleX;
+			//var xx = nametag.x + ( nametag.textW * _tagscale );
+			var xx = nametag.x + ( nametag.width / 2 );
+			xx += ( 4 * _sprscale ) + ( 16 * _sprscale / 2 )
 			var yy = nametag.y - ( nametag.height / 2 ); // - ( spr_tiredmark.height / 2 );
 			
 			draw_sprite_ext( spr_tiredmark, 0, xx, yy, _sprscale, _sprscale );
@@ -206,9 +209,9 @@ public class DeltaruneBody extends GMBody
 		return from;
 	}
 	
-	public function snd_play( _sound = null )
+	public function snd_play( _sound )
 	{
-		return GMControl.InternalAudioPlay( _sound, 1, false );
+		return GMObject.audio_play_sound( _sound  );
 	}
 	
 	public function c_start()

@@ -33,6 +33,9 @@ public class MonsterBody extends DeltaruneBody
 	public var state = 0;
 	public var hurttimer = 0;
     
+	public var use_mercy = true;
+	public var use_damage = true;
+	
 	public function MonsterBody()
 	{
 		super();
@@ -59,15 +62,20 @@ public class MonsterBody extends DeltaruneBody
 			characterH *= darkscale;
 		}
         
-		// States
 		
-		myactions["damage_weak"] = AddAction( "Damage 30", Action_Hurt, 30 );
-		myactions["damage_strong"] = AddAction( "Damage 120", Action_Hurt, 120 );
+		if ( use_damage )
+		{
+			mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
+			myactions["damage_weak"] = AddAction( "Damage 30", Action_Hurt, 30 );
+			myactions["damage_strong"] = AddAction( "Damage 120", Action_Hurt, 120 );
+		}
 		
-		myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
-		myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
-		
-		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
+		if ( use_mercy )
+		{
+			mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
+			myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
+			myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
+		}
 	}
 	
 	override public function Draw()
@@ -91,6 +99,11 @@ public class MonsterBody extends DeltaruneBody
 		{
 			scr_damage_enemy( enemy, amount );
 		}
+	}
+	
+	public function HealthChanged( val = 0 )
+	{
+		
 	}
 	
 	public function Action_SetMercy( data )

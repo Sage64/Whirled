@@ -30,6 +30,10 @@ for custom fonts
 	make sure the second argument of SetFont is true e.g
 	nametag.SetFont( "My Font", true );
 
+for the scale:
+	use nametag.SetScale( 0.5 ); 
+	set to 0 for automatic scaling
+	set to -1 for automatic scaling that shrinks with the avatar to avoid cropping issues
 */
 
 package
@@ -76,6 +80,9 @@ public class GMNameTag extends Sprite
 	public var textH = 0;
 	public var textScale = -1;
 	
+	public var alignH = 0;
+	public var alignV = 1;
+	
 	public var gotName = false;
 	
 	public function GMNameTag( ctrl, container )
@@ -114,6 +121,11 @@ public class GMNameTag extends Sprite
 		{
 			this.scaleX = textScale * ( this.scaleX > 0 ? 1 : -1 );
 			this.scaleY = textScale * ( this.scaleY > 0 ? 1 : -1 );
+		}
+		else if ( ( textScale < 0 ) && ( this.scaleX > 1 || this.scaleY > 1 ) )
+		{
+			this.scaleX = 1;
+			this.scaleY = 1;
 		}
 	}
 	

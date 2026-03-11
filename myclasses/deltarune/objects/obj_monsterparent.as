@@ -6,8 +6,6 @@ import gamemaker.*;
 
 public class obj_monsterparent extends DeltaruneObject
 {
-	
-	
 	public var idlesprite;
 	public var hurtsprite;
 	public var sparedsprite;
@@ -16,8 +14,13 @@ public class obj_monsterparent extends DeltaruneObject
 	public var myself = 0;
 	
 	public var monster = 1;
-	public var mercymod = 0;
+	public var monstername = "Enemy";
+	public var monstermaxhp = 130;
+	public var monsterhp = 130;
 	public var monsterstatus = 0;
+	
+	public var mercymod = 0;
+	public var mercymax = 100;
 	
 	public var state = 0;
 	public var siner = 0;

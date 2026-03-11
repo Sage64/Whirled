@@ -342,7 +342,7 @@ public class DeltaruneObject extends GMObject
 	
 	public function snd_play( _sound )
 	{
-		return audio_play_sound( _sound, false  );
+		return audio_play_sound( _sound  );
 	}
 	
 	public function snd_pitch( _sound, _pitch = 1 )
