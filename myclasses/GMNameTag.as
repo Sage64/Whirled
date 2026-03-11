@@ -106,15 +106,16 @@ public class GMNameTag extends Sprite
 	
 	public function UpdatePosition()
 	{
+		var transformMatrix = container.transform.concatenatedMatrix;
+		this.scaleX = 1 / transformMatrix.a;
+		
 		if ( textScale <= 0 )
 		{
-			var transformMatrix = container.transform.concatenatedMatrix;
-			this.scaleX = 1 / transformMatrix.a;
-			this.scaleY = 1 / transformMatrix.d; 
+			this.scaleY = 1 / transformMatrix.d;
 		}
 		else
 		{
-			this.scaleX = textScale;
+			this.scaleX = textscale * ( this.scaleX > 1 ? 1 : -1 );
 			this.scaleY = textScale;
 		}
 	}
