@@ -108,15 +108,12 @@ public class GMNameTag extends Sprite
 	{
 		var transformMatrix = container.transform.concatenatedMatrix;
 		this.scaleX = 1 / transformMatrix.a;
+		this.scaleY = 1 / transformMatrix.d;
 		
-		if ( textScale <= 0 )
-		{
-			this.scaleY = 1 / transformMatrix.d;
-		}
-		else
+		if ( textScale > 0 )
 		{
 			this.scaleX = textscale * ( this.scaleX > 1 ? 1 : -1 );
-			this.scaleY = textScale;
+			this.scaleY = textScale * ( this.scaleY > 1 ? 1 : -1 );
 		}
 	}
 	
