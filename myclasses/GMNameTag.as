@@ -74,6 +74,7 @@ public class GMNameTag extends Sprite
 	public var textObj;
 	public var textW = 0;
 	public var textH = 0;
+	public var textScale = -1;
 	
 	public var gotName = false;
 	
@@ -105,21 +106,17 @@ public class GMNameTag extends Sprite
 	
 	public function UpdatePosition()
 	{
-		var transformMatrix = container.transform.concatenatedMatrix;
-		// also shrink to fit if the canvas becomes too small
-		// saw it break with certain avatars so im disabling it though
-		if ( false )
+		if ( textScale <= 0 )
 		{
-			this.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
-			this.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
-		}
-		else
-		{
+			var transformMatrix = container.transform.concatenatedMatrix;
 			this.scaleX = 1 / transformMatrix.a;
 			this.scaleY = 1 / transformMatrix.d; 
 		}
-		
-		// parent.setChildIndex( this, parent.numChildren - 1 );
+		else
+		{
+			this.scaleX = textScale;
+			this.scaleY = textScale;
+		}
 	}
 	
 	public function UpdateLook()
@@ -298,6 +295,11 @@ public class GMNameTag extends Sprite
 	public function SetSize( _size )
 	{
 		this.textFormat.size = _size;
+	}
+	
+	public function SetScale( _scale )
+	{
+		this.textScale = _scale;
 	}
 	
 }
