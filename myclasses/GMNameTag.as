@@ -112,8 +112,8 @@ public class GMNameTag extends Sprite
 		
 		if ( textScale > 0 )
 		{
-			this.scaleX = textScale * ( this.scaleX > 1 ? 1 : -1 );
-			this.scaleY = textScale * ( this.scaleY > 1 ? 1 : -1 );
+			this.scaleX = textScale * ( this.scaleX > 0 ? 1 : -1 );
+			this.scaleY = textScale * ( this.scaleY > 0 ? 1 : -1 );
 		}
 	}
 	
