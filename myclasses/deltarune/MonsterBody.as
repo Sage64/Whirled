@@ -83,6 +83,8 @@ public class MonsterBody extends DeltaruneBody
 		super.Draw();
 	}
 	
+	//
+	
 	public function Action_Hurt( data )
 	{
 		trace( "oof!" );
@@ -103,8 +105,15 @@ public class MonsterBody extends DeltaruneBody
 	
 	public function HealthChanged( val = 0 )
 	{
+		OnHealthChanged( val );
+	}
+	
+	public function OnHealthChanged( val = 0 )
+	{
 		
 	}
+	
+	// 
 	
 	public function Action_SetMercy( data )
 	{
@@ -114,6 +123,8 @@ public class MonsterBody extends DeltaruneBody
 			data = 100;
 		SetMemory( mymemories["mercy"].name, data );
 	}
+	
+	
 	
 	public function MercyChanged( val = 0 )
 	{

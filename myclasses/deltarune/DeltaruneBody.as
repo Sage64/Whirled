@@ -127,6 +127,14 @@ public class DeltaruneBody extends GMBody
 		return State;
 	}
 	
+	override public function OnStateChanged()
+	{
+		if ( curState && curState.darkzone )
+			global.darkzone = 1;
+		else
+			global.darkzone = 0;
+	}
+	
 	override public function OnUpdateLook()
 	{
 		if ( hDir > 0 )
@@ -192,21 +200,21 @@ public class DeltaruneBody extends GMBody
 	
 	// Deltarune gamemaker functions
 	
-	public function scr_approach( from, to, amount )
+	public function scr_approach( a, b, amount )
 	{
-		if ( from < to )
+		if ( a < b )
 		{
-			from += amount;
-			if ( from > to )
-				return from;
+			a += amount;
+			if ( a > b )
+				return a;
 		}
 		else
 		{
-			from -= amount;
-			if ( from < to )
-				return to;
+			a -= amount;
+			if ( a < b )
+				return b;
 		}
-		return from;
+		return a;
 	}
 	
 	public function snd_play( _sound )

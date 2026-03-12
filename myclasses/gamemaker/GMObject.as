@@ -29,6 +29,8 @@ public class GMObject extends Sprite
 	public var id = this;
 	public var exists = true;
 	
+	public var persistent = false;
+	
 	public var xstart;
 	public var ystart;
 	public var depth = 0;
@@ -134,6 +136,17 @@ public class GMObject extends Sprite
 		GM Functions
 	*/
 	
+	public function array_create( len, val = 0 )
+	{
+		var array = new Array( len );
+		if ( val != null )
+		{
+			for ( var i = 0; i < len; ++i )
+				array[i] = val;
+		}
+		return array;
+	}
+	
 	public function script_execute( scr, arg )
 	{
 		var i = 0;
@@ -205,6 +218,14 @@ public class GMObject extends Sprite
 	public static function random_range( a, b )
 	{
 		return gml.lerp( a, b, Math.random() );
+	}
+	
+	public static function sign( val )
+	{
+		if ( val == 0 )
+			return 0;
+		else
+			return ( val > 0 ) ? 1 : -1;
 	}
 	
 	public static function sqr( val )

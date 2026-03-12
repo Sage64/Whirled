@@ -16,7 +16,7 @@ public class obj_monsterparent extends DeltaruneObject
 	public var monster = 1;
 	public var monstername = "Enemy";
 	public var monstermaxhp = 130;
-	public var monsterhp = 130;
+	public var monsterhp = monstermaxhp;
 	public var monsterstatus = 0;
 	
 	public var mercymod = 0;

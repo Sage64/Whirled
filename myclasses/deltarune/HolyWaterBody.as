@@ -40,7 +40,6 @@ public class HolyWaterBody extends MonsterBody
 	
 	public function HolyWaterBody()
 	{
-		
 		super();
 		
 		mystates["default"] = DWState( "Default" );
@@ -53,6 +52,8 @@ public class HolyWaterBody extends MonsterBody
 	
 	override public function OnStateChanged()
 	{
+		super.OnStateChanged();
+		
 		x = originX;
 		y = originY;
 		characterH = 0;
@@ -228,7 +229,13 @@ class obj_mizzle extends obj_monsterparent
 		hurtsprite = spr_holywater_hurt;
 		sparedsprite = spr_holywater_alarm;
 		
+		monstername = "Mizzle";
+		monstermaxhp = 470;
+		monsterhp = 470;
+		
+		
 		mercymod = body.GetMemory( "deltarune.monster.mercy" );
+		
 	}
 	
 	override public function Create()
@@ -498,7 +505,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 			}
 			if ( mizzle_con == 20 && mizzle.image_alpha == 2 )
 			{
-				mizzle.sprite_set( spr_holywater_alarm );
+				mizzle.sprite_set( global.spr_holywater_alarm );
 				mizzle_con = 21;
 			}
 			if ( mizzle_con == 30 )
@@ -508,7 +515,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 			if ( mizzle_con == 99 )
 			{
 				//mizzle.image_speed = 0;
-				mizzle.sprite_set( spr_holywater_alarm );
+				mizzle.sprite_set( global.spr_holywater_alarm );
 				mizzle.image_index = ( mizzle.image_index % 9 );
 				mizzle_con = 100;
 				if ( body )

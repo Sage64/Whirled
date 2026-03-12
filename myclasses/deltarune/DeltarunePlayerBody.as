@@ -98,6 +98,8 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	
 	override public function OnStateChanged()
 	{
+		super.OnStateChanged();
+		
 		fun = 0;
 		if ( !curState )
 			return;
@@ -113,11 +115,6 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		{
 			dsprite = curState.sprite;
 		}
-		
-		if ( curState.darkzone )
-			global.darkzone = 1;
-		else
-			global.darkzone = 0;
 		
 		canrun = true;
 		

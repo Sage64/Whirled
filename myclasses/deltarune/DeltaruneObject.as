@@ -309,6 +309,47 @@ public class DeltaruneObject extends GMObject
 		return (arg2 * 0.5 * ((arg0 * arg0 * (((_s + 1) * arg0) + _s)) + 2)) + arg1;
 	}
 	
+	public function i_ex( inst )
+	{
+		return instance_exists( inst );
+	}
+	
+	public function scr_approach( a, b, amount )
+	{
+		if ( a < b )
+		{
+			a += amount;
+			if ( a > b )
+				return a;
+		}
+		else
+		{
+			a -= amount;
+			if ( a < b )
+				return b;
+		}
+		return a;
+	}
+	
+	public function scr_depth()
+	{
+		depth = 100000 - y;
+	}
+	
+	public function scr_doom( inst, time = 1 )
+	{
+		if ( !instance_exists( inst ) )
+			return;
+		var _doom = instance_create( 0, 0, obj_doom );
+		_doom.time = time;
+		_doom.target = inst;
+	}
+	
+	public function scr_even( val )
+	{
+		return round( val / 2 ) * 2;
+	}
+	
 	public function scr_marker_ext( xx, yy, _sprite, _xscale = 1, _yscale = 1, _imgspd = 0, _image = 0, _blend = 0xFFFFFF, _depth = 0, _depthalt = false, _doom = -1, _alpha = 1 )
 	{
 		var marker = instance_create( xx, yy, DeltaruneObject );
@@ -330,15 +371,6 @@ public class DeltaruneObject extends GMObject
 		return marker;
 	}
 	
-	public function i_ex( inst )
-	{
-		return instance_exists( inst );
-	}
-	
-	public function scr_even( val )
-	{
-		return round( val / 2 ) * 2;
-	}
 	
 	public function snd_play( _sound )
 	{
