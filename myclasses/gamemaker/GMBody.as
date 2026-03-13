@@ -296,7 +296,6 @@ public class GMBody extends Sprite
 	}
 	
 	
-	
 	public function GetName()
 	{
 		if ( GMControl.entityID == null )
@@ -364,11 +363,6 @@ public class GMBody extends Sprite
 		isSleeping = ctrl.isSleeping();
 		orientation = ctrl.getOrientation();
 		
-		if ( false ) // debug test
-		{
-			isMoving = true;
-		}
-		
 		direction = 90 - orientation;
 		
 		hDir = gml.dcos( direction );
@@ -382,9 +376,6 @@ public class GMBody extends Sprite
 			speed = moveSpeed;
 			hspeed = hDir * speed;
 			vspeed = vDir * speed;
-			// var transformMatrix = media.transform.concatenatedMatrix;
-			// var transformScaleX = 1; // / transformMatrix.a;
-			// var transformScaleY = 1; // / transformMatrix.d;
 			roomHMove = 0;
 			roomVMove = 0;
 			if ( false )
@@ -657,23 +648,35 @@ public class GMBody extends Sprite
 	// also processes it
 	public function SetState( statename )
 	{
-		var State = GetState( statename );
-		if ( !State )
+		if ( statename == null )
 		{
-			GMControl.Log( "SetState invalid" );
-			return;
+			// seems deliberate;
+			ctrl.setState( null );
+			GMStateChanged( new ControlEvent( ControlEvent.STATE_CHANGED, null ) );
 		}
-		ctrl.setState( State.name );
-		var event = new ControlEvent( ControlEvent.STATE_CHANGED, State.name );
-		GMStateChanged( event );
+		else
+		{
+			var State = GetState( statename );
+			if ( !State )
+			{
+				GMControl.Log( "SetState invalid" );
+				return;
+			}
+			ctrl.setState( State.name );
+			GMStateChanged( new ControlEvent( ControlEvent.STATE_CHANGED, State.name ) );
+		}
 	}
 	
 	public function GetState( statename = null )
 	{
-		if ( typeof statename == "object" )
-			statename = statename.name;
-		var _getstate = states[ statename ];
-		
+		GMControl.debugTracker = "GetState";
+		var _getstate = statename;
+		if ( statename != null )
+		{
+			if ( typeof statename == "object" )
+				statename = statename.name;
+			_getstate = states[ statename ];
+		}
 		if ( _getstate == null )
 		{
 			if ( stateList.length < 1 )
@@ -687,8 +690,7 @@ public class GMBody extends Sprite
 	{
 		var _get = ctrl.getState();
 		var _getstate = GetState( _get );
-		// trace( "getstate: " + _getstate );
-		if ( _getstate != null )
+		if ( _getstate )
 			return _getstate.name;
 		return _get;
 	}
@@ -721,21 +723,29 @@ public class GMBody extends Sprite
 	public function GMStateChanged( event )
 	{
 		GMControl.debugTracker = "GMStateChanged (did you forget to account for curState/prevState being null?)";
+		if ( !event )
+		{
+			GMControl.Warn( "no event" );
+			return;
+		}
 		stateName = event.name;
 		GMControl.Log( "State set to " + stateName );
 		prevState = curState;
 		curState = GetState( stateName );
-		if ( curState != null )
+		if ( curState )
 		{
 			if ( curState.func )
 				curState.func();
 		}
+		else
+			curState = null;
 		if ( prevState == curState )
 		{
 			GMControl.Log( "No change in state, not executing OnStateChanged" );
 		}
 		else
 		{
+			GMControl.debugTracker = "GMStateChanged - OnStateChanged";
 			OnStateChanged();
 			OnUpdateLook();
 		}
@@ -869,6 +879,11 @@ public class GMBody extends Sprite
 	public function Action_OpenControlPanel( data = null )
 	{
 		return GMControl.OpenControlPanel();
+	}
+	
+	public function Action_PlaySound( data = null )
+	{
+		GMObject.audio_play_sound( global[data], 0, false );
 	}
 	
 	// 

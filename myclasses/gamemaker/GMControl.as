@@ -15,6 +15,7 @@ import flash.display.*;
 import flash.errors.*;
 import flash.events.*;
 import flash.text.*;
+import flash.ui.*;
 import flash.utils.*;
 
 import com.whirled.*;
@@ -190,7 +191,14 @@ public class GMControl extends ActorControl
 			GMControl.Log( "Debug Mode" );
 			debug = true;
 			GMGotControl();
-			// AddEventListener( root, KeyboardEvent.KEY_DOWN, DebugKeyDown );
+			try
+			{
+				AddEventListener( media.stage, KeyboardEvent.KEY_DOWN, DebugKeyDown );
+			}
+			catch ( e )
+			{
+				GMControl.Warn( "tried to add keyboard to stage (security violation)" );
+			} 
 		}
 		
 		entityID = ctrl.getMyEntityId();
@@ -342,7 +350,6 @@ public class GMControl extends ActorControl
 		symbol.gotoAndStop( 1 );
 		symbol.x = 0;
 		symbol.y = 0;
-		symbol.alpha = 0;
 
 		var spr = new GMInternalSprite( symbol );
 		internalspritelist.push( spr );
@@ -393,8 +400,8 @@ public class GMControl extends ActorControl
 	
 	public static function GMControlEvent( event )
 	{
-		GMControl.Log( "Event: " + event.type + ": \"" + event.name + "\", " + event.value );
 		_eventqueue.push( event );
+		GMControl.Log( "Event: " + event.type );// + ": \"" + event.name + "\", " + event.value );
 	}
 	
 	private static  function GMProcessEvents()
@@ -503,7 +510,45 @@ public class GMControl extends ActorControl
 	
 	public static function DebugKeyDown( ev )
 	{
-		
+		if ( !ev )
+			return;
+		var key = ev.keyCode;
+		// 
+		if ( key >= 48 && key <= 57 )
+		{
+			var _num = key - 48;
+			if ( key == 48 )
+				_num += 10;
+			--_num;
+			if ( body )
+			{
+				var _getstate = null;
+				trace (_num );
+				if ( _num < 0 )
+				{
+					body.SetState( null );
+				}
+				else if ( body.stateList.length < _num )
+				{
+				}
+				else
+				{
+					_getstate = body.GetState( body.stateList[_num] );
+					if ( _getstate )
+						body.SetState( _getstate );
+				}
+			}
+		} 
+		switch( key ) 
+		{
+			case Keyboard.S:
+				GMControl._isSleeping = !GMControl._isSleeping;
+				ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+				break;
+			case Keyboard.D:
+				ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+				break;
+		}
 	}
 	
 	public static function Caught( e )
@@ -711,8 +756,8 @@ public class GMControl extends ActorControl
 			// GMUpdateView();
 			
 			var transformMatrix = media.transform.concatenatedMatrix;
-			unscaleX = 1 / transformMatrix.a;
-			unscaleY = 1 / transformMatrix.d;
+			unscaleX = ( 1 / transformMatrix.a );
+			unscaleY = ( 1 / transformMatrix.d );
 			
 			// sort by draw depth
 			if ( true )
@@ -1094,6 +1139,27 @@ public class GMControl extends ActorControl
 		g.lineStyle( w, drawcolor, a );
 		g.moveTo( x1, y1 );
 		g.lineTo( x2, y2 );
+	}
+	
+	public static function InternalDrawRectangle( x1, y1, x2, y2, outline = false )
+	{
+		var g = container.graphics;
+		var a = null;
+		if ( a == null )
+			a = drawalpha;
+		// drawcolor;
+		if ( outline )
+		{
+			InternalDrawLine( x1, y1, x2, y1, a );
+			InternalDrawLine( x2, y1, x2, y2, a );
+			InternalDrawLine( x2, y2, x1, y2, a );
+			InternalDrawLine( x1, y2, x1, y1, a );
+		}
+		else
+		{
+			g.beginFill( drawcolor, drawalpha );
+			g.drawRect( x1, y1, x2 - x1, y2 - y1 );
+		}
 	}
 	
 	public static function InternalTextDraw( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )

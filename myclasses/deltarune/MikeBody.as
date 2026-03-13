@@ -44,8 +44,8 @@ public class MikeBody extends MonsterBody
 		super();
 		
 		mystates["battat"] = DWState( "-BATTAT-", spr_mike_small );
-		mystates["battat_mikeup"] = DWState( "* There's only ONE real MIKE...", spr_mike_s_mic_up );
-		mystates["battat_pointdown"] = DWState( "* And that's ME!!!", spr_mike_s_point_down );
+		mystates["battat_mikeup"] = DWState( "Mic up", spr_mike_s_mic_up );
+		mystates["battat_pointdown"] = DWState( "Point down", spr_mike_s_point_down );
 		mystates["batatt_point_l"] = DWState( "Point left", spr_mike_s_pointing_aggressive );
 		mystates["batatt_point_r"] = DWState( "Point right", spr_mike_s_pointing_aggressive );
 		
@@ -86,6 +86,7 @@ public class MikeBody extends MonsterBody
 		
 		if ( curState == mystates["mic"] )
 		{
+			
 			mic_timer = 0;
 			characterH = 80 * 2;
 			mic = instance_create( x, y - 16, DeltaruneObject );
@@ -108,7 +109,10 @@ public class MikeBody extends MonsterBody
 			if ( !instance_exists( mike_s ) )
 			{
 				mike_s = instance_create( x, y, obj_mike );
-				mike_s.image_alpha = 0;
+				if ( instance_exists( inst ) )
+					mike_s.image_alpha = inst.image_alpha;
+				else
+					mike_s.image_alpha = 0;
 			}
 			mike_s.sprite_set( global.spr_mike_small );
 			mike_s.image_index = 0;
@@ -154,16 +158,22 @@ public class MikeBody extends MonsterBody
 			if ( spr == spr_mike_m || spr == spr_mike_m_sad )
 			{
 				if ( !instance_exists( mike_m ) )
-					mike_m = instance_create( x, y, obj_mike );
+				{
+					mike_m = instance_create( x - 128, y, obj_mike );
+					mike_m.image_alpha = 0;
+				}
 				mike = mike_m;
 				mike.sprite_set( spr );
 				mike.image_speed = 0.25;
 				mike.howtall = 60 * 2;
 				mike.scr_lerpvar( "x", mike.x, 0, 15, 2 );
 				mike.scr_lerpvar( "y", mike.y, 0, 15, 2 );
+				mike.scr_lerpvar( "image_alpha", mike.image_alpha, 1, 10, 0 );
 			}
 			else if ( instance_exists( mike_m ) )
 			{
+				mike_m.scr_lerpvar( "x", mike_m.x, -128, 10, 0 );
+				mike_m.scr_lerpvar( "y", mike_m.y, 0, 10, 0 );
 				mike_m.scr_lerpvar( "image_alpha", mike_m.image_alpha, 0, 10, 0 );
 				mike_m.scr_doom( mike_m, 10 );
 				mike_m = null;
@@ -172,16 +182,22 @@ public class MikeBody extends MonsterBody
 			if ( spr == spr_mike_big )
 			{
 				if ( !instance_exists( mike_b ) )
-					mike_b = instance_create( x, y, obj_mike );
+				{
+					mike_b = instance_create( x + 128, y, obj_mike );
+					mike_b.image_alpha = 0;
+				}
 				mike = mike_b;
 				mike.sprite_set( spr );
 				mike.image_index = 0;
 				mike.howtall = 88 * 2;
 				mike.scr_lerpvar( "x", mike.x, 0, 15, 2 );
 				mike.scr_lerpvar( "y", mike.y, 0, 15, 2 );
+				mike.scr_lerpvar( "image_alpha", mike.image_alpha, 1, 10, 0 );
 			}
 			else if ( instance_exists( mike_b ) )
 			{
+				mike_b.scr_lerpvar( "x", mike_b.x, 128, 10, 0 );
+				mike_b.scr_lerpvar( "y", mike_b.y, 0, 10, 0 );
 				mike_b.scr_lerpvar( "image_alpha", mike_b.image_alpha, 0, 10, 0 );
 				mike_b.scr_doom( mike_b, 10 );
 				mike_b = null;
@@ -191,13 +207,20 @@ public class MikeBody extends MonsterBody
 			if ( spr == spr_mike_small )
 			{
 				if ( !instance_exists( mike_s ) )
+				{
 					mike_s = instance_create( x, y, obj_mike );
+					if ( instance_exists( inst ) )
+						mike_s.image_alpha = inst.image_alpha;
+					else
+						mike_s.image_alpha = 0;
+				}
 				mike = mike_s;
 				mike.sprite_set( spr );
 				mike.image_index = 0;
 				mike.howtall = 46 * 2;
 				mike.scr_lerpvar( "x", mike.x, 0, 15, 2 );
 				mike.scr_lerpvar( "y", mike.y, 0, 15, 2 );
+				mike.scr_lerpvar( "image_alpha", mike.image_alpha, 1, 10, 0 );
 			}
 			else if ( instance_exists( mike_s ) )
 			{
@@ -207,14 +230,17 @@ public class MikeBody extends MonsterBody
 				mike_s = null;
 			}
 			
-			if ( mike )
+			if ( mike || instance_exists( mic ) )
 			{
 				instance_destroy( inst );
 			}
-			else if ( spr && ( spr != global.spr_mic_2x ) )
+			else if ( spr )
 			{
 				if ( !instance_exists( inst ) )
+				{
 					inst = instance_create( x, y, DeltaruneObject );
+					inst.image_alpha = 0;
+				}
 				inst.x = x;
 				inst.y = y;
 				inst.sprite_set( spr );
@@ -230,12 +256,17 @@ public class MikeBody extends MonsterBody
 				{
 					inst.x = doomed.x;
 					inst.y = doomed.y;
-					inst.scr_lerpvar( "x", inst.x, 0, 15, 2 );
-					inst.scr_lerpvar( "y", inst.y, 0, 15, 2 );
+					inst.image_alpha = doomed.image_alpha;
 					inst.image_xscale = doomed.image_xscale;
 					inst.image_yscale = doomed.image_yscale;
 					instance_destroy( doomed );
+					
+					inst.scr_lerpvar( "x", inst.x, 0, 15, 2 );
+					inst.scr_lerpvar( "y", inst.y, 0, 15, 2 );
+					inst.scr_lerpvar( "image_alpha", inst.image_alpha, 1, 15, 2 );
 				}
+				else
+					inst.image_alpha = 1;
 			}
 		}
 		
@@ -352,6 +383,11 @@ public class MikeBody extends MonsterBody
 			x += mike.x;
 			y += mike.y;
 			characterH = mike.howtall + mike.anim[8];
+		}
+		else if ( instance_exists( inst ) )
+		{
+			x += inst.x;
+			y += inst.y;
 		}
 	}
 }

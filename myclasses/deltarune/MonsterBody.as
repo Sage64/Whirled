@@ -66,15 +66,15 @@ public class MonsterBody extends DeltaruneBody
 		if ( use_damage )
 		{
 			mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
-			myactions["damage_weak"] = AddAction( "Damage 30", Action_Hurt, 30 );
-			myactions["damage_strong"] = AddAction( "Damage 120", Action_Hurt, 120 );
+			myactions["damage_weak"] = AddAction( "Hurt 30", Action_Hurt, 30 );
+			myactions["damage_strong"] = AddAction( "Hurt 120", Action_Hurt, 120 );
 		}
 		
 		if ( use_mercy )
 		{
 			mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
-			myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
-			myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
+			myactions["mercy_set_0"] = AddAction( "Mercy 0%", Action_SetMercy, 0 );
+			myactions["mercy_0"] = AddAction( "Mercy 100%", Action_SetMercy, 100 );
 		}
 	}
 	
@@ -153,6 +153,7 @@ public class MonsterBody extends DeltaruneBody
 			target.shakex = 9;
 			target.state = 3;
 			target.hurttimer = 30;
+			target.hurtamt = amount;
 		}
 	}
 }

@@ -39,6 +39,8 @@ public class GMObject extends Sprite
 	
 	public var sprite_index = null; // use sprite_current instead for sprite ref
 	public var sprite_current = null;
+	public var sprite_width = 0;
+	public var sprite_height = 0;
 	public var image_number = 1;
 	public var image_index = 0;
 	public var image_speed = 1;
@@ -374,6 +376,11 @@ public class GMObject extends Sprite
 	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
 	{
 		return GMControl.InternalDrawLine( x1, y1, x2, y2, w, a );
+	}
+	
+	public static function draw_rectangle( x1, y1, x2, y2, outline = false )
+	{
+		return GMControl.InternalDrawRectangle( x1, y1, x2, y2, outline );
 	}
 	
 	// Text

@@ -14,10 +14,12 @@ public class obj_monsterparent extends DeltaruneObject
 	public var myself = 0;
 	
 	public var monster = 1;
+	public var monsterstatus = 0;
 	public var monstername = "Enemy";
 	public var monstermaxhp = 130;
 	public var monsterhp = monstermaxhp;
-	public var monsterstatus = 0;
+	public var monsterat = 1;
+	public var monsterdf = 1;
 	
 	public var mercymod = 0;
 	public var mercymax = 100;
@@ -31,6 +33,7 @@ public class obj_monsterparent extends DeltaruneObject
 	// hurt
 	public var attacked = 0;
 	public var hurt = 0;
+	public var hurtamt = 0;
 	public var hurttimer = 0;
 	public var hurtshake = 0;
 	public var shakex = 0;
