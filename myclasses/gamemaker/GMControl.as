@@ -1,5 +1,5 @@
 ﻿
-// GM Controller
+// GM Control
 // by sage [ https://github.com/Sage64/Whirled ]
 // Control object for my GMBody base, combines all control types into one
 
@@ -27,7 +27,6 @@ public class GMControl extends ActorControl
 {
 	public static var debug = false;
 	public static var debug_log = [];
-	public static var logAddedTime = 0;
 	public static var debugTracker = "";
 	public static var hasErrored = false;
 	
@@ -1105,6 +1104,7 @@ public class GMControl extends ActorControl
 		_symbol.rotation = -_angle;
 		_symbol.alpha = _alpha;
 		_symbol.visible = true;
+		return _symbol;
 	}
 	
 	public static function InternalSpriteGet( sprname )

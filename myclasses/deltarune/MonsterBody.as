@@ -66,15 +66,15 @@ public class MonsterBody extends DeltaruneBody
 		if ( use_damage )
 		{
 			mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
-			myactions["damage_weak"] = AddAction( "Hurt 30", Action_Hurt, 30 );
-			myactions["damage_strong"] = AddAction( "Hurt 120", Action_Hurt, 120 );
+			myactions["damage_weak"] = AddAction( "Hurt 50", Action_Hurt, 50 );
+			myactions["damage_strong"] = AddAction( "Hurt 150", Action_Hurt, 150 );
 		}
 		
 		if ( use_mercy )
 		{
 			mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
-			myactions["mercy_set_0"] = AddAction( "Mercy 0%", Action_SetMercy, 0 );
-			myactions["mercy_0"] = AddAction( "Mercy 100%", Action_SetMercy, 100 );
+			myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
+			myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
 		}
 	}
 	
@@ -99,7 +99,8 @@ public class MonsterBody extends DeltaruneBody
 	{
 		if ( instance_exists( enemy ) )
 		{
-			scr_damage_enemy( enemy, amount );
+			scr_spell( 1, enemy, amount );
+			
 		}
 	}
 	
@@ -136,8 +137,30 @@ public class MonsterBody extends DeltaruneBody
 		
 	}
 	
+	// Functions
 	
-	public function scr_damage_enemy( target, amount )
+	public static function scr_spell( spell = 0, target = null, damage = 100 )
+	{
+		switch ( spell )
+		{
+			case 0: // None
+				break;
+			case 1: // Basic Attack
+				var cancelattack = 0;
+				if  ( ( cancelattack == 0 ) && ( GMBody.instance_exists( target ) ) )
+				{
+					scr_damage_enemy( target, damage );
+					snd_play( global.snd_damage );
+					var attack;
+					if ( attack )
+						attack.sprite_set( global.spr_attack_mash );
+				}
+				break;
+				
+		}
+	}
+	
+	public static function scr_damage_enemy( target, amount )
 	{
 		var dmgx = target.x;
 		var dmgy = target.y - 20;
@@ -148,7 +171,7 @@ public class MonsterBody extends DeltaruneBody
 		{
 			
 		}
-		else if ( instance_exists( target ) )
+		else if ( GMBody.instance_exists( target ) )
 		{
 			target.shakex = 9;
 			target.state = 3;

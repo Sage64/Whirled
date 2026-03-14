@@ -74,6 +74,11 @@ public class JokerBody extends MonsterBody
 			enemy.jbody.fade = 0;
 			enemy.jbody.nextcon = 0;
 			
+			if ( curState == mystates["teleport"] )
+			{
+				SetMoveSpeed( 20 );
+			}
+			
 			if ( curState == mystates["scythe"] )
 			{
 				enemy.jbody.nextcon = 5;
@@ -525,8 +530,13 @@ class obj_joker_body extends DeltaruneObject
 			{
 				for ( i = 0; i < 7; i += 1 )
 				{
-					draw_sprite_ext( global.spr_joker_dance, ( dancesiner / 2 ) + ( i / 4 ), offx + shadowx[i], offy + shadowy[i], image_xscale, image_yscale, image_angle, image_blend, dalpha[i] );
+					draw_sprite_ext( global.spr_joker_dance, ( dancesiner / 2 ) + ( i / 4 ), offx + shadowx[i], offy + shadowy[i], image_xscale, image_yscale, image_angle, image_blend, dalpha[i] * image_alpha );
 				}
+				i = 1;
+				body.x += shadowx[i];
+				body.y += shadowy[i];
+				if ( body.nametag )
+					body.nametag.alpha = dalpha[i] * image_alpha;
 			}
 			if (dancelv == 4)
 				draw_sprite_ext( global.spr_joker_teleport, 1, offx + flyx, offy + fly, image_xscale, image_yscale, image_angle, image_blend, image_alpha );

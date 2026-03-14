@@ -216,7 +216,7 @@ public class DeltaruneBody extends GMBody
 		return a;
 	}
 	
-	public function snd_play( _sound )
+	public static function snd_play( _sound )
 	{
 		return GMObject.audio_play_sound( _sound  );
 	}
