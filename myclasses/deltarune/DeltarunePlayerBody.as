@@ -99,7 +99,6 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	override public function OnStateChanged()
 	{
 		super.OnStateChanged();
-		
 		fun = 0;
 		if ( !curState )
 			return;
@@ -112,12 +111,8 @@ public class DeltarunePlayerBody extends DeltaruneBody
 			lsprite = ( curState.sprite[3] );
 		}
 		else if ( curState.directional == 0 )
-		{
 			dsprite = curState.sprite;
-		}
-		
 		canrun = true;
-		
 		if ( global.flag[11] == 1 )
 			runheld = true;
 		else
@@ -269,7 +264,7 @@ public class DeltarunePlayerBody extends DeltaruneBody
 			FollowTarget();
 		}
 		
-		if ( isMoving && fun == 0 )
+		if ( isMoving && ( fun == 0 ) )
 		{
 			PlayerControl();
 		}
@@ -394,23 +389,19 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	public function AnimateWalk()
 	{
 		walk = 0;
-		
 		if ( nopress == 0 )
 		{
 			if ( px != 0 || py != 0 )
 				walk = 1;
 		}
-		
 		if ( walk == 1 )
 			walkbuffer = 6;
-		
 		if ( walkbuffer > 3 )
 		{
 			walktimer += ( runmove ? 3 : 1.5 ) * timescale;
 			walktimer = walktimer % 40;
 			image_index = Math.floor( walktimer / 10 );
 		}
-		
 		if ( walkbuffer <= 0 )
 		{
 			if ( walktimer < 10 )
@@ -423,7 +414,6 @@ public class DeltarunePlayerBody extends DeltaruneBody
 				walktimer = 39.5
 			image_index = 0;
 		}
-		
 		walkbuffer -= 0.75 * timescale;
 	}
 	

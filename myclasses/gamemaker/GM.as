@@ -219,8 +219,9 @@ public class GM
 		}
 		symbol.visible = false;
 		symbol.gotoAndStop( 1 );
-		symbol.x = 0;
-		symbol.y = 0;
+		symbol.x = -1024;
+		symbol.y = -1024;
+		symbol.alpha = 0;
 
 		var spr = new GMInternalSprite( symbol );
 		internalspritelist.push( spr );
@@ -376,13 +377,14 @@ public class GM
 			
 			while ( _tempdrawsprites.length > 0 )
 			{
-				var spr = _tempdrawsprites[0];
-				_tempdrawsprites.shift();
-				spr.x = -1024; //( container.width / 2 );
-				spr.y = -1024; //( container.height );
+				var spr = _tempdrawsprites.shift();
+				
+				spr.x = -512; //( container.width / 2 );
+				spr.y = -512; //( container.height );
 				spr.scaleX = 1 / 100;
 				spr.scaleY = 1 / 100;
 				spr.alpha = ( 1 / 100 );
+				spr.visible = false;
 				// trace( spr.name );
 			}
 			

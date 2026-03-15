@@ -181,6 +181,8 @@ public class GMBody extends GMObject
 	{
 		super();
 		
+		image_speed = 0;
+		
 		name = "GMBody";
 		this.ctrl = GMControl.ctrl;
 		this.media = GMControl.media; 
