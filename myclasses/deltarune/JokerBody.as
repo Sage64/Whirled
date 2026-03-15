@@ -25,7 +25,11 @@ public class JokerBody extends MonsterBody
 	{
 		super();
 		
+		SetUseMercy( false );
+		
 		textsound = global.snd_txtjok;
+		
+		// 
 		
 		mymemories["shadow"] = AddMemory( "deltarune.jevil.drawshadow", 1, SetDrawShadow );
 		
@@ -66,9 +70,18 @@ public class JokerBody extends MonsterBody
 		{
 			SetMoveSpeed( 50 );
 			if ( instance_exists( enemy ) )
-				enemy.jbody.condition = 2;
-			if ( !instance_exists( enemy ) )
+			{
+				if ( enemy.jbody.condition != 4 )
+					enemy.jbody.condition = 2;
+			}
+			else
+			{
+				enemy = instance_create( x, y, obj_joker );
+				enemy.jbody.size = 0;
+				enemy.jbody.condition = 4;
 				nametag.alpha = 0;
+			}
+				
 		}
 		else
 		{
@@ -90,8 +103,9 @@ public class JokerBody extends MonsterBody
 			
 			if ( curState == mystates["scythe"] )
 			{
+				if ( prevState == mystates["disappear"] )
+					enemy.jbody.condition = 3;
 				enemy.jbody.nextcon = 5;
-				SetViewOffset( 0, y - ( ( 0 ) + characterH / 2 ) );
 			}
 			else if ( curState == mystates["postbattle"] )
 			{
@@ -369,17 +383,22 @@ class obj_joker_body extends DeltaruneObject
 		floatsiner += floatsinerspeed * ts;
 		fly = sin( floatsiner / 8 ) * 3 * ( ( floatsinerspeed * 2 ) - 1 );
 		flyx = 0;
-		if ( dancelv >= 1 )
-			flyx = cos( floatsiner / 8 ) * 3 * ( ( floatsinerspeed * 2 ) - 1 );
-		if ( dancelv == 4 )
+		if ( condition != 4 )
 		{
-			flyx = 0;
-			fly = 0;
+			if ( dancelv >= 1 )
+				flyx = cos( floatsiner / 8 ) * 3 * ( ( floatsinerspeed * 2 ) - 1 );
+			if ( dancelv == 4 )
+			{
+				flyx = 0;
+				fly = 0;
+			}
 		}
 		if ( condition == 0 )
 			condition = nextcon;
 		if ( condition == 0 )
 		{
+			
+			
 			if ( dancelv == 3 )
 				dancesiner += 1 * ts;
 			for ( i = 0; i < 7; i += 1 )
@@ -441,6 +460,7 @@ class obj_joker_body extends DeltaruneObject
 				size = 2;
 				condition = 4;
 				sndcon = 0;
+				body.SetViewOffset( 0, y - ( ( 0 ) + body.characterH / 2 ) );
 			}
 		}
 		else if ( condition == 3 )
@@ -456,6 +476,7 @@ class obj_joker_body extends DeltaruneObject
 				size = 2;
 				condition = 0;
 				sndcon = 0;
+				body.SetViewOffset( 0, y - ( ( 0 ) + body.characterH / 2 ) );
 			}
 			if ( body.nametag )
 				body.nametag.alpha = size / 2;
@@ -474,6 +495,7 @@ class obj_joker_body extends DeltaruneObject
 				s_vspeed = 0;
 				s_alpha = 1;
 				snd_play( global.snd_joker_metamorphosis );
+				body.SetViewOffset( 0, y - ( ( 0 ) + body.characterH / 2 ) );
 			}
 			timer += 1 * ts;
 			if ( timer >= 1 && timer <= 3 )
@@ -491,11 +513,17 @@ class obj_joker_body extends DeltaruneObject
 				spintimer += 1 * ts;
 				s_xscale = sin( spintimer / 3 ) * 2;
 				s_sprite = global.spr_joker_scythebody;
-				s_yscale *= 0.7;
 				if ( s_xscale > 2 )
 					s_xscale = 2;
-				if ( s_yscale < 2 )
-					s_yscale = 2;
+				if ( s_yscale > 2 )
+				{
+					s_yscale *= 0.7;
+					if ( s_yscale <= 2 )
+					{
+						s_yscale = 2;
+						body.SetViewOffset( 0, y - ( ( 100 ) + body.characterH / 2 ) );
+					}
+				}
 			}
 			else if ( timer >= 30 && timer < 41 )
 			{
@@ -509,6 +537,7 @@ class obj_joker_body extends DeltaruneObject
 			{
 				timer = 0;
 				condition = 4;
+				body.SetViewOffset( 0, y - ( ( 0 ) + body.characterH / 2 ) );
 			}
 			if ( body.nametag )
 				body.nametag.alpha = s_alpha;
@@ -591,6 +620,7 @@ class obj_joker_body extends DeltaruneObject
 			{
 				finalalpha = image_alpha * ( 0.125 + ( 0.1 * sin( floatsiner / 8 ) ) );
 				draw_sprite_ext( global.spr_joker_main, 0, offx, offy + fly, ( image_xscale ), image_yscale, image_angle, image_blend, finalalpha );
+				body.x = offx;
 				if ( body.nametag )
 					body.nametag.alpha = finalalpha;
 			}
@@ -602,11 +632,12 @@ class obj_joker_body extends DeltaruneObject
 		}
 		
 		// Shadow
-		if ( condition == 0 || condition == 1 )
+		if ( condition == 0 || condition == 1 || ( condition == 4 && GMControl.isControl ) )
 		{
 			if ( dancelv <= 2 && ( body && body.jev_drawshadow ) )
 			{
 				sprite_width = 0;
+				draw_set_alpha( finalalpha );
 				draw_set_color( c_black );
 				var ypos = ( y );
 				var x1 = ( ( x + ( sprite_width / 2 ) ) - 25 - fly ) + flyx;
@@ -614,6 +645,7 @@ class obj_joker_body extends DeltaruneObject
 				var x2 = x + ( sprite_width / 2 ) + 25 + fly + flyx;
 				var y2 = ypos + 5 + ( fly / 2 );
 				draw_rectangle( x1, y1, x2, y2, false );
+				draw_set_alpha( 1 );
 			}
 		}
 	}

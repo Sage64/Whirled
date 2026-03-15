@@ -178,10 +178,10 @@ public class DeltaruneBody extends GMBody
 		var tireddraw = ( isSleeping && nametag );
 		if ( tireddraw && spr_tiredmark )
 		{
-			var _sprscale = GMControl.unscaleX * 1.25;
+			var _sprscale = GM.unscaleX * 1.25;
 			//var xx = nametag.x + ( nametag.textW * _tagscale );
 			var xx = nametag.x + ( nametag.width / 2 );
-			xx += ( 4 * _sprscale ) + ( GMControl.unscaleX * 4 ) + ( 16 * _sprscale / 2 )
+			xx += ( 4 * _sprscale ) + ( GM.unscaleX * 4 ) + ( 16 * _sprscale / 2 )
 			var yy = nametag.y - ( nametag.height / 2 ); // - ( spr_tiredmark.height / 2 );
 			draw_sprite_ext( spr_tiredmark, 0, xx, yy, _sprscale, _sprscale, 0, 0xFFFFFF, nametag.alpha );
 		}

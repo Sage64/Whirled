@@ -38,10 +38,10 @@ public class MikeBody extends MonsterBody
 	
 	public function MikeBody()
 	{
-		use_damage = false;
-		use_mercy = false;
-		
 		super();
+		
+		SetUseDamage( false );
+		SetUseMercy( false );
 		
 		mystates["battat"] = DWState( "-BATTAT-", spr_mike_small );
 		mystates["battat_mikeup"] = DWState( "Mic up", spr_mike_s_mic_up );

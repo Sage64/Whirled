@@ -39,7 +39,7 @@ public class MonsterBody extends DeltaruneBody
 	public function MonsterBody()
 	{
 		super();
-        
+		
 		// Base properties
 		
 		characterH = 40;
@@ -62,25 +62,30 @@ public class MonsterBody extends DeltaruneBody
 			characterH *= darkscale;
 		}
         
+		mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
+		myactions["damage_weak"] = AddAction( "[Hurt 50]", Action_Hurt, 50 );
+		myactions["damage_strong"] = AddAction( "[Hurt 150]", Action_Hurt, 150 );
 		
-		if ( use_damage )
-		{
-			mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
-			myactions["damage_weak"] = AddAction( "[Hurt 50]", Action_Hurt, 50 );
-			myactions["damage_strong"] = AddAction( "[Hurt 150]", Action_Hurt, 150 );
-		}
-		
-		if ( use_mercy )
-		{
-			mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
-			myactions["mercy_set_0"] = AddAction( "[SetMercy 0%]", Action_SetMercy, 0 );
-			myactions["mercy_0"] = AddAction( "[SetMercy 100%]", Action_SetMercy, 100 );
-		}
+		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
+		myactions["mercy_0"] = AddAction( "[SetMercy 0%]", Action_SetMercy, 0 );
+		myactions["mercy_100"] = AddAction( "[SetMercy 100%]", Action_SetMercy, 100 );
 	}
 	
 	override public function Draw()
 	{
 		super.Draw();
+	}
+	
+	public function SetUseDamage( on = 1 )
+	{
+		myactions["damage_weak"].hidden = !on;
+		myactions["damage_strong"].hidden = !on;
+	}
+	
+	public function SetUseMercy( on = 1 )
+	{
+		myactions["mercy_0"].hidden = !on;
+		myactions["mercy_100"].hidden = !on;
 	}
 	
 	//

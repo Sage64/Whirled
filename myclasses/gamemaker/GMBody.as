@@ -334,28 +334,12 @@ public class GMBody extends GMObject
 	}
 	
 	/*
-		
-		INPUT
-		
-	*/
-	
-	public function GMKeyUp( event )
-	{
-		trace( event );
-	}
-	
-	public function GMKeyDown( event )
-	{
-		trace( event );
-	}
-	
-	/*
 		APPEARANCE
 	*/
 	
 	// Triggered upon first appearing, moving, sleeping, walking, changing states, etc
-	// assume it can happen anytime, and not just
-	// reset an animation from it
+	// assume it can happen whenever, and don't just change animations immediately
+	// anytime its called
 	public function GMUpdateLook( event = null )
 	{
 		GMControl.Log( "GMUpdateLook" );
@@ -751,6 +735,8 @@ public class GMBody extends GMObject
 			OnStateChanged();
 			OnUpdateLook();
 		}
+		RegisterStates();
+		RegisterActions();
 	}
 	
 	public function OnStateChanged()
@@ -1103,7 +1089,7 @@ public class GMBody extends GMObject
 		event.name = Memory.name;
 		event.value = Memory.value;
 		
-		GM.GMEvent( event );
+		GMControl.GMControlEvent( event );
 		
 		return Memory;
 	}

@@ -376,11 +376,13 @@ public class GM
 			
 			while ( _tempdrawsprites.length > 0 )
 			{
-				var spr = _tempdrawsprites.shift();
-				spr.x = container.x - ( 1024 );
-				spr.y = container.y - ( 1024 );
+				var spr = _tempdrawsprites[0];
+				_tempdrawsprites.shift();
+				spr.x = -1024; //( container.width / 2 );
+				spr.y = -1024; //( container.height );
 				spr.scaleX = 1 / 100;
 				spr.scaleY = 1 / 100;
+				spr.alpha = ( 1 / 100 );
 				// trace( spr.name );
 			}
 			
