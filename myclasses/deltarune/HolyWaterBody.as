@@ -50,6 +50,12 @@ public class HolyWaterBody extends MonsterBody
 		mystates["watercooler_patrol"] = DWState( "Watercooler (Patrol)" );
 	}
 	
+	override public function DoBodyDebug()
+	{
+		// SetState( mystates["watercooler_patrol"].name );
+		//GMControl.GMActionTriggered( myactions["f1"] );
+	}
+	
 	override public function OnStateChanged()
 	{
 		super.OnStateChanged();
@@ -126,7 +132,7 @@ public class HolyWaterBody extends MonsterBody
 				else
 				{
 					if ( !instance_exists( mizzle ) )
-						mizzle = instance_create( x, y - 24, obj_mizzle );
+						mizzle = instance_create( x, y - 24, obj_mizzle_enemy );
 				}
 				
 				break;
@@ -180,16 +186,8 @@ public class HolyWaterBody extends MonsterBody
 	
 	override public function OnHurt( amount = 0 )
 	{
-		if ( instance_exists( mizzle ) )
-		{
-			scr_damage_enemy( mizzle, amount );
-		}
-	}
-	
-	override public function DoBodyDebug()
-	{
-		//SetState( mystates["watercooler_patrol"].name );
-		//GMControl.GMActionTriggered( myactions["f1"] );
+		enemy = mizzle;
+		super.OnHurt( amount );
 	}
 	
 	override public function Step()
@@ -206,7 +204,7 @@ import deltarune.objects.*;
 import flash.display.*;
 
 
-class obj_mizzle extends obj_monsterparent
+class obj_mizzle_enemy extends obj_monsterparent
 {
 	// Initialize asset vars first
 	public var spr_holywater_alarm = sprite_get( "spr_holywater_alarm" );
@@ -221,7 +219,7 @@ class obj_mizzle extends obj_monsterparent
 	
 	public var firstframe = 0;
 	
-	public function obj_mizzle()
+	public function obj_mizzle_enemy()
 	{
 		super();
 		
@@ -273,7 +271,7 @@ class obj_mizzle extends obj_monsterparent
 			
 			if ( state == 3 )
 			{
-				body.x += ( 2 * image_xscale ) + shakex;
+				body.x += ( 0 * image_xscale ) + shakex;
 				body.y += 8;
 			}
 			else
@@ -549,7 +547,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 					instance_destroy( mizzle );
 					//instance_destroy( mizzle );
 					instance_destroy( body.mizzle );
-					body.mizzle = instance_create( body.originX, body.originY - 24, obj_mizzle );
+					body.mizzle = instance_create( body.originX, body.originY - 24, obj_mizzle_enemy );
 					body.mizzle.image_index = mizzle.image_index;
 					body.mizzle.siner = 0;//body.mizzle.image_index;
 					body.OnUpdateLook();

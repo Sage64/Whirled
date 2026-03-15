@@ -18,9 +18,16 @@ public class JokerBody extends MonsterBody
 {
 	public var inst;
 	
+	public var jev_drawshadow = 1;
+	
+	
 	public function JokerBody()
 	{
 		super();
+		
+		textsound = global.snd_txtjok;
+		
+		mymemories["shadow"] = AddMemory( "deltarune.jevil.drawshadow", 1, SetDrawShadow );
 		
 		mystates["default"] = DWState( "Default" );
 		mystates["teleport"] = DWState( "Teleport" );
@@ -30,6 +37,8 @@ public class JokerBody extends MonsterBody
 		mystates["tired"] = DWState( "Tired" );
 		mystates["scythe"] = DWState( "Metamorphosis" );
 		mystates["postbattle"] = DWState( "Post-battle" );
+		
+		myactions["toggle_shadow"] = AddAction_Options( "[Toggle Shadow]", Action_ToggleShadow, [0, 1] );
 		
 		myactions["snd_joker_anything"] = AddAction( "ANYTHING!", Action_PlaySound, "snd_joker_anything" );
 	}
@@ -45,7 +54,7 @@ public class JokerBody extends MonsterBody
 		
 		SetMoveSpeed( 6 );
 		
-		SetViewOffset( 0, y - ( ( 0 ) + characterH / 2 ) );
+		SetViewOffset( 0, y - ( ( 32 ) + characterH / 2 ) );
 		
 		if ( curState == null )
 		{
@@ -121,9 +130,9 @@ public class JokerBody extends MonsterBody
 		}
 		else if ( instance_exists( enemy ) )
 		{
-			if ( curState == mystates["dance"] || curState == mystates["dance_chaos"] )
+			if ( false && ( curState == mystates["dance"] || curState == mystates["dance_chaos"] ) )
 			{
-				enemy.image_xscale = 2;	
+				
 			}
 			else
 			{
@@ -132,7 +141,8 @@ public class JokerBody extends MonsterBody
 				{
 					if ( isSleeping )
 						enemy.jbody.dancelv = 2;
-					else enemy.jbody.dancelv = 0;
+					else
+						enemy.jbody.dancelv = 0;
 				}
 			}
 		}
@@ -153,6 +163,7 @@ public class JokerBody extends MonsterBody
 				enemy.state = 0;
 				enemy.jbody.sndcon = 1;
 				enemy.jbody.condition = 2;
+				enemy.jbody.size = 0;
 				//enemy.jbody.size = 0;
 			}
 		}
@@ -175,6 +186,18 @@ public class JokerBody extends MonsterBody
 		}
 	}
 	
+	public function Action_ToggleShadow( data = null )
+	{
+		SetMemory( "deltarune.jevil.drawshadow", ( jev_drawshadow == 1 ) ? 0 : 1 );
+	}
+	
+	public function SetDrawShadow( val = 0 )
+	{
+		if ( val == 1 )
+			jev_drawshadow = 1;
+		else
+			jev_drawshadow = 0;
+	}
 }
 
 }
@@ -339,10 +362,11 @@ class obj_joker_body extends DeltaruneObject
 	
 	override public function Step()
 	{
+		var ts = body.timescale_delta;
 		if ( instance_exists( joker ) )
 			image_xscale = joker.image_xscale;
 		var i;
-		floatsiner += floatsinerspeed;
+		floatsiner += floatsinerspeed * ts;
 		fly = sin( floatsiner / 8 ) * 3 * ( ( floatsinerspeed * 2 ) - 1 );
 		flyx = 0;
 		if ( dancelv >= 1 )
@@ -357,13 +381,13 @@ class obj_joker_body extends DeltaruneObject
 		if ( condition == 0 )
 		{
 			if ( dancelv == 3 )
-				dancesiner += 1;
+				dancesiner += 1 * ts;
 			for ( i = 0; i < 7; i += 1 )
 			{
 				if ( i >= 1 )
 				{
-					shadowx[i] += sin(i + (floatsiner / 5)) * 8 * sfactor[i];
-					shadowy[i] += cos(i + (floatsiner / 5)) * 4 * sfactor[i];
+					shadowx[i] += sin(i + (floatsiner / 5)) * 8 * sfactor[i] * ts;
+					shadowy[i] += cos(i + (floatsiner / 5)) * 4 * sfactor[i] * ts;
 				}
 				dalpha[i] = sin( i + ( dancesiner / 9 ) );
 				if (dalpha[i] < 0 && i >= 1)
@@ -426,7 +450,7 @@ class obj_joker_body extends DeltaruneObject
 				snd_play( global.snd_spearappear );
 				sndcon = 1;
 			}
-			size += 0.5;
+			size += 0.5 * ts;
 			if ( size >= 2 )
 			{
 				size = 2;
@@ -436,9 +460,10 @@ class obj_joker_body extends DeltaruneObject
 			if ( body.nametag )
 				body.nametag.alpha = size / 2;
 		}
-		// 
+		// Metamorphosis
 		else if ( condition == 5 )
 		{
+			ts = 1;
 			if ( timer == 0 )
 			{
 				spintimer = 0;
@@ -450,7 +475,7 @@ class obj_joker_body extends DeltaruneObject
 				s_alpha = 1;
 				snd_play( global.snd_joker_metamorphosis );
 			}
-			timer += 1;
+			timer += 1 * ts;
 			if ( timer >= 1 && timer <= 3 )
 			{
 				s_xscale *= 1.3;
@@ -463,7 +488,7 @@ class obj_joker_body extends DeltaruneObject
 			}
 			else if ( timer >= 15 && timer <= 30 )
 			{
-				spintimer += 1;
+				spintimer += 1 * ts;
 				s_xscale = sin( spintimer / 3 ) * 2;
 				s_sprite = global.spr_joker_scythebody;
 				s_yscale *= 0.7;
@@ -474,11 +499,11 @@ class obj_joker_body extends DeltaruneObject
 			}
 			else if ( timer >= 30 && timer < 41 )
 			{
-				spintimer += 1;
+				spintimer += 1 * ts;
 				s_xscale = sin( spintimer / 3 ) * 2;
-				s_vspeed = -3;
-				s_y += s_vspeed;
-				s_alpha -= 0.1;
+				s_vspeed -= 3;
+				s_y += s_vspeed * ts;
+				s_alpha -= 0.1 * ts;
 			}
 			else if ( timer >= 41 )
 			{
@@ -509,9 +534,11 @@ class obj_joker_body extends DeltaruneObject
 		var i;
 		var offx = x - ( 2 * image_xscale );
 		var offy = y - ( 21 * 2 ) - (  floatheight );// + 18;
+		var finalalpha = image_alpha;
 		
 		body.x = offx + flyx;
 		body.y = ( offy + 22 * 2 ) + fly - y;
+		
 		
 		if ( condition == 0 )
 		{
@@ -521,25 +548,27 @@ class obj_joker_body extends DeltaruneObject
 				if ( fade )
 					fade_a = abs( sin( floatsiner / 13 ) );
 				draw_sprite_ext( global.spr_joker_main, 0, offx + flyx, offy + fly, image_xscale, image_yscale, image_angle, image_blend, fade_a * image_alpha );
+				finalalpha = fade_a * image_alpha;
 			}
 			else if ( dancelv == 1 )
-				draw_sprite_ext( global.spr_joker_dance, floatsiner / 3, offx + flyx, offy + fly, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+				draw_sprite_ext( global.spr_joker_dance, floatsiner / 3, offx + flyx, offy + fly, abs( image_xscale ), image_yscale, image_angle, image_blend, image_alpha );
 			else if ( dancelv == 2 )
 				draw_sprite_ext( global.spr_joker_tired, 0, offx + flyx, offy + fly, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
 			else if ( dancelv == 3 )
 			{
 				for ( i = 0; i < 7; i += 1 )
 				{
-					draw_sprite_ext( global.spr_joker_dance, ( dancesiner / 2 ) + ( i / 4 ), offx + shadowx[i], offy + shadowy[i], image_xscale, image_yscale, image_angle, image_blend, dalpha[i] * image_alpha );
+					draw_sprite_ext( global.spr_joker_dance, ( dancesiner / 2 ) + ( i / 4 ), offx + shadowx[i], offy + shadowy[i], abs( image_xscale ), image_yscale, image_angle, image_blend, dalpha[i] * image_alpha );
 				}
 				i = 1;
 				body.x += shadowx[i];
 				body.y += shadowy[i];
-				if ( body.nametag )
-					body.nametag.alpha = dalpha[i] * image_alpha;
+				finalalpha = dalpha[i] * image_alpha;
 			}
 			if (dancelv == 4)
 				draw_sprite_ext( global.spr_joker_teleport, 1, offx + flyx, offy + fly, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+			if ( body.nametag )
+				body.nametag.alpha = finalalpha;
 		}
 		else if ( condition == 1 )
 		{
@@ -549,6 +578,8 @@ class obj_joker_body extends DeltaruneObject
 			draw_sprite_ext( global.spr_jokerhead, ji, (offx + sinx) - 2, (offy + siny + fly) - 14, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
 			body.x += sinx;
 			body.y += siny;
+			if ( body.nametag )
+				body.nametag.alpha = finalalpha;
 		}
 		else if ( condition == 2 || condition == 3 )
 		{
@@ -558,7 +589,10 @@ class obj_joker_body extends DeltaruneObject
 		{
 			if ( GMControl.isControl )
 			{
-				draw_sprite_ext( global.spr_joker_main, 0, offx, offy + fly, ( image_xscale ), image_yscale, image_angle, image_blend, image_alpha * ( 0.125 + ( 0.1 * sin( floatsiner / 8 ) ) ) );
+				finalalpha = image_alpha * ( 0.125 + ( 0.1 * sin( floatsiner / 8 ) ) );
+				draw_sprite_ext( global.spr_joker_main, 0, offx, offy + fly, ( image_xscale ), image_yscale, image_angle, image_blend, finalalpha );
+				if ( body.nametag )
+					body.nametag.alpha = finalalpha;
 			}
 		}
 		else if ( condition == 5 )
@@ -570,7 +604,7 @@ class obj_joker_body extends DeltaruneObject
 		// Shadow
 		if ( condition == 0 || condition == 1 )
 		{
-			if ( dancelv <= 2 )
+			if ( dancelv <= 2 && ( body && body.jev_drawshadow ) )
 			{
 				sprite_width = 0;
 				draw_set_color( c_black );

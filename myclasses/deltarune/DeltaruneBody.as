@@ -37,6 +37,9 @@ public class DeltaruneBody extends GMBody
 	public var cutscene;
 	public var siner = 0;
 	
+	public var textsound = global.snd_text;
+	public var textsoundinst;
+	
 	public function DeltaruneBody()
 	{
 		var i;
@@ -153,6 +156,12 @@ public class DeltaruneBody extends GMBody
 		
 	}
 	
+	override public function OnSentChat( message )
+	{
+		snd_stop( textsoundinst );
+		textsoundinst = snd_play( textsound );
+	}
+	
 	override public function Step()
 	{
 		
@@ -221,6 +230,11 @@ public class DeltaruneBody extends GMBody
 		return GMObject.audio_play_sound( _sound  );
 	}
 	
+	public static function snd_stop( _sound )
+	{
+		return GMObject.audio_stop_sound( _sound );
+	}
+	
 	public function c_start()
 	{
 		if ( cutscene )
@@ -260,7 +274,7 @@ public class DeltaruneBody extends GMBody
 	}
 	
 	// Change the value of a variable on an instance
-	// variable must exist and not be null
+	// variable must not currently be null 
 	public function c_var_instance( inst, varname = "", val = 0 )
 	{
 		if ( !inst )

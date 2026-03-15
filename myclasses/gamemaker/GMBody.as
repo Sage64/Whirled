@@ -41,7 +41,7 @@ import com.threerings.util.*
 import com.whirled.*;
 
 // 
-public class GMBody extends Sprite
+public class GMBody extends GMObject
 {
 	public static const CONFIG_CUSTOM_NAMETAG =  ( 1 << 0 );
 	
@@ -53,7 +53,7 @@ public class GMBody extends Sprite
 	public var media;
 	public var container;
 	public var ctrl;
-	public var body = this;
+	//public var body = this;
 	
 	public var _eventlisteners = {
 		list: [],
@@ -150,7 +150,8 @@ public class GMBody extends Sprite
 	// Avatar common
 	public var scale = 1;
 	
-	// Gamemaker
+	// Gamemaker - OLD. Body now extends GMObject
+	/*
 	public static const global = GMControl.global;
 	
 	public static var current_time = 0;
@@ -173,14 +174,13 @@ public class GMBody extends Sprite
 	public var speed = 0; 		// 0 if not moving, moveSpeed if moving, etc
 	public var hspeed = 0;		// horizontal speed ( left/right of the backdrop )
 	public var vspeed = 0;		// vertical speed ( on the whirled Z axis, or back/front of the backdrop )	
-	
-	// Color constants
-	static var c_black = 0x000000;
-	static var c_white = 0xFFFFFF;
+	*/
 	
 	// Base constructor - var body = new GMBody();
 	public function GMBody( base_fps = 30 )
 	{
+		super();
+		
 		name = "GMBody";
 		this.ctrl = GMControl.ctrl;
 		this.media = GMControl.media; 
@@ -206,8 +206,9 @@ public class GMBody extends Sprite
 		
 		// ctrl.registerCustomConfig( GMControl.OpenConfig );
 		
-		AddMemory( "gm.character", null, null );
 		AddMemory( "gm.flags", 0, null );
+		AddMemory( "gm.character", null, null );
+		
 	}
 	
 	// Clean up
@@ -218,7 +219,7 @@ public class GMBody extends Sprite
 		Cleanup();
 	}
 	
-	public function Cleanup()
+	override public function Cleanup()
 	{
 		// override if needed
 	}
@@ -227,11 +228,12 @@ public class GMBody extends Sprite
 		INIT PROCESS
 	*/
 	
-	private function GMControlEvent( event )
+	public function GMControlEvent( event )
 	{
 		GMControl.Log( "Event: " + event.type + ": \"" + event.name + "\", " + event.value );
 		_eventqueue.push( event );
 	}
+	
 	private function GMProcessEvents()
 	{
 		for ( var i = 0; i < _eventqueue.length; ++i )
@@ -714,7 +716,7 @@ public class GMBody extends Sprite
 				_state = _state.name;
 			if ( curState && curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
 				continue;
-			GMControl.Log( i + ": " + _state );
+			//GMControl.Log( i + ": " + _state );
 			names.push( _state );
 		}
 		ctrl.registerStates( names );
@@ -774,15 +776,15 @@ public class GMBody extends Sprite
 		var Action = {};
 		Action.name = actionname;
 		Action.value = actionvalue;
+		Action.hidden = 0;
 		if ( actionfunc )
 			Action.action = actionfunc;
-		actions[ actionname] = Action;
-		//if ( !hidden )
+		actions[actionname] = Action;
 		actionList.push( Action );
 		return Action;
 	}
 	
-	public function AddActionOption( actionname = "option", actionfunc = null, options = null )
+	public function AddAction_Options( actionname = "option", actionfunc = null, options = null )
 	{
 		if ( !options )
 			options = [ 0, 1 ];
@@ -794,9 +796,20 @@ public class GMBody extends Sprite
 		return Action;
 	}
 	
+	public function AddAction_ToggleMemory( actionname = "memory_toggle", memoryname = null, options = null )
+	{
+		// memory must be added before this action can be
+		if ( memoryname == null )
+			return;
+		var Action = AddAction( actionname, null );
+		Action.togglememory = memoryname;
+		var memval = GetMemory( memval );
+		
+	}
+	
 	public function GetAction( actionname )
 	{
-		return actions.get( actionname );
+		return actions[actionname];
 	}
 	
 	public function RegisterActions()
@@ -818,7 +831,7 @@ public class GMBody extends Sprite
 					continue;
 				_action = _action.name;
 			}
-			GMControl.Log( i + ": " + _action );
+			//GMControl.Log( i + ": " + _action );
 			names.push( _action );
 		}
 		ctrl.registerActions( names );
@@ -846,13 +859,18 @@ public class GMBody extends Sprite
 				++Action.option;
 				if ( Action.option > Action.options.length )
 					Action.option = 0;
-				actiondata = Action.options[Action.option];
+				//actiondata = Action.options[Action.option];
+				if ( Action.action )
+					Action.action( Action.options[Action.option] );
 				actions[Action.actionname] = Action;
 			}
-			if ( actiondata == null )
-				actiondata = Action.value;
-			if ( Action.action )
-				Action.action( actiondata );
+			else
+			{
+				if ( actiondata == null )
+					actiondata = Action.value;
+				if ( Action.action )
+					Action.action( actiondata );
+			}
 		}
 	}
 	
@@ -892,7 +910,7 @@ public class GMBody extends Sprite
 		MAIN LOOP
 	*/
 	
-	// Call body.Loop() on frame 3 of the timeline
+	// OLD. Call body.Loop() on frame 3 of the timeline
 	// Not neccessary if GMControl is doing it already
 	public function Loop()
 	{
@@ -901,7 +919,7 @@ public class GMBody extends Sprite
 		// GMEndStep();
 	}
 	
-	public function GMStep()
+	override public function GMStep()
 	{
 		// Timer
 		stepStartTime = getTimer();
@@ -951,7 +969,7 @@ public class GMBody extends Sprite
 			image_index += ( image_speed * timescale_delta );
 			if ( image_index >= image_number )
 			{
-				GMAnimationEnd();
+				OnAnimationEnd();
 				while ( image_index > image_number )
 				{
 					image_index -= image_number;
@@ -965,7 +983,7 @@ public class GMBody extends Sprite
 		
 		var xx = originX;
 		var yy = originY;
-		var hh = ( 1 << 31 );
+		var hh = ( -( 65500 ) );
 		
 		_usenametag = ( ( configFlags & GMBody.CONFIG_CUSTOM_NAMETAG ) && ( nametag ) )
 		if ( !_usenametag )
@@ -979,7 +997,7 @@ public class GMBody extends Sprite
 		stepEndTime = getTimer();
 		// duration = stepEndTime - stepStartTime;
 	}
-	public function Step()
+	override public function Step()
 	{
 		// override
 	}
@@ -988,14 +1006,14 @@ public class GMBody extends Sprite
 		DRAW
 	*/
 	
-	public function GMDraw()
+	override public function GMDraw()
 	{
 		Draw();
 		
 		if ( nametag && _usenametag )
 		{
 			nametag.x = x;
-			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 1 << 31 );
+			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 65500 );
 			nametag.UpdatePosition();
 		}
 		
@@ -1014,12 +1032,12 @@ public class GMBody extends Sprite
 		DrawEnd();
 	}
 	
-	public function Draw()
+	override public function Draw()
 	{
 		draw_self();
 	}
 	
-	public function DrawEnd()
+	override public function DrawEnd()
 	{
 		
 	}
@@ -1057,12 +1075,7 @@ public class GMBody extends Sprite
 		// override
 	}
 	
-	private function GMAnimationEnd()
-	{
-		OnAnimationEnd();
-	}
-	
-	public function OnAnimationEnd()
+	override public function OnAnimationEnd()
 	{
 		// override
 	}
@@ -1072,15 +1085,15 @@ public class GMBody extends Sprite
 	
 	public function AddMemory( key, defaultval = null, func = null )
 	{
-		GMControl.Log( "Adding memory \"" + key + "\" with value: " + defaultval );
+		var memval = ctrl.getMemory( key, null );
+		if ( memval != null )
+			defaultval = memval;
+		
+		GM.Log( "Adding memory \"" + key + "\", value: " + defaultval );
 		var Memory = {}
 		Memory.name = key;
 		Memory.value = defaultval;
 		Memory.func = func;
-		
-		defaultval = ctrl.getMemory( key, null );
-		if ( defaultval )
-			Memory.value = defaultval;
 				
 		memories[key] = Memory;
 		memoryList.push( Memory );
@@ -1090,7 +1103,7 @@ public class GMBody extends Sprite
 		event.name = Memory.name;
 		event.value = Memory.value;
 		
-		GMControl.GMControlEvent( event );
+		GM.GMEvent( event );
 		
 		return Memory;
 	}
@@ -1114,7 +1127,7 @@ public class GMBody extends Sprite
 	public function OnMemoryChanged( key, value )
 	{
 		var Memory = memories[key];
-		GMControl.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
+		GM.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
 		if ( Memory )
 		{
 			Memory.value = value;
@@ -1138,89 +1151,6 @@ public class GMBody extends Sprite
 		
 	}
 	
-	/*
-		GAMEMAKER-BASED INSTANCE FUNCTIONS
-	*/
-	
-	/*
-		Instances
-	*/
-	
-	public function instance_create( _x, _y, _obj )
-	{
-		return GMControl.InternalInstanceCreate( _x, _y, _obj );
-	}
-	
-	public function instance_destroy( _inst = null )
-	{
-		if ( _inst == null )
-			_inst = this;
-		return GMControl.InternalInstanceDestroy( _inst );
-	}
-	
-	public function instance_exists( _obj )
-	{
-		return GMObject.instance_exists( _obj );
-		
-		if ( _obj )
-		{
-			return _obj.exists;
-		}
-		return false;
-	}
-	
-	/*
-		Sprites
-	*/
-	
-	// Use a sprite, e.g not the current sprite_current temporarily
-	public static function draw_sprite( _sprite, _image = null, _x = null, _y = null )
-	{
-		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, 1, 1, 0, 0xFFFFFF, 1 );
-	}
-	
-	public static function draw_sprite_ext( _sprite, _image = null,
-	_x = null, _y = null, _xscale = 1, _yscale = 1,
-	_rot = 0, _col = 0xFFFFFF, _alpha = 1 )
-	{
-		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
-	}
-	
-	public function draw_self()
-	{
-		return GMControl.InternalSpriteDraw( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha  );
-	}
-	
-	public function sprite_set( sprite_ref )
-	{
-		if ( sprite_ref == -1 )
-			sprite_ref = null;
-		if ( sprite_ref == sprite_current )
-		{
-			trace( "no change" );
-			return;
-		}
-		
-		if ( sprite_current )
-		{
-			sprite_current.symbol.visible = false;
-			sprite_current = null;
-		}
-		
-		if ( sprite_ref )
-		{
-			trace( "sprite = " + sprite_ref.name );
-			sprite_current = sprite_ref;
-			image_number = sprite_current.count;
-		}
-	}
-	
-	public static function sprite_get( sprite_name )
-	{
-		return GMControl.InternalSpriteGet( sprite_name );
-	}
-	
-	// Path
 	
 	
 	

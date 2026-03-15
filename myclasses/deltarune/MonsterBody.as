@@ -66,15 +66,15 @@ public class MonsterBody extends DeltaruneBody
 		if ( use_damage )
 		{
 			mymemories["health"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
-			myactions["damage_weak"] = AddAction( "Hurt 50", Action_Hurt, 50 );
-			myactions["damage_strong"] = AddAction( "Hurt 150", Action_Hurt, 150 );
+			myactions["damage_weak"] = AddAction( "[Hurt 50]", Action_Hurt, 50 );
+			myactions["damage_strong"] = AddAction( "[Hurt 150]", Action_Hurt, 150 );
 		}
 		
 		if ( use_mercy )
 		{
 			mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
-			myactions["mercy_set_0"] = AddAction( "SetMercy 0%", Action_SetMercy, 0 );
-			myactions["mercy_0"] = AddAction( "SetMercy 100%", Action_SetMercy, 100 );
+			myactions["mercy_set_0"] = AddAction( "[SetMercy 0%]", Action_SetMercy, 0 );
+			myactions["mercy_0"] = AddAction( "[SetMercy 100%]", Action_SetMercy, 100 );
 		}
 	}
 	
@@ -147,13 +147,14 @@ public class MonsterBody extends DeltaruneBody
 				break;
 			case 1: // Basic Attack
 				var cancelattack = 0;
-				if  ( ( cancelattack == 0 ) && ( GMBody.instance_exists( target ) ) )
+				if  ( ( cancelattack == 0 ) && ( instance_exists( target ) ) )
 				{
 					scr_damage_enemy( target, damage );
-					snd_play( global.snd_damage );
-					var attack;
-					if ( attack )
-						attack.sprite_set( global.spr_attack_mash );
+					
+					var attack = instance_create( target.x + ( gml.random( 6 ) - 3 ), target.y + ( gml.random( 6 ) - 3 ), obj_basicattack );
+					if ( target.body )
+						attack.y -= ( target.body.characterH / 2 );
+					//attack.sprite_set( global.spr_attack_mash );
 				}
 				break;
 				
@@ -171,7 +172,7 @@ public class MonsterBody extends DeltaruneBody
 		{
 			
 		}
-		else if ( GMBody.instance_exists( target ) )
+		else if ( instance_exists( target ) )
 		{
 			target.shakex = 9;
 			target.state = 3;

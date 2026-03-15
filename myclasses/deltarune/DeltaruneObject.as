@@ -371,13 +371,17 @@ public class DeltaruneObject extends GMObject
 		return marker;
 	}
 	
-	
-	public function snd_play( _sound )
+	public static function snd_play( _sound )
 	{
-		return audio_play_sound( _sound  );
+		return GMObject.audio_play_sound( _sound  );
 	}
 	
-	public function snd_pitch( _sound, _pitch = 1 )
+	public static function snd_stop( _sound )
+	{
+		return GMObject.audio_stop_sound( _sound );
+	}
+	
+	public static function snd_pitch( _sound, _pitch = 1 )
 	{
 		
 		return null;

@@ -18,7 +18,7 @@ import com.whirled.*;
 
 public class GMObject extends Sprite
 {
-	public static const global = GMControl.global;
+	public static const global = GM.global;
 	
 	public static var current_time = 0;
 	
@@ -51,6 +51,8 @@ public class GMObject extends Sprite
 	public var image_alpha = 1;
 	
 	// Movement
+	public var direction = 0;
+	public var speed = 0;
 	public var hspeed = 0;
 	public var vspeed = 0;
 	public var gravity = 0;
@@ -86,7 +88,7 @@ public class GMObject extends Sprite
 		xstart = x;
 		ystart = y;
 		
-		GMControl.debugTracker = "GMObject";
+		GM.debugTracker = "GMObject";
 		this.body = GMControl.body;
 	}
 	
@@ -130,6 +132,11 @@ public class GMObject extends Sprite
 	public function Draw()
 	{
 		draw_self();
+	}
+	
+	public function DrawEnd()
+	{
+		// unused currently
 	}
 	
 	public function OnAnimationEnd() {}
@@ -239,14 +246,14 @@ public class GMObject extends Sprite
 	
 	public static function instance_create( _x, _y, _obj )
 	{
-		return GMControl.InternalInstanceCreate( _x, _y, _obj );
+		return GM.InternalInstanceCreate( _x, _y, _obj );
 	}
 	
 	public function instance_destroy( _inst = null )
 	{
 		if ( _inst == null )
 			_inst = this;
-		return GMControl.InternalInstanceDestroy( _inst );
+		return GM.InternalInstanceDestroy( _inst );
 	}
 	
 	public static function instance_exists( _obj )
@@ -275,9 +282,10 @@ public class GMObject extends Sprite
 	// Sprite
 	
 	// Retrieve a sprite asset
+	// OLD. assets are now added to "global", eg: global.sprite_name
 	public static function sprite_get( sprite_name )
 	{
-		return GMControl.InternalSpriteGet( sprite_name );
+		return GM.InternalSpriteGet( sprite_name );
 	}
 	
 	// Set the "current" sprite for this object;
@@ -293,7 +301,6 @@ public class GMObject extends Sprite
 		
 		if ( sprite_current )
 		{
-			//sprite_current.symbol.visible = false;
 			sprite_current = null;
 		}
 		
@@ -307,14 +314,14 @@ public class GMObject extends Sprite
 	
 	public function draw_self()
 	{
-		return GMControl.InternalSpriteDraw( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha  );
+		return GM.InternalSpriteDraw( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha  );
 	}
 	
 	public function draw_sprite( _sprite, _image = null, _x = null, _y = null )
 	{
 		if ( _sprite == sprite_index )
 			_sprite = sprite_current;
-		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, 1, 1, 0, 0xFFFFFF, 1 );
+		return GM.InternalSpriteDraw( _sprite, _image, _x, _y, 1, 1, 0, 0xFFFFFF, 1 );
 	}
 	
 	public function draw_sprite_ext( _sprite, _image = null,
@@ -323,7 +330,7 @@ public class GMObject extends Sprite
 	{
 		if ( _sprite == sprite_index )
 			_sprite = sprite_current;
-		return GMControl.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
+		return GM.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
 	}
 	
 	public function draw_sprite_pos( sprite, subimg, x1, y1, x2, y2, x3, y3, x4, y4, alpha )
@@ -355,53 +362,53 @@ public class GMObject extends Sprite
 	
 	public static function draw_set_alpha( alpha )
 	{
-		return GMControl.InternalSetAlpha( alpha );
+		return GM.InternalSetAlpha( alpha );
 	}
 	
 	public static function draw_get_alpha()
 	{
-		return GMControl.drawalpha;
+		return GM.internaldrawalpha;
 	}
 	
 	public static function draw_set_color( col )
 	{
-		return GMControl.InternalSetColor( col );
+		return GM.InternalSetColor( col );
 	}
 	
 	public static function draw_get_color()
 	{
-		return GMControl.drawcolor;
+		return GM.internaldrawcolor;
 	}
 	
 	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
 	{
-		return GMControl.InternalDrawLine( x1, y1, x2, y2, w, a );
+		return GM.InternalDrawLine( x1, y1, x2, y2, w, a );
 	}
 	
 	public static function draw_rectangle( x1, y1, x2, y2, outline = false )
 	{
-		return GMControl.InternalDrawRectangle( x1, y1, x2, y2, outline );
+		return GM.InternalDrawRectangle( x1, y1, x2, y2, outline );
 	}
 	
 	// Text
 	
 	public static function draw_set_font( _fnt )
 	{
-		GMControl.drawfont = _fnt;
+		GM.internaldrawfont = _fnt;
 	}
 	
 	public static function draw_set_halign( _h = fa_left )
 	{
-		GMControl.drawhalign = _h;
+		GM.internaldrawhalign = _h;
 	}
 	public static function draw_set_valign( _v = fa_top )
 	{
-		GMControl.drawvalign = _v;
+		GM.internaldrawvalign = _v;
 	}
 	
 	public function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
 	{
-		GMControl.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
+		GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
 		return;
 	}
 	
@@ -410,10 +417,13 @@ public class GMObject extends Sprite
 	
 	public static function audio_play_sound( _sound, _priority = 0, _loop = false, _gain = 1, _offset = 0, _pitch = 1 )
 	{
-		return GMControl.InternalAudioPlay( _sound, _priority, _loop, _gain, _offset, _pitch );
+		return GM.InternalAudioPlay( _sound, _priority, _loop, _gain, _offset, _pitch );
 	}
 	
-	
+	public static function audio_stop_sound( _sound )
+	{
+		return GM.InternalAudioStop( _sound );
+	}
 }
 
 

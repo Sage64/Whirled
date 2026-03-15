@@ -62,7 +62,7 @@ public class MikeBody extends MonsterBody
 	
 	override public function DoBodyDebug()
 	{
-		SetState( mystates["batatt_point_l"] );
+		//SetState( mystates["trio"] );
 	}
 	
 	
@@ -311,6 +311,7 @@ public class MikeBody extends MonsterBody
 	
 	override public function OnSentChat( message )
 	{
+		super.OnSentChat( message );
 		var talker = null;
 		if ( instance_exists( mike_s ) )
 		{

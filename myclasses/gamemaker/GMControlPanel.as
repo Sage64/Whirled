@@ -49,10 +49,10 @@ public class GMControlPanel extends Sprite
 		rootPanel = new ControlPanel();
 		
 		// debug init
-		if ( GMControl.debug )
+		if ( GM.debug )
 		{
 			
-			media = GMControl.media;
+			media = GM.media;
 			if ( media )
 				media.addChild( this );
 			x = 600;
@@ -127,10 +127,10 @@ public class GMControlPanel extends Sprite
 		logText.y = 0;
 		
 		logText.text = "LOG";
-		var len = GMControl.debug_log.length;
+		var len = GM.debug_log.length;
 		for ( var i = 0; i < len; ++i )
 		{
-			logText.appendText( "\n" + GMControl.debug_log[i]);
+			logText.appendText( "\n" + GM.debug_log[i]);
 		}
 		
 		logText.setTextFormat( textFormat );
