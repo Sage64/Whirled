@@ -90,7 +90,7 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		
 		mymemories["autorun"] = AddMemory( "deltarune.autorun", 0, SetAutorun );
 		
-		myactions["autorun_toggle"] = AddAction_Options( "[Toggle Autorun]", Action_ToggleAutorun, [false, true] );
+		myactions["autorun_toggle"] = AddAction( "[Toggle Autorun]", Action_ToggleAutorun );
 		
 		myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
 		myactions["battlemode"].hidden = true;

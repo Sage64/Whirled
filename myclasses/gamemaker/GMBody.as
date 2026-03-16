@@ -915,7 +915,7 @@ public class GMBody extends GMObject
 			timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
 		lastms = stepStartTime;
 		
-		current_time = stepStartTime / 1000;
+		current_time = ( stepStartTime );
 		GMObject.current_time = current_time;
 		
 		GMProcessEvents();
@@ -1099,9 +1099,13 @@ public class GMBody extends GMObject
 	// Set a memory via its AddMemory name
 	public function SetMemory( name, value )
 	{
+		trace( "setmemory " + name + " " + value );
 		if ( typeof name == "object" )
 			name = name.name;
-		ctrl.setMemory( memories[name].name, value );
+		if ( ctrl.isConnected() )
+			ctrl.setMemory( memories[name].name, value );
+		else
+			OnMemoryChanged( name, value );
 	}
 	
 	// Retrieve a memory from its AddMemory name

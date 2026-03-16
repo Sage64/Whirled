@@ -25,6 +25,9 @@ public class SpamtonBody extends MonsterBody
 	
 	public var sneo_drawvines = 1;
 	
+	public var spamton_vocab = {};
+	public var spamton_vocab_neo = {};
+	
 	public function SpamtonBody()
 	{
 		spr_spamton_cherub = sprite_get( "spr_spamton_cherub" );
@@ -54,7 +57,7 @@ public class SpamtonBody extends MonsterBody
 		mystates["neo_idle"] = NeoState( "NEO - Idle" );
 		
 		mymemories["neo_vines"] = AddMemory( "deltarune.spamton.drawvines", 1, SetVinesVisible );
-		myactions["neo_togglevines"] = AddAction_Options( "[NEO - Toggle Vines]", Action_ToggleVines, [0, 1] );
+		myactions["neo_togglevines"] = AddAction( "[NEO - Toggle Vines]", Action_ToggleVines );
 		
 		// Preview
 		mystates["neo_preview"] = NeoState( "NEO - Preview / Ambush" );
@@ -74,6 +77,13 @@ public class SpamtonBody extends MonsterBody
 		mystates["neo_happy"] = NeoState( "NEO - * [FRIENDSHIP]" );
 		mystates["neo_happy2"] = NeoState( "NEO - * WATCH ME FLY, [MAMA]" );
 		mystates["neo_dead"] = NeoState( "NEO - Freedom" );
+		
+		
+		spamton_vocab["their"] = "[There]";
+		spamton_vocab["soul"] = "[HeartShapedObject]";
+		spamton_vocab_neo["soul"] = "[[SOUL]]";
+		spamton_vocab["you're"] = "you;re";
+		spamton_vocab["hello"] = "HEY HEY HEY!"
 	}
 	
 	override public function Cleanup()
@@ -446,6 +456,18 @@ public class SpamtonBody extends MonsterBody
 			sneo.Anim_Hurt();
 		}
 		super.OnHurt( amount );
+	}
+	
+	override public function OnSentChat( message )
+	{
+		if ( instance_exists( sneo ) )
+			textsound = global.snd_txtspam2;
+		else if ( instance_exists( inst ) )
+			textsound = global.snd_txtspam;
+		else
+			textsound = global.snd_text;
+		
+		super.OnSentChat( message );
 	}
 	
 	public function Action_ToggleVines( data = null )

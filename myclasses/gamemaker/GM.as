@@ -59,6 +59,8 @@ public class GM
 	public static var internaldrawhalign = 0;
 	public static var internaldrawvalign = 0;
 	public static var internaldrawtextformat = new TextFormat();
+	public static var internalblendmode = BlendMode.NORMAL;
+	public static var internalfog = null;
 	
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
@@ -73,6 +75,12 @@ public class GM
 	
 	public static var instances = [];
 	public static var instances_of = {};
+	
+	
+	public static var view_x = 0;
+	public static var view_y = 0;
+	public static var view_width = stageW;
+	public static var view_height = stageH;
 	
 	// 
 	
@@ -375,12 +383,13 @@ public class GM
 				} ) ;
 			}
 			
+			
 			while ( _tempdrawsprites.length > 0 )
 			{
 				var spr = _tempdrawsprites.shift();
 				
-				spr.x = -512; //( container.width / 2 );
-				spr.y = -512; //( container.height );
+				spr.x = 0; //( container.width / 2 );
+				spr.y = 512; //( container.height );
 				spr.scaleX = 1 / 100;
 				spr.scaleY = 1 / 100;
 				spr.alpha = ( 1 / 100 );
@@ -523,12 +532,26 @@ public class GM
 		var g = ( ( _blend >> 8 ) & 0xFF ) / 255;
 		var b = ( ( _blend ) & 0xFF ) / 255;
 		
-		var color = _symbol.transform.colorTransform;
-		color.redMultiplier = r;
-		color.greenMultiplier = g;
-		color.blueMultiplier = b;
-		color.alphaMultiplier = 1;
-		_symbol.transform.colorTransform = color;
+		var color;
+		if ( internalfog )
+		{
+			color = _symbol.transform.colorTransform;
+			color.color = internalfog;
+			_symbol.transform.colorTransform = color;
+		}
+		else
+		{
+			color = _symbol.transform.colorTransform;
+			color.redOffset = 0;
+			color.greenOffset = 0;
+			color.blueOffset = 0;
+			color.redMultiplier = r;
+			color.greenMultiplier = g;
+			color.blueMultiplier = b;
+			color.alphaMultiplier = 1;
+			_symbol.transform.colorTransform = color;
+		}
+		_symbol.blendMode = internalblendmode;
 		
 		_symbol.gotoAndStop( Math.floor( _image % _symbol.totalFrames ) + 1 );
 		_symbol.x = _x;

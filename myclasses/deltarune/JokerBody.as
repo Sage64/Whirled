@@ -44,6 +44,8 @@ public class JokerBody extends MonsterBody
 		
 		myactions["toggle_shadow"] = AddAction_Options( "[Toggle Shadow]", Action_ToggleShadow, [0, 1] );
 		
+		myactions["snd_joker_oh"] = AddAction( "o", Action_PlaySound, "snd_joker_oh" );
+		myactions["snd_joker_chaos"] = AddAction( "Chaos, Chaos!", Action_PlaySound, "snd_joker_chaos" );
 		myactions["snd_joker_anything"] = AddAction( "ANYTHING!", Action_PlaySound, "snd_joker_anything" );
 	}
 	
@@ -98,7 +100,7 @@ public class JokerBody extends MonsterBody
 			
 			if ( curState == mystates["teleport"] )
 			{
-				SetMoveSpeed( 20 );
+				SetMoveSpeed( 50 );
 			}
 			
 			if ( curState == mystates["scythe"] )

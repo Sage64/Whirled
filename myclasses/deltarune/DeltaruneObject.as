@@ -54,7 +54,7 @@ public class DeltaruneObject extends GMObject
 		return ___lerpvar;
 	}
 	
-	public function scr_lerpvar_instance( ...argument )
+	public static function scr_lerpvar_instance( ...argument )
 	{
 		var argument_count = argument.length;
 		var __lerpvar = instance_create( 0, 0, obj_lerpvar );
@@ -369,6 +369,118 @@ public class DeltaruneObject extends GMObject
 		}
 		//
 		return marker;
+	}
+	
+	public function draw_sprite_ext_centerscale(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	{
+		var _xoff = sprite_get_xoffset(arg0) * image_xscale;
+		var _yoff = sprite_get_yoffset(arg0) * image_yscale;
+		var _sprite_width = sprite_get_width(arg0) * image_xscale;
+		var _sprite_height = sprite_get_width(arg0) * image_yscale;
+		draw_sprite_ext(arg0, arg1, arg2 - (((_sprite_width - _xoff) * (arg4 - image_xscale)) / 2), arg3 - (((_sprite_height - _yoff) * (arg5 - image_yscale)) / 2), arg4, arg5, arg6, arg7, arg8);
+	}
+	
+	public function scr_draw_outline_ext(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+	{
+		gpu_set_fog( true, arg7, 0, 0 );
+		var __xdirA = arg9;
+		var __xdirB = 0;
+		var __ydirA = 0;
+		var __ydirB = arg9;
+		if ( ( arg6 % 90 ) != 0 )
+		{
+			__xdirA = lengthdir_x( arg9, arg6 );
+			__xdirB = lengthdir_x( arg9, arg6 + 90 );
+			__ydirA = lengthdir_y( arg9, arg6 + 90 );
+			__ydirB = lengthdir_y( arg9, arg6 );
+		}
+		draw_sprite_ext( arg0, arg1, arg2 + __xdirA, arg3 + __ydirA, arg4, arg5, arg6, c_white, arg8 );
+		draw_sprite_ext( arg0, arg1, arg2 - __xdirA, arg3 - __ydirA, arg4, arg5, arg6, c_white, arg8 );
+		draw_sprite_ext( arg0, arg1, arg2 + __xdirB, arg3 + __ydirB, arg4, arg5, arg6, c_white, arg8 );
+		draw_sprite_ext( arg0, arg1, arg2 - __xdirB, arg3 - __ydirB, arg4, arg5, arg6, c_white, arg8 );
+		gpu_set_fog( false, c_white, 0, 0 );
+	}
+
+	
+	public function scr_draw_chaseaura( sprite_index, walk_index, x, y )
+    {
+		var sprite_width = abs( sprite_get_width( sprite_index ) * image_xscale );
+		var sprite_height = ( sprite_get_height( sprite_index ) * image_yscale );
+		
+		//
+		var facing = ( image_xscale < 0 ? 1 : 0 );
+		var drawsiner = ( current_time / 1000 ) * 30 * 0.25;
+		//
+		var i;
+		var _xx;
+		var _yy;
+		var _xscale;
+		var _yscale;
+		// 
+		
+		
+		var drawx = 0;
+		var drawscale = 1;
+		
+		var superscalex = 0;
+		var superdrawx = 0;
+		var superscalexb = 1;
+		
+		if ( facing == 1 )
+		{
+			drawscale = -1;
+			//drawx = sprite_width;
+			superscalex = -4;
+			superscalexb = -1;
+			//superdrawx = -( sprite_width ) * 2;
+		}
+		
+		x += drawx;
+		
+		if ( true )
+		{
+			gpu_set_blendmode( bm_add );
+			for ( i = 0; i < 5; i++ )
+			{
+				var aura = ( i * 9 ) + ( ( drawsiner * 3 ) % 9 );
+				var aurax = ( aura * 0.75 ) + ( sin( aura / 4 ) * 4 );
+				var auray = 45 * scr_ease_in( aura / 45, 1 );
+				var aurayscale = min( 80 / sprite_height, 1 );
+				_xx = x - ( ( aurax / 180 ) * drawscale * ( sprite_width ) );
+				_yy = y - ( ( auray / 82)  * sprite_height * aurayscale );
+				_xscale = ( abs( image_xscale ) + ( aurax / 36 ) ) * drawscale;
+				_yscale = image_yscale + ( ( auray / 36 ) * aurayscale );
+				var _alpha = image_alpha * ( 1 - ( auray / 45) ) * 0.5;
+				draw_sprite_ext( sprite_index, walk_index, _xx, _yy, _xscale, _yscale, image_angle, c_red, _alpha );
+			}
+			gpu_set_blendmode( bm_normal );
+		}
+		if ( true )
+		{
+			var xmult = min((70 / ( sprite_width )) * 4, 4);
+			var ymult = min((80 / sprite_height) * 5, 5);
+			var ysmult = min((80 / sprite_height) * 0.2, 0.2);
+			_xx = x + superdrawx + ( sin( drawsiner / 5 ) * xmult );
+			_yy = y + ( cos( drawsiner / 5 ) * ymult );
+			draw_sprite_ext_centerscale(
+				sprite_index,
+				walk_index,
+				_xx, _yy,
+				abs( image_xscale ) + superscalex,
+				image_yscale + (sin(drawsiner / 5) * ysmult),
+				image_angle, c_red, image_alpha * 0.2
+			);
+			_xx = (x + superdrawx) - (sin(drawsiner / 5) * xmult)
+			_yy = y - ( cos( drawsiner / 5 ) * ymult )
+			draw_sprite_ext_centerscale(
+				sprite_index, walk_index,
+				_xx, _yy,
+				abs( image_xscale ) + superscalex,
+				image_yscale - (sin(drawsiner / 5) * ysmult), 
+				image_angle, c_red, image_alpha * 0.2
+			);
+		}
+		scr_draw_outline_ext( sprite_index, walk_index, x, y, image_xscale * 1, image_yscale, image_angle, c_red, image_alpha * 0.3, 2 );
 	}
 	
 	public static function snd_play( _sound )

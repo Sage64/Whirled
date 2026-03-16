@@ -95,6 +95,7 @@ public class DeltaruneBody extends GMBody
 			{
 				if ( sprites.length >= 4 )
 				{
+					State.sprites = sprites;
 					State.directional = 4;
 					State.sprite = [
 						sprite_get( sprites[0] ),
@@ -159,7 +160,13 @@ public class DeltaruneBody extends GMBody
 	override public function OnSentChat( message )
 	{
 		snd_stop( textsoundinst );
-		textsoundinst = snd_play( textsound );
+		
+		var _snd = textsound;
+		if ( _snd && ( _snd.constructor == Array ) )
+		{
+			_snd = _snd[irandom( _snd.length - 1 )]
+		}
+		textsoundinst = snd_play( _snd );
 	}
 	
 	override public function Step()

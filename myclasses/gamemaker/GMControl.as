@@ -476,33 +476,13 @@ public class GMControl extends ActorControl
 	
 	public static function Log( text = "" )
 	{
-		return GM.Log( text );
-		
-		var _time = new Date();
-		
-		var hh = String( _time.getHours() );
-		if ( hh.length < 2 )
-			hh = "0" + hh;
-		var mm = String( _time.getMinutes() );
-		if ( mm.length < 2 )
-			mm = "0" + mm;
-		var ss = String( _time.getSeconds() );
-		if ( ss.length < 2 )
-			ss = "0" + ss;
-		
-		text = "[" + hh + ":" + mm + ":" + ss +  "]" + String( text );
-		trace( "Log: " + text );
-		debug_log.push( text );
-		if ( debug_log.length > 64 )
-			debug_log.shift();
-		
-		if ( controlPanel )
-			controlPanel.Relayout();
+		if ( GMControl.isControl )
+			return GM.Log( text );
 	}
 	
 	public static function Warn( text )
 	{
-		Log( "WARNING at " + debugTracker + ": " + text );
+		return Log( "WARNING at " + debugTracker + ": " + text );
 	}
 	
 	public static function GetControlPanel()

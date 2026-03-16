@@ -72,7 +72,7 @@ public class GMObject extends Sprite
 	// Function constants
 	public static const string = String;
 	
-	//
+	// Text constants
 	public static const fa_left = 0;
 	public static const fa_center = 1;
 	public static const fa_right = 2;
@@ -80,6 +80,10 @@ public class GMObject extends Sprite
 	public static const fa_middle = 1;
 	public static const fa_bottom = 2;
 	
+	
+	// Draw constants
+	public static const bm_add = BlendMode.ADD;
+	public static const bm_normal = BlendMode.NORMAL;
 	
 	public function GMObject()
 	{
@@ -154,6 +158,11 @@ public class GMObject extends Sprite
 				array[i] = val;
 		}
 		return array;
+	}
+	
+	public function is_array( val )
+	{
+		return ( val && ( val.constructor == Array ) );
 	}
 	
 	public function script_execute( scr, arg )
@@ -242,6 +251,18 @@ public class GMObject extends Sprite
 		return val * val;
 	}
 	
+	// View
+	
+	public static function camera_get_view_x( cam = null )
+	{
+		return 0 - ( GM.view_width / 2 );
+	}
+	
+	public static function camera_get_view_y( cam = null )
+	{
+		return 0 - ( GM.view_height / 2  );
+	}
+	
 	// Instance
 	
 	public static function instance_create( _x, _y, _obj )
@@ -309,8 +330,32 @@ public class GMObject extends Sprite
 			// trace( "sprite = " + sprite_ref.name );
 			sprite_current = sprite_ref;
 			image_number = sprite_current.count;
+			sprite_width = sprite_current.width;
+			sprite_height = sprite_current.height;
 		}
 	}
+	
+	public function sprite_get_xoffset( spr )
+	{
+		return spr.x;
+	}
+	
+	public function sprite_get_yoffset( spr )
+	{
+		return spr.y;
+	}
+	
+	public function sprite_get_width( spr )
+	{
+		return spr.width;
+	}
+	
+	public function sprite_get_height( spr )
+	{
+		return spr.height;
+	}
+	
+	// Sprite - draw
 	
 	public function draw_self()
 	{
@@ -340,6 +385,19 @@ public class GMObject extends Sprite
 	
 	
 	// Draw
+	
+	public static function gpu_set_blendmode( _bm )
+	{
+		GM.internalblendmode = _bm;
+	}
+	
+	public static function gpu_set_fog( on, col = c_white, _start = 0, _end = 0 )
+	{
+		if ( on )
+			GM.internalfog = col;
+		else
+			GM.internalfog = null;
+	}
 	
 	public static function merge_color( cola, colb, amnt )
 	{
