@@ -4,10 +4,15 @@
 import deltarune.*;
 import gamemaker.*;
 
-public class obj_ extends DeltaruneObject
+public class obj_writer extends DeltaruneObject
 {
-	public function obj_()
+	
+	
+	public function obj_writer()
 	{
+		super();
+		
+		
 		
 	}
 	

@@ -136,7 +136,7 @@ public class GMControl extends ActorControl
 	public static function Init( media )
 	{
 		if ( !GM.gm )
-			GM.Init( media );
+			GM.Init( media, stageW, stageH );
 		
 		Log( "GMControl Init" );
 		
@@ -226,34 +226,35 @@ public class GMControl extends ActorControl
 		
 	}
 	
-	// Add a character that from its scene
-	public static function AddCharacter( dispname, scenename )
+	// Add a character
+	// 
+	public static function AddCharacter( dispname, internalname )
 	{
-		if ( characters[scenename] != null )
+		if ( characters[internalname] != null )
 		{
-			GMControl.Log( "Character " + scenename + " already exists" );
+			GMControl.Log( "Character " + internalname + " already exists" );
 			return;
 		}
-		GMControl.Log( "Adding character " + scenename +  " (" + dispname + ")" );
+		GMControl.Log( "Adding character " + internalname +  " (" + dispname + ")" );
 		
 		var NewChar = {};
-		characters[scenename] = NewChar;
+		characters[internalname] = NewChar;
 		characterList.push( NewChar );
-		characters[scenename] = NewChar;
+		characters[internalname] = NewChar;
 		
 		NewChar.name = dispname;
-		NewChar.scenename = scenename;
+		NewChar.internalname = internalname;
 		NewChar.body = null;
 		
 		return NewChar;
 	}
 	
 	// Add a Body class
-	public static function AddBody( dispname, scenename, bodyclass )
+	public static function AddBody( dispname, internalname, bodyclass )
 	{
-		var NewChar = characters[scenename];
+		var NewChar = characters[internalname];
 		if ( NewChar == null )
-			NewChar = AddCharacter( dispname, scenename );
+			NewChar = AddCharacter( dispname, internalname );
 		GMControl.Log( "Adding Body for character '" + dispname + "'" );
 		body = new bodyclass();
 		NewChar.body = body;
@@ -401,6 +402,7 @@ public class GMControl extends ActorControl
 	{
 		if ( !ev )
 			return;
+		var i;
 		var key = ev.keyCode;
 		// 
 		if ( key >= 48 && key <= 57 )
@@ -417,7 +419,6 @@ public class GMControl extends ActorControl
 					if ( _num < body.actionList.length )
 					{
 						_getstate = body.actionList[_num];
-						trace( _getstate );
 						if ( _getstate )
 							body.TriggerAction( _getstate );
 					}
@@ -437,6 +438,33 @@ public class GMControl extends ActorControl
 				}
 			}
 		} 
+		else if ( key == 189 )
+		{
+			// -
+			trace( "prev state" );
+			for ( i = 1; i < body.stateList.length; ++i )
+			{
+				if ( body.curState == body.stateList[i] )
+				{
+					body.SetState( body.stateList[i - 1] );
+					break;
+				}
+			}
+		}
+		else if ( key == 187 )
+		{
+			// +
+			trace( "next state" );
+			for ( i = 0; ( i + 1 ) < body.stateList.length; ++i )
+			{
+				if ( body.curState == body.stateList[i] )
+				{
+					body.SetState( body.stateList[i + 1] );
+					break;
+				}
+			}
+		}
+		
 		switch( key ) 
 		{
 			case Keyboard.S:
@@ -754,7 +782,12 @@ public class GMControl extends ActorControl
 	{
 		var _state = super.getState();
 		if ( _state == null )
-			_state = ( false && _states.length > 0 ) ? _states[0] : "default";
+		{
+			if ( false && _states.length > 0 )
+				_state = _states[0];
+			else
+				_state = "default";
+		}
 		return _state;
 	}
 	

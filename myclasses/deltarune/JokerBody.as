@@ -33,14 +33,14 @@ public class JokerBody extends MonsterBody
 		
 		mymemories["shadow"] = AddMemory( "deltarune.jevil.drawshadow", 1, SetDrawShadow );
 		
-		mystates["default"] = DWState( "Default" );
-		mystates["teleport"] = DWState( "Teleport" );
-		mystates["disappear"] = DWState( "Disappear" );
-		mystates["dance"] = DWState( "Dance" );
-		mystates["dance_chaos"] = DWState( "Dance (chaos)" );
-		mystates["tired"] = DWState( "Tired" );
-		mystates["scythe"] = DWState( "Metamorphosis" );
-		mystates["postbattle"] = DWState( "Post-battle" );
+		mystates["default"] = EnemyState( "Default" );
+		mystates["teleport"] = EnemyState( "Teleport" );
+		mystates["disappear"] = EnemyState( "Disappear" );
+		mystates["dance"] = EnemyState( "Dance" );
+		mystates["dance_chaos"] = EnemyState( "Dance (chaos)" );
+		mystates["tired"] = EnemyState( "Tired" );
+		mystates["scythe"] = EnemyState( "Metamorphosis" );
+		mystates["postbattle"] = EnemyState( "Post-battle" );
 		
 		myactions["toggle_shadow"] = AddAction_Options( "[Toggle Shadow]", Action_ToggleShadow, [0, 1] );
 		
@@ -268,6 +268,7 @@ class obj_joker extends obj_monsterparent
 			if ( hurttimer > 0 )
 			{
 				hurttimer = 0;
+				jbody.timer = 0;
 				jbody.condition = 1;
 				jbody.siner = 0;
 				jbody.maxdist += 20 + ( hurtamt / 5 );

@@ -152,31 +152,8 @@ public class GMBody extends GMObject
 	
 	// Gamemaker - OLD. Body now extends GMObject
 	/*
-	public static const global = GMControl.global;
-	
-	public static var current_time = 0;
-	
-	// Sprite
-	//public var sprite_index = null; old.
-	public var sprite_current = null; // the symbol that will be used as the primary sprite
-	public var image_number = 1;
-	public var image_index = 0;
-	public var image_speed = 0;
-	public var image_xscale = 1;
-	public var image_yscale = 1;
-	public var image_angle = 0;
-	public var image_blend = 0xFFFFFF;
-	public var image_alpha = 1;
-	
-	// Object
-	public var depth = 0;
-	public var direction = 0; 	// 0 = right, 90 = up, 180 = left, 270 = down
-	public var speed = 0; 		// 0 if not moving, moveSpeed if moving, etc
-	public var hspeed = 0;		// horizontal speed ( left/right of the backdrop )
-	public var vspeed = 0;		// vertical speed ( on the whirled Z axis, or back/front of the backdrop )	
 	*/
 	
-	// Base constructor - var body = new GMBody();
 	public function GMBody( base_fps = 30 )
 	{
 		super();
@@ -201,7 +178,8 @@ public class GMBody extends GMObject
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
 		
-		AddState( "DevMode", true );
+		mystates["devmode"] = AddState( "DevMode", true );
+		mystates["devmode"].hidden = true;
 		AddAction("GMSentChat", GMSentChat, true ).hidden = true;
 		
 		AddAction( "[Avatar Control Panel]", Action_OpenControlPanel );
@@ -217,13 +195,23 @@ public class GMBody extends GMObject
 	public function GMCleanup()
 	{
 		GMControl.Log( "Cleaning up" );
-		media.removeChild( this );
+		if ( parent )
+			parent.removeChild( this );
 		Cleanup();
 	}
 	
 	override public function Cleanup()
 	{
+		super.Cleanup();
 		// override if needed
+	}
+	
+	// Called after the body is created, initialized and ready.
+	// Could be used to, for example, reset Memory values when
+	// the character is first loaded/switched to
+	override public function Create()
+	{
+		super.Create();
 	}
 	
 	/*
@@ -602,7 +590,13 @@ public class GMBody extends GMObject
 	public function AddState( statename, hidden = false )
 	{
 		GMControl.Log( "Adding state \"" + statename + "\"" );
-		var State = {}
+		var State = states[statename];
+		if ( !State )
+			State = {};
+		var _pos = stateList.indexOf( State );
+		if ( _pos >= 0 )
+			stateList.splice( _pos, 1 );
+		
 		State.name = statename;
 		State.substates = null;
 		State.subactions = null;
@@ -623,10 +617,10 @@ public class GMBody extends GMObject
 			curState = State;
 			stateName = statename;
 		}
-		// 
+		//
+		
+		stateList.push( State );
 		states[ statename ] = State;
-		if ( !hidden )
-			stateList.push( State );
 		return State;
 	}
 	
@@ -667,9 +661,13 @@ public class GMBody extends GMObject
 		}
 		if ( _getstate == null )
 		{
-			if ( stateList.length < 1 )
-				return null;
-			return stateList[0] ;
+			for ( var i = 0; i < stateList.length; ++i )
+			{
+				if ( stateList[i].hidden )
+					continue;
+				_getstate = stateList[i];
+				break;
+			}
 		}
 		return _getstate;
 	}
@@ -699,7 +697,11 @@ public class GMBody extends GMObject
 				continue;
 			var _state = State;
 			if ( typeof _state == "object" )
+			{
+				if ( _state.hidden )
+					continue;
 				_state = _state.name;
+			}
 			if ( curState && curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
 				continue;
 			//GMControl.Log( i + ": " + _state );
@@ -765,10 +767,12 @@ public class GMBody extends GMObject
 		Action.name = actionname;
 		Action.value = actionvalue;
 		Action.hidden = 0;
+		Action.OnTriggered = null;
 		if ( actionfunc )
 			Action.action = actionfunc;
+		if ( actions[actionname] == null )
+			actionList.push( Action );
 		actions[actionname] = Action;
-		actionList.push( Action );
 		return Action;
 	}
 	
@@ -781,6 +785,11 @@ public class GMBody extends GMObject
 		Action.option = 0;
 		Action.options = options;
 		
+		Action.OnTriggered = function()
+		{
+			trace( "Action: " + this );
+		}
+		
 		return Action;
 	}
 	
@@ -789,10 +798,14 @@ public class GMBody extends GMObject
 		// memory must be added before this action can be
 		if ( memoryname == null )
 			return;
+		if ( options == null )
+			options = [ false, true ];
 		var Action = AddAction( actionname, null );
-		Action.togglememory = memoryname;
+		Action.togglememory = [ memoryname, options ];
 		var memval = GetMemory( memval );
 		
+		
+		return Action;
 	}
 	
 	public function GetAction( actionname )
@@ -842,7 +855,18 @@ public class GMBody extends GMObject
 		var Action = actions[ actionname ];
 		if ( Action )
 		{
-			if ( Action.options )
+			if ( Action.togglememory )
+			{
+				var _mem = memories[ Action.togglememory[0] ];
+				if ( _mem )
+				{
+					if ( _mem.value == Action.togglememory[1][0] )
+						SetMemory( _mem, Action.togglememory[1][1] );
+					else
+						SetMemory( _mem, Action.togglememory[1][0] );
+				}
+			}
+			else if ( Action.options )
 			{
 				++Action.option;
 				if ( Action.option > Action.options.length )
@@ -851,6 +875,8 @@ public class GMBody extends GMObject
 				if ( Action.action )
 					Action.action( Action.options[Action.option] );
 				actions[Action.actionname] = Action;
+				if ( Action.OnTriggered )
+					Action.OnTriggered();
 			}
 			else
 			{
@@ -1099,7 +1125,6 @@ public class GMBody extends GMObject
 	// Set a memory via its AddMemory name
 	public function SetMemory( name, value )
 	{
-		trace( "setmemory " + name + " " + value );
 		if ( typeof name == "object" )
 			name = name.name;
 		if ( ctrl.isConnected() )

@@ -84,12 +84,12 @@ public class GM
 	
 	// 
 	
-	public function GM( _media )
+	public function GM( _media, _width = null, _height = null )
 	{
 		gm = this;
 		media = _media;
 		
-		Init( _media );
+		Init( _media, _width, _height );
 	}
 	
 	public static function GMCleanup()
@@ -112,14 +112,21 @@ public class GM
 		}
 	}
 	
-	public static function Init( _media )
+	public static function Init( _media, _width = null, _height = null )
 	{
 		Log( "GM Init" );
 		GM.media = _media;
 		GM.root = _media;
 		
+		if ( _width != null )
+			stageW = _width;
+		if ( _height != null )
+			stageH = _height;
+		
+		media.cacheAsBitmap = false;
+		
 		GM.container = new Sprite();
-		GM.container.cacheAsBitmap = true;
+		GM.container.cacheAsBitmap = false; // must be false so effects can pass through it
 		
 		media.addChild( GM.container );
 	}
@@ -520,6 +527,11 @@ public class GM
 			_symbol = new _symbol.constructor();
 			container.addChild( _symbol );
 			_tempsymbols.push( _symbol );
+			if ( _tempsymbols.length > 128 )
+			{
+				var _get = _tempsymbols.shift();
+				_get.parent.removeChild( _get );
+			}
 		}
 		else
 		{
@@ -551,7 +563,6 @@ public class GM
 			color.alphaMultiplier = 1;
 			_symbol.transform.colorTransform = color;
 		}
-		_symbol.blendMode = internalblendmode;
 		
 		_symbol.gotoAndStop( Math.floor( _image % _symbol.totalFrames ) + 1 );
 		_symbol.x = _x;
@@ -561,6 +572,17 @@ public class GM
 		_symbol.rotation = -_angle;
 		_symbol.alpha = _alpha;
 		_symbol.visible = true;
+		_symbol.blendMode = internalblendmode;
+		return _symbol;
+	}
+	
+	public static function InternalSpriteDrawPart( _sprite, _subimg, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _colour, _alpha )
+	{
+		var _symbol = GM.InternalSpriteDraw( _sprite, _subimg, _x, _y, _xscale, _yscale, 0, _colour, _alpha );
+		
+		_symbol.x = _x;
+		_symbol.y = _y;
+		
 		return _symbol;
 	}
 	
@@ -665,7 +687,7 @@ public class GM
 	{
 		if ( _sound == null || _sound == -1 )
 			return null;
-		// _sound.Stop();
+		_sound.stop();
 	}
 }
 
@@ -764,6 +786,7 @@ class GMInternalSound
 {
 	public var audio;
 	public var sound;
+	public var inst;
 	
 	public function GMInternalSound( _audio )
 	{
@@ -774,12 +797,16 @@ class GMInternalSound
 	public function Play( _offset = 0, _loop = false, _gain = 1 )
 	{
 		var chan = sound.play( _offset, _loop, new SoundTransform( _gain ) );
+		inst = chan;
 		return chan;
 	}
 	
-	public function Stop()
+	public function stop()
 	{
-		sound.close();
-		sound = new audio();
+		if ( inst )
+		{
+			inst.stop();
+			inst = null;
+		}
 	}
 }

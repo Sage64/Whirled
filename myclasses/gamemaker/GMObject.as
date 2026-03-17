@@ -37,7 +37,7 @@ public class GMObject extends Sprite
 	
 	public var alarm = new Array( 12 );
 	
-	public var sprite_index = null; // use sprite_current instead for sprite ref
+	public var sprite_index = -2; // use sprite_current instead for sprite ref
 	public var sprite_current = null;
 	public var sprite_width = 0;
 	public var sprite_height = 0;
@@ -300,6 +300,8 @@ public class GMObject extends Sprite
 		inst[varname] = val;
 	}
 	
+	
+	
 	// Sprite
 	
 	// Retrieve a sprite asset
@@ -337,22 +339,26 @@ public class GMObject extends Sprite
 	
 	public function sprite_get_xoffset( spr )
 	{
-		return spr.x;
+		if ( spr )
+			return spr.x;
 	}
 	
 	public function sprite_get_yoffset( spr )
 	{
-		return spr.y;
+		if ( spr )
+			return spr.y;
 	}
 	
 	public function sprite_get_width( spr )
 	{
-		return spr.width;
+		if ( spr )
+			return spr.width;
 	}
 	
 	public function sprite_get_height( spr )
 	{
-		return spr.height;
+		if ( spr )
+			return spr.height;
 	}
 	
 	// Sprite - draw
@@ -376,6 +382,11 @@ public class GMObject extends Sprite
 		if ( _sprite == sprite_index )
 			_sprite = sprite_current;
 		return GM.InternalSpriteDraw( _sprite, _image, _x, _y, _xscale, _yscale, _rot, _col, _alpha  );
+	}
+	
+	public function draw_sprite_part_ext( _sprite, _subimg, _left, _top, _width, _height, _x, _y, _xscale = 1, _yscale = 1, _colour = 0xFFFFFF, _alpha = 1 )
+	{
+		return GM.InternalSpriteDrawPart( _sprite, _subimg, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _colour, _alpha )
 	}
 	
 	public function draw_sprite_pos( sprite, subimg, x1, y1, x2, y2, x3, y3, x4, y4, alpha )

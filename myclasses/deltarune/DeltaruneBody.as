@@ -17,6 +17,9 @@ import com.whirled.*
 
 /*
 	In the darkworld (darkmode = true) most things are scaled 2x
+	the media scale and movement is halved to compensate for this
+	this means, for example, an object moving 10 pixels actually has to move 20
+	// as the 1x1 pixel is now 2x2
 */
 
 public class DeltaruneBody extends GMBody
@@ -35,7 +38,6 @@ public class DeltaruneBody extends GMBody
 	public var lighty = 0xfff947;
 	
 	public var cutscene;
-	public var siner = 0;
 	
 	public var textsound = global.snd_text;
 	public var textsoundinst;

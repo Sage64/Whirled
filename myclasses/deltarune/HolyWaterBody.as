@@ -48,6 +48,9 @@ public class HolyWaterBody extends MonsterBody
 		mystates["singing"] = DWState( "Singing" );
 		mystates["watercooler"] = DWState( "Watercooler" );
 		mystates["watercooler_patrol"] = DWState( "Watercooler (Patrol)" );
+		
+		AddEnemyStates();
+		
 	}
 	
 	override public function DoBodyDebug()
@@ -133,6 +136,7 @@ public class HolyWaterBody extends MonsterBody
 				{
 					if ( !instance_exists( mizzle ) )
 						mizzle = instance_create( x, y - 24, obj_mizzle_enemy );
+					enemy = mizzle;
 				}
 				
 				break;
@@ -152,16 +156,20 @@ public class HolyWaterBody extends MonsterBody
 		{
 			mizzle.image_xscale = image_xscale;// Math.abs( mizzle.image_xscale ) * ( ( hDir > 0 ) ? -1 : 1 );
 			
-			if ( curState == mystates["awake"] )
+			if ( curState == mystates["default"] )
 			{
-				mizzle.monsterstatus = 0;
-			}
-			else
-			{
-				if ( curState == mystates["sleep"] || isSleeping )
+				if ( isSleeping )
 					mizzle.monsterstatus = 1;
 				else
 					mizzle.monsterstatus = 0;
+			}
+			else if ( curState == mystates["awake"] )
+			{
+				mizzle.monsterstatus = 0;
+			}
+			else if ( curState == mystates["sleep"] )
+			{
+				mizzle.monsterstatus = 1;
 			}
 			mizzle.OnUpdateLook();
 		}
@@ -186,7 +194,6 @@ public class HolyWaterBody extends MonsterBody
 	
 	override public function OnHurt( amount = 0 )
 	{
-		enemy = mizzle;
 		super.OnHurt( amount );
 	}
 	
@@ -223,9 +230,9 @@ class obj_mizzle_enemy extends obj_monsterparent
 	{
 		super();
 		
-		idlesprite = spr_holywater_alarm;
-		hurtsprite = spr_holywater_hurt;
-		sparedsprite = spr_holywater_alarm;
+		idlesprite = global.spr_holywater_alarm;
+		hurtsprite = global.spr_holywater_hurt;
+		sparedsprite = global.spr_holywater_alarm;
 		
 		monstername = "Mizzle";
 		monstermaxhp = 470;
@@ -281,13 +288,13 @@ class obj_mizzle_enemy extends obj_monsterparent
 	
 	override public function Draw()
 	{
-		firstframe++;
+		// firstframe++;
 		if ( true ) //(firstframe > 1 )
 		{
 			scr_enemy_drawhurt_generic();
-			scr_enemy_drawidle_generic(0.16666666666666666);
+			scr_enemy_drawidle_generic( 1 / 6 );
 		}
-		if (becomeflash == 0)
+		if ( becomeflash == 0 )
 			flash = 0;
 		becomeflash = 0;
 	}
@@ -548,6 +555,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 					//instance_destroy( mizzle );
 					instance_destroy( body.mizzle );
 					body.mizzle = instance_create( body.originX, body.originY - 24, obj_mizzle_enemy );
+					body.enemy = body.mizzle;
 					body.mizzle.image_index = mizzle.image_index;
 					body.mizzle.siner = 0;//body.mizzle.image_index;
 					body.OnUpdateLook();
