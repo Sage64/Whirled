@@ -31,6 +31,7 @@ public class GM
 	public static var root;
 	public static var media;
 	public static var container;
+	public static var g;
 	public static var stageW = 600;
 	public static var stageH = 450;
 	public static var scale = 1;
@@ -127,6 +128,7 @@ public class GM
 		
 		GM.container = new Sprite();
 		GM.container.cacheAsBitmap = false; // must be false so effects can pass through it
+		GM.g = container.graphics;
 		
 		media.addChild( GM.container );
 	}
@@ -329,17 +331,21 @@ public class GM
 	
 	public static function GetControlPanel()
 	{
-		if ( !ctrl )
-			return;
-		if ( !ctrl.hasControl() )
-			return;
-		var ww = 640;
-		var hh = 420;
-		var smallScreen = ( ( ctrl != null ) && ( ctrl.getEnvironment() != EntityControl.ENV_ROOM ) );
-		if ( smallScreen )
+		var ww = 1280;
+		var hh = 720;
+		
+		if ( ctrl != null )
 		{
-			ww = 320;
-			hh = 240;
+			if ( ctrl.getEnvironment() == EntityControl.ENV_SHOP )
+			{
+				ww = 320;
+				hh = 240;
+			}
+			else if ( ctrl.getEnvironment() == EntityControl.ENV_ROOM )
+			{
+				ww = 640;
+				hh = 420;
+			}
 		}
 		if ( !controlPanel )
 			controlPanel = new GMControlPanel( ww, hh );
@@ -408,13 +414,15 @@ public class GM
 			{
 				var sym = _tempsymbols.shift();
 				sym.visible = false;
-				container.removeChild( sym );
+				sym.parent.removeChild( sym );
 				sym.x = container.x - ( 1024 );
 				sym.y = container.y - ( 1024 );
 			}
 			
-			container.graphics.clear();
-			//media.graphics.clear();
+			// container.graphics.clear();
+			// media.graphics.clear();
+			
+			g.clear();
 			
 			GMDraw();
 		}
@@ -519,25 +527,47 @@ public class GM
 		// real bitmap cached drawing not implemented yet
 		// currently just moves symbols into place and hides them next frame
 		
-		var _symbol = _sprite.GetImage( _image );
+		var _symbol = _sprite.symbol;
 		if ( !_symbol )
 			return;
-		if ( _symbol.constructor != MovieClip && _symbol.visible )
-		{
-			_symbol = new _symbol.constructor();
-			container.addChild( _symbol );
-			_tempsymbols.push( _symbol );
-			if ( _tempsymbols.length > 128 )
-			{
-				var _get = _tempsymbols.shift();
-				_get.parent.removeChild( _get );
-			}
-		}
-		else
+		var _subimg = Math.floor( _image % _symbol.totalFrames );
+		var usebitmap = true;
+		if ( !_symbol.visible && !usebitmap )
 		{
 			_tempdrawsprites.push( _symbol );
 			var pos = container.numChildren;
 			container.setChildIndex( _symbol, pos - 1 );
+			if ( _symbol.totalFrames > 1 )
+				_symbol.gotoAndStop( _subimg + 1 );
+		}
+		else
+		{
+			if ( false ) // ( _symbol.constructor != MovieClip )
+			{
+				_symbol = new _symbol.constructor();
+				if ( _symbol.totalFrames > 1 )
+					_symbol.gotoAndStop( _subimg + 1 );
+			}
+			//else
+			{
+				var _spriteImage = _sprite.GetImage( _subimg );
+				if ( _spriteImage.bitmapdata )
+				{
+					var _shape = new Bitmap( _spriteImage.bitmapdata );
+					var _shapedata = _symbol.getChildAt( 0 );
+					_symbol = new Sprite();
+					_symbol.addChild( _shape );
+					_shape.x = 0 -_sprite.x;
+					_shape.y = 0 -_sprite.y;
+				}
+			}
+			container.addChild( _symbol );
+			_tempsymbols.push( _symbol );
+			if ( _tempsymbols.length > 200 )
+			{
+				var _get = _tempsymbols.shift();
+				_get.parent.removeChild( _get );
+			}
 		}
 		
 		var r = ( ( _blend >> 16 ) & 0xFF ) / 255;
@@ -564,7 +594,11 @@ public class GM
 			_symbol.transform.colorTransform = color;
 		}
 		
-		_symbol.gotoAndStop( Math.floor( _image % _symbol.totalFrames ) + 1 );
+		if ( _symbol.mask )
+		{
+			// _symbol.mask.parent.removeChild( _symbol.mask );
+			_symbol.mask = null;
+		}
 		_symbol.x = _x;
 		_symbol.y = _y;
 		_symbol.scaleX = _xscale;
@@ -579,9 +613,26 @@ public class GM
 	public static function InternalSpriteDrawPart( _sprite, _subimg, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _colour, _alpha )
 	{
 		var _symbol = GM.InternalSpriteDraw( _sprite, _subimg, _x, _y, _xscale, _yscale, 0, _colour, _alpha );
+		if ( !_symbol )
+			return;
+		var offx = ( _left - _sprite.x );
+		var offy = ( _top - _sprite.y );
+		_symbol.x -= offx * _xscale;
+		_symbol.y -= offy * _yscale;
 		
-		_symbol.x = _x;
-		_symbol.y = _y;
+		if ( true )
+		{
+			var _mask = new Shape();
+			container.addChild( _mask );
+			_mask.x = 0;
+			_mask.y = 0;
+			var g = _mask.graphics;
+			g.beginFill( 0, 1 );
+			g.drawRect( _x, _y, _width * _xscale, _height * _yscale );
+			g.endFill();
+			_symbol.mask = _mask;
+			_tempsymbols.push( _mask );
+		}
 		
 		return _symbol;
 	}
@@ -698,6 +749,7 @@ public class GM
 import gamemaker.*;
 
 import flash.display.*;
+import flash.geom.*;
 import flash.media.*;
 
 import com.threerings.*;
@@ -726,7 +778,6 @@ class GMInternalSprite
 		symbol = _symbol;
 		isBitmap = _isbitmap;
 		// 
-		
 		symbol.x = 0;
 		symbol.y = 0;
 		symbol.scaleX = 1; // 5;
@@ -735,10 +786,10 @@ class GMInternalSprite
 		var transformMatrix = symbol.transform.concatenatedMatrix;
 		symbol.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
 		symbol.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
-		
-		var getshape = symbol.getChildAt( 0 ) as Shape;
-		
 		bounds = symbol.transform.pixelBounds;
+		
+		//var getshape = symbol.getChildAt( 0 ) as Shape;
+		//var data = getshape.graphics;
 		
 		name = symbol.name;
 		width = symbol.width;
@@ -749,14 +800,14 @@ class GMInternalSprite
 		width = bounds.width;
 		height = bounds.height;
 		
-		var data = getshape.graphics;
-		//trace( data );
+		// trace( name + ", " + "x:" + x + " y:" + y + ", w:" + width + " h:" + height );
 		
 		for ( var i = 0; i < symbol.totalFrames; ++i )
 		{
-			images[i] = {};
-			images[i].sprite = symbol;
+			if ( symbol.numChildren < 1 )
+				continue;
 			++count;
+			GetImage( i );
 		}
 	}
 	
@@ -764,20 +815,33 @@ class GMInternalSprite
 	{
 		while ( images.length > 0 )
 		{
-			var img = images.pop();
-			if ( img == null )
+			var frame = images.pop();
+			if ( !frame || !frame.bitmapdata )
 				continue;
-			img.bitmap_data.dispose();
+			frame.bitmapdata.dispose();
 		}
 	}
 	
 	public function GetImage( index )
 	{
-		return symbol;
-		var _image = images[ Math.floor( index ) % count ];
-		if ( !_image )
-			return;
-		return _image.sprite;
+		var i = Math.floor( index ) % count;
+		var frame = images[i];
+		if ( !frame )
+		{
+			var pre_x = symbol.x;
+			var pre_y = symbol.y;
+			trace( "get bitmap data for " + name + ":" + i );
+			frame = {};
+			images[i] = frame;
+			frame.symbol = symbol;
+			frame.bitmapdata = new BitmapData( width, height, true, 0x00FFFFFF );
+			symbol.gotoAndStop( i + 1 );
+			var offset = new Matrix();
+			offset.tx = x;
+			offset.ty = y;
+			frame.bitmapdata.draw( symbol, offset );
+		}
+		return frame;
 	}
 	
 }
