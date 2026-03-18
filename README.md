@@ -35,5 +35,7 @@ any amount of these can be added this way
 
 All added assets can be accessed through the global struct within any object
 e.g
+
 sprite_set( global.spr_holywater_idle );
+
 audio_play_sound( global.snd_defeatrun );
