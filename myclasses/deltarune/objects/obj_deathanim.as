@@ -24,6 +24,7 @@ public class obj_deathanim extends DeltaruneObject
 	public var bx = [];
 	public var bspeed = [];
 	public var bsin = [];
+	public var xsign = 1;
 	
 	public function obj_deathanim()
 	{
@@ -33,39 +34,44 @@ public class obj_deathanim extends DeltaruneObject
 	
 	override public function Create()
 	{
+		snd_stop( global.snd_deathnoise );
 		snd_play( global.snd_deathnoise );
 	}
 	
 	override public function Step()
 	{
+		var sprite_index = sprite_current;
 		var i,j;
-		if ( t== 0 )
+		if ( t == 0 )
 		{
-			truew = sprite_get_width( sprite_current );
-			trueh = sprite_get_width( sprite_current );
+			if ( image_xscale < 0 )
+				xsign = -1;
+			x -= sprite_get_xoffset( sprite_index ) * image_xscale;
+			y -= sprite_get_yoffset( sprite_index ) * image_yscale;
+			truew = sprite_get_width(sprite_index);
+			trueh = sprite_get_width(sprite_index);
 			imgx = image_xscale;
 			imgy = image_yscale;
-			if ( truew >= 50 || trueh >= 50 )
-				bsize = 8;
 			if ( truew >= 100 || truew >= 100 )
 				bsize = 16;
-			xs = ceil( truew / bsize );
-			ys = ceil( trueh / bsize );
-			
-			for ( i = 0; i <= xs; ++i )
+			else if ( truew >= 50 || trueh >= 50 )
+				bsize = 8;
+			xs = ceil(truew / bsize);
+			ys = ceil(trueh / bsize);
+			for (i = 0; i <= xs; i += 1)
 			{
-				bl[i] = [];
-				bh[i] = [];
-				bx[i] = [];
-				bspeed[i] = [];
-				bsin[i] = [];
-				for ( j = 0; j <= ys; ++j )
+				bl[i] = new Array( ys );
+				bh[i] = new Array( ys );
+				bx[i] = new Array( ys );
+				bspeed[i] = new Array( ys );
+				bsin[i] = new Array( ys );
+				for (j = 0; j <= ys; j += 1)
 				{
 					bl[i][j] = i * bsize;
 					bh[i][j] = j * bsize;
-					bx[i][j] = x + ( i * bsize * imgx );
+					bx[i][j] = x + (i * bsize * imgx);
 					bspeed[i][j] = 0;
-					bsin[i][j] = ( 4 + ( j * 3 ) ) - i;
+					bsin[i][j] = (4 + (j * 3)) - i;
 				}
 			}
 		}
@@ -82,9 +88,11 @@ public class obj_deathanim extends DeltaruneObject
 				for ( j = 0; j <= ys; ++j )
 				{
 					if ( bsin[i][j] <= 0 )
-						bspeed[i][j] += acc;
-					bx[i][j] += bspeed[i][j];
+						bspeed[i][j] += 1;
+					bx[i][j] += ( bspeed[i][j] * xsign );
 					bsin[i][j] -= 1;
+					
+					var _y = y + (j * bsize * imgy);
 				}
 			}
 		}
@@ -99,18 +107,12 @@ public class obj_deathanim extends DeltaruneObject
 			return;
 		}
 		var i,j;
+		var sprite_index = sprite_current;
 		for ( i = 0; i <= xs; i += 1 )
 		{
 			for ( j = 0; j <= ys; j += 1 )
 			{
-				draw_sprite_part_ext(
-					sprite_current, image_index,
-					bl[i][j], bh[i][j],
-					bsize, bsize,
-					bx[i][j], y + ( j * bsize * imgy ),
-					imgx, imgy,
-					image_blend, 1 - ( bspeed[i][j] / 12 )
-				);
+				draw_sprite_part_ext(sprite_index, image_index, bl[i][j], bh[i][j], bsize, bsize, bx[i][j], y + (j * bsize * imgy), imgx, imgy, image_blend, 1 - (bspeed[i][j] / 12));
 			}
 		}
 	}

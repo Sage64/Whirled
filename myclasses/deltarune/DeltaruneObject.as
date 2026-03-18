@@ -9,6 +9,8 @@ import deltarune.objects.*;
 
 public class DeltaruneObject extends GMObject
 {    
+	
+	
 	public function DeltaruneObject()
 	{
 		super();

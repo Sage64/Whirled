@@ -24,8 +24,12 @@ import com.whirled.*
 
 public class DeltaruneBody extends GMBody
 {
-	public static var spr_battlebg;
-	public static var spr_tiredmark;
+	public static const INPUT_DOWN = 0;
+	public static const INPUT_RIGHT = 1;
+	public static const INPUT_UP = 2;
+	public static const INPUT_LEFT = 3;
+	
+	public static const FLAG_AUTORUN = 11;
 	
 	// 
 	
@@ -46,17 +50,13 @@ public class DeltaruneBody extends GMBody
 	{
 		var i;
 		
-		spr_battlebg = sprite_get( "spr_battlebg" );
-		spr_tiredmark = sprite_get( "spr_tiredmark" );
-		
 		if ( !global.damagefont )
 		{
 			global.damagefont = { name: "_sans", size: 12 };
 		}
 		
 		super( 30 );
-		
-		// use_delta = false;
+		use_delta = false;
 		
 		SetScale ( bscale );
 		
@@ -74,11 +74,15 @@ public class DeltaruneBody extends GMBody
 			nametag.Apply();
 		}
 		
-		if ( global.flag == null )
+		if ( !global.deltarune )
 		{
+			global.deltarune = 1;
 			global.flag = new Array( 100 );
 			global.interact = 0;
+			global.chapter = 1;
 		}
+		
+		
 	}
 	
 	public function LWState( statename, sprites = null )
@@ -125,7 +129,7 @@ public class DeltaruneBody extends GMBody
 	}
 	
 	public function BoardState( statename, sprites = null )
-	{
+	{ 
 		var State = DWState( statename, sprites );
 		// 
 		State.board = true;
@@ -143,10 +147,11 @@ public class DeltaruneBody extends GMBody
 	
 	override public function OnUpdateLook()
 	{
+		super.OnUpdateLook();
 		if ( hDir > 0 )
-            image_xscale = -Math.abs( image_xscale );
-        else
-            image_xscale = Math.abs( image_xscale );
+			image_xscale = -Math.abs( image_xscale );
+		else
+			image_xscale = Math.abs( image_xscale );
 	}
 	
 	override public function OnSleep()
@@ -185,14 +190,18 @@ public class DeltaruneBody extends GMBody
 	{
 		super.DrawEnd();
 		var tireddraw = ( isSleeping && nametag );
-		if ( tireddraw && spr_tiredmark )
+		if ( tireddraw && global.spr_tiredmark )
 		{
-			var _sprscale = GM.unscaleX * 1.25;
-			//var xx = nametag.x + ( nametag.textW * _tagscale );
+			var _sprscale = GM.unscaleX * 1.5;
 			var xx = nametag.x + ( nametag.width / 2 );
-			xx += ( 4 * _sprscale ) + ( GM.unscaleX * 4 ) + ( 16 * _sprscale / 2 )
-			var yy = nametag.y - ( nametag.height / 2 ); // - ( spr_tiredmark.height / 2 );
-			draw_sprite_ext( spr_tiredmark, 0, xx, yy, _sprscale, _sprscale, 0, 0xFFFFFF, nametag.alpha );
+			xx += ( 4 * _sprscale ) + ( GM.unscaleX * 4 ) + ( 16 * _sprscale / 2 ) - ( global.spr_tiredmark.width * _sprscale / 2 );
+			var yy = nametag.y - ( nametag.height / 2 ) - ( global.spr_tiredmark.height * _sprscale / 2 );
+			if ( false )
+			{
+				for ( var i = 0; i < Math.PI * 2; i += ( Math.PI / 4 ) )
+					draw_sprite_ext( global.spr_tiredmark, 0, xx + ( Math.cos( i ) * _sprscale * 1 ), yy + ( Math.sin( i ) * _sprscale * 1 ), _sprscale, _sprscale, 0, 0x000000, nametag.alpha );
+			}
+			draw_sprite_ext( global.spr_tiredmark, 0, xx, yy, _sprscale, _sprscale, 0, 0xFFFFFF, nametag.alpha );
 		}
 	}
 	
@@ -214,6 +223,7 @@ public class DeltaruneBody extends GMBody
 			ctrl.setLogicalLocation( ownerpos[0], ownerpos[1], ownerpos[2], dir );
 		}
 	}
+	
 	
 	// Deltarune gamemaker functions
 	

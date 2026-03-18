@@ -128,7 +128,7 @@ public class MonsterBody extends DeltaruneBody
 				case mystates["enemy_idle"]:
 					break;
 				case mystates["enemy_spared"]:
-					enemy.DoSpare();
+					enemy.scr_spare();
 					break;
 				case mystates["enemy_defeated"]:
 					enemy.hurt_fatal = 0;
@@ -145,7 +145,7 @@ public class MonsterBody extends DeltaruneBody
 					enemy.scr_defeatrun();
 					break;
 				case mystates["enemy_frozen"]:
-					enemy.hurt_fatal = 0;
+					enemy.hurt_fatal = 1;
 					enemy.hurt_frozen = 1;
 					enemy.monsterhp = 0;
 					enemy.scr_monsterdefeat();

@@ -71,8 +71,6 @@ public class GMBody extends GMObject
 	public var wasSleeping = false;
 	
 	public var stepStartTime;
-	public var timescale = 1;
-	public var timescale_delta = 1;
 	public var lastms = 0;
 	public var stepEndTime;
 	
@@ -796,6 +794,7 @@ public class GMBody extends GMObject
 	public function AddAction_ToggleMemory( actionname = "memory_toggle", memoryname = null, options = null )
 	{
 		// memory must be added before this action can be
+		// memory will be toggled between the options, or assumed [false, true] by default
 		if ( memoryname == null )
 			return;
 		if ( options == null )
@@ -803,7 +802,6 @@ public class GMBody extends GMObject
 		var Action = AddAction( actionname, null );
 		Action.togglememory = [ memoryname, options ];
 		var memval = GetMemory( memval );
-		
 		
 		return Action;
 	}
@@ -924,21 +922,13 @@ public class GMBody extends GMObject
 		MAIN LOOP
 	*/
 	
-	// OLD. Call body.Loop() on frame 3 of the timeline
-	// Not neccessary if GMControl is doing it already
-	public function Loop()
-	{
-		GMStep();
-		media.gotoAndPlay( 2 );
-		// GMEndStep();
-	}
-	
 	override public function GMStep()
 	{
 		// Timer
 		stepStartTime = getTimer();
+		timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
 		if ( use_delta )
-			timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
+			timescale = timescale_delta;
 		lastms = stepStartTime;
 		
 		current_time = ( stepStartTime );

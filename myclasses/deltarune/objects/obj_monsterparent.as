@@ -11,8 +11,8 @@ public class obj_monsterparent extends DeltaruneObject
 	public var sparedsprite;
 	//
 	
-	public var offset_x;
-	public var offset_y;
+	public var offset_x = 0;
+	public var offset_y = 0;
 	
 	public var myself = 0;
 	
@@ -68,7 +68,7 @@ public class obj_monsterparent extends DeltaruneObject
 		body.SetMemory( body.mymemories["monsterhp"], monsterhp );
 	}
 	
-	public function DoSpare()
+	public function scr_spare()
 	{
 		scr_spareanim();
 		scr_recruit();

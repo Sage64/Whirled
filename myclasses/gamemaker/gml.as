@@ -26,9 +26,20 @@ public class gml
 		return _val;
 	}
 	
+	public static function choose( ...args )
+	{
+		if ( args.length > 0 )
+			return args[irandom( args.length -1 )];
+	}
+	
 	public static function random( amnt )
 	{
 		return Math.random() * amnt;
+	}
+	
+	public static function irandom( amnt )
+	{
+		return Math.floor( Math.random() * amnt );
 	}
 	
 	public static function random_range( a, b )

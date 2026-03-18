@@ -83,7 +83,7 @@ public class SpamtonBody extends MonsterBody
 		spamton_vocab["soul"] = "[HeartShapedObject]";
 		spamton_vocab_neo["soul"] = "[[SOUL]]";
 		spamton_vocab["you're"] = "you;re";
-		spamton_vocab["hello"] = "HEY HEY HEY!"
+		spamton_vocab["hello"] = "HEY HEY HEY!";
 	}
 	
 	override public function Cleanup()
@@ -758,8 +758,8 @@ class obj_spamton_neo extends obj_monsterparent
 	public var shocker_threshold = 10;
 	public var shockthreshold = 10;
 	
-	public var offset_x = 55;
-	public var offset_y = 190;
+	//public var offset_x = 55;
+	//public var offset_y = 190;
 	
 	public var facing = 0;
 	public var lastxoff = 0;
@@ -825,6 +825,9 @@ class obj_spamton_neo extends obj_monsterparent
 	public function obj_spamton_neo()
 	{
 		var i;
+		
+		offset_x = 55;
+		offset_y = 190;
 		
 		Parts_Default();
 		

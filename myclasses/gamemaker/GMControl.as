@@ -87,7 +87,6 @@ public class GMControl extends ActorControl
 	public static var unscaleX = 1;
 	public static var unscaleY = 1;
 	
-	public static var controlPanel;
 	public static var popupPanel = null;
 	
 	public static var _tempsymbols = [];
@@ -517,18 +516,7 @@ public class GMControl extends ActorControl
 	{
 		if ( !ctrl.hasControl() )
 			return;
-		var ww = 640;
-		var hh = 420;
-		var smallScreen = ( ( ctrl != null ) && ( ctrl.getEnvironment() != EntityControl.ENV_ROOM ) );
-		if ( smallScreen )
-		{
-			ww = 320;
-			hh = 240;
-		}
-		if ( !controlPanel )
-			controlPanel = new GMControlPanel( ww, hh );
-		controlPanel.SetSize( ww, hh );
-		return controlPanel;
+		return GM.GetControlPanel();
 	}
 	
 	public static function OpenControlPanel()

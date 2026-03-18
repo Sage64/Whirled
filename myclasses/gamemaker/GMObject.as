@@ -20,6 +20,9 @@ public class GMObject extends Sprite
 {
 	public static const global = GM.global;
 	
+	public static var timescale = 1;
+	public static var timescale_delta = 1;
+	
 	public static var current_time = 0;
 	
 	public static var _createx;

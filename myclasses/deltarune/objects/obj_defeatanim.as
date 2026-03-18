@@ -22,6 +22,7 @@ public class obj_defeatanim extends DeltaruneObject
 	
 	override public function Create()
 	{
+		snd_stop( global.snd_defeatrun );
 		snd_play( global.snd_defeatrun );
 	}
 	

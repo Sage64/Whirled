@@ -199,7 +199,7 @@ public class HolyWaterBody extends MonsterBody
 	
 	override public function Step()
 	{
-		
+		super.Step();
 	}
 }
 
@@ -333,12 +333,6 @@ class obj_mizzle_singer extends DeltaruneObject
 
 class obj_dw_church_watercooler extends DeltaruneObject
 {
-	public var spr_holywater_alarm = sprite_get( "spr_holywater_alarm" );
-	public var spr_holywater_idle = sprite_get( "spr_holywater_idle" );
-	public var spr_pxwhite = sprite_get( "spr_pxwhite" );
-	public var spr_watercooler = sprite_get( "spr_watercooler" );
-	public var spr_watercooler_parts = sprite_get( "spr_watercooler_parts" );
-	
 	public static var c_water1 = 0x2D9BD7;
 	public static var c_water2 = 0x99D9EA;
 	
@@ -372,7 +366,7 @@ class obj_dw_church_watercooler extends DeltaruneObject
 	public function obj_dw_church_watercooler()
 	{
 		super();
-		sprite_set( spr_watercooler_parts );
+		sprite_set( global.spr_watercooler_parts );
 	}
 	
 	override public function Cleanup()
@@ -422,9 +416,9 @@ class obj_dw_church_watercooler extends DeltaruneObject
 		{
 			if ( !instance_exists( mizzle ) )
 			{
-				var xx = ( spr_watercooler.x ) + spr_holywater_idle.x + ( x - (32*0) );
+				var xx = ( global.spr_watercooler.x ) + global.spr_holywater_idle.x + ( x - (32*0) );
 				var yy = y;
-				mizzle = scr_marker_ext( xx, yy, spr_holywater_idle, body.image_xscale, body.image_yscale, 0.125, 0, 0xFFFFFF, 0, false, -1, 0 );
+				mizzle = scr_marker_ext( xx, yy, global.spr_holywater_idle, body.image_xscale, body.image_yscale, 0.125, 0, 0xFFFFFF, 0, false, -1, 0 );
 				mizzle.depth = -1;
 			}
 			if ( instance_exists( mizzle ) )
@@ -481,8 +475,8 @@ class obj_dw_church_watercooler extends DeltaruneObject
 				siner += 1;
 				if ( mizzle_con < 99 )
 				{
-					mizzle.x = scr_even( ( spr_watercooler.x ) + spr_holywater_idle.x + ( x - (32*0) ) + ( sin( siner / 20 ) * patrolradius ) );
-        			mizzle.y = scr_even( ( spr_watercooler.y * 1 ) + ( y - 12 ) + ( cos( siner / 20 ) * patrolradius ) );
+					mizzle.x = scr_even( ( global.spr_watercooler.x ) + global.spr_holywater_idle.x + ( x - (32*0) ) + ( sin( siner / 20 ) * patrolradius ) );
+        			mizzle.y = scr_even( ( global.spr_watercooler.y * 1 ) + ( y - 12 ) + ( cos( siner / 20 ) * patrolradius ) );
 				}
 				body.x = mizzle.x;
 				body.y = mizzle.y;
@@ -576,10 +570,10 @@ class obj_dw_church_watercooler extends DeltaruneObject
 			if (watalph != 0)
 				dodrain = true;
 		}
-		draw_sprite_ext( spr_pxwhite, 0, x + 4, y + howfull, 30, 40, 0, merge_color( c_water1, c_white, clamp(sin(siner / 30) * 0.5, 0, 1)), (1 - watalph) * drain * image_alpha );
-		draw_sprite_ext( sprite_index, 0, x, y, 2, 2, 0, c_white, image_alpha );
-		draw_sprite_ext( sprite_index, 1, x, y, 2, 2, 0, c_water1, 0.25 * image_alpha );
-		draw_sprite_ext( sprite_index, 2, x, y, 2, 2, 0, c_water2, 0.5 * image_alpha );
+		draw_sprite_ext( global.spr_pxwhite, 0, x + 4, y + howfull, 30, 40, 0, merge_color( c_water1, c_white, clamp(sin(siner / 30) * 0.5, 0, 1)), (1 - watalph) * drain * image_alpha );
+		draw_sprite_ext( sprite_current, 0, x, y, 2, 2, 0, c_white, image_alpha );
+		draw_sprite_ext( sprite_current, 1, x, y, 2, 2, 0, c_water1, 0.25 * image_alpha );
+		draw_sprite_ext( sprite_current, 2, x, y, 2, 2, 0, c_water2, 0.5 * image_alpha );
 
 	}
 }

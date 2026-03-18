@@ -47,6 +47,8 @@ public class JokerBody extends MonsterBody
 		myactions["snd_joker_oh"] = AddAction( "o", Action_PlaySound, "snd_joker_oh" );
 		myactions["snd_joker_chaos"] = AddAction( "Chaos, Chaos!", Action_PlaySound, "snd_joker_chaos" );
 		myactions["snd_joker_anything"] = AddAction( "ANYTHING!", Action_PlaySound, "snd_joker_anything" );
+		
+		AddEnemyStates();
 	}
 	
 	
@@ -379,7 +381,7 @@ class obj_joker_body extends DeltaruneObject
 	
 	override public function Step()
 	{
-		var ts = body.timescale_delta;
+		var ts = timescale_delta;
 		if ( instance_exists( joker ) )
 			image_xscale = joker.image_xscale;
 		var i;
