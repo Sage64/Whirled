@@ -30,8 +30,5 @@ Disable "Export in frame 1" to prevent unneccessary images inflating the file si
 That symbol must be added in the main event to the avatar using "GMControl.AddSprites( <class_name> );"
 any amount of these can be added this way
 
-Currently, any sprite itself that needs to be drawn multiple times must also be exported for actionscript, but this class name cannot be the same as its sprite name. Any workaround for this is fine as the classname itself isnt important, I choose to stick a "c_" infront of it
-e.g spr_watercooler_parts -> c_spr_watercooler_parts
-
 <img width="1292" height="825" alt="image" src="https://github.com/user-attachments/assets/134fd21e-d728-4325-8071-621116a15936" />
 <img width="851" height="429" alt="image" src="https://github.com/user-attachments/assets/bdc6fd65-ab73-4230-87df-46777210ade6" />
