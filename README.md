@@ -32,3 +32,8 @@ any amount of these can be added this way
 
 <img width="1292" height="825" alt="image" src="https://github.com/user-attachments/assets/134fd21e-d728-4325-8071-621116a15936" />
 <img width="851" height="429" alt="image" src="https://github.com/user-attachments/assets/bdc6fd65-ab73-4230-87df-46777210ade6" />
+
+All added assets can be accessed through the global struct within any object
+e.g
+sprite_set( global.spr_holywater_idle );
+audio_play_sound( global.snd_defeatrun );
