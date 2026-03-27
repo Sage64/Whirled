@@ -43,8 +43,6 @@ import com.whirled.*;
 // 
 public class GMBody extends GMObject
 {
-	public static const CONFIG_CUSTOM_NAMETAG =  ( 1 << 0 );
-	
 	public var timescale_fps = 30; 	// base framerate for timing behaviour
 	public var use_delta = true; 	// compensate for lag by increasing the timescale
 	
@@ -61,9 +59,6 @@ public class GMBody extends GMObject
 	 };
 	 
 	public var _eventqueue :Array = [];
-	public var _lastsprite = null;
-	
-	public var configFlags = GMBody.CONFIG_CUSTOM_NAMETAG;
 	
 	public var isMoving = false;
 	public var wasMoving = false;
@@ -73,24 +68,20 @@ public class GMBody extends GMObject
 	public var stepStartTime;
 	public var lastms = 0;
 	public var stepEndTime;
-	
-	// the "view" of the canvas is offset by this amount
-	// giving the canvas more room
-	public var viewXOffset = 0;
-	public var viewYOffset = 0;
-	// seems this offset trick has a limit in one direction but not the other
-	// or atleast considerably larger in one direction
-	// so, we will offset it by this much to get around that
 
-	// the base hotspot position and nameplate height above this objects x/y
+	// the base hotspot position
 	// you shouldn't need to change it
-	// handle the "feet" position by correctly aligning the symbols or using this.x and this.y
+	// handle the "feet" position by correctly aligning the symbols or using this object's X and Y
 	public var originX = 0;
 	public var originY = 0;
+	
+	// nameplate height above this objects x/y
 	public var characterH = 32;
 	
 	public var hDir = 0;
 	public var vDir = 0;
+	
+	public var flipped = false;
 	
 	public var roomHMove = 0; // pixels the avatar has moved this frame, relative to its scale
 	public var roomVMove = 0;
@@ -170,7 +161,6 @@ public class GMBody extends GMObject
 		
 		this.timescale_fps = base_fps;
 		
-		// SetOrigin( GMControl.stageW / 2, GMControl.stageH / 2 );
 		SetOrigin( 0, 0 );
 		
 		SetMoveSpeed( 3 );
@@ -178,13 +168,16 @@ public class GMBody extends GMObject
 		
 		mystates["devmode"] = AddState( "DevMode", true );
 		mystates["devmode"].hidden = true;
-		AddAction("GMSentChat", GMSentChat, true ).hidden = true;
 		
-		AddAction( "[Avatar Control Panel]", Action_OpenControlPanel );
+		myactions["devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
+		myactions["devpanel"].hidden = true;
 		
-		// ctrl.registerCustomConfig( GMControl.OpenConfig );
+		myactions["chatsent"] = AddAction("GMSentChat", GMSentChat, "GMChatSent sent with null message" );
+		myactions["chatsent"].hidden = true;
 		
-		AddMemory( "gm.flags", 0, null );
+		ctrl.registerCustomConfig( GMControl.OpenConfig );
+		
+		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
 		
 	}
@@ -210,6 +203,7 @@ public class GMBody extends GMObject
 	override public function Create()
 	{
 		super.Create();
+		
 	}
 	
 	/*
@@ -224,6 +218,7 @@ public class GMBody extends GMObject
 	
 	private function GMProcessEvents()
 	{
+		GM.debugTracker = "GMBody.GMProcessEvents";
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
 			var event = _eventqueue.shift();
@@ -322,6 +317,26 @@ public class GMBody extends GMObject
 	}
 	
 	/*
+		FLAGS
+	*/
+	
+	public function GMFlagsChanged( data )
+	{
+		GM.Log( "gm.flags = " + data );
+	}
+	
+	public function SetFlag( flag = 0, on = true )
+	{
+		var flags = GetMemory( "gm.flags" );
+		if ( on )
+			flags |= ( flag );
+		else
+			flags &= ~flag;
+		SetMemory( "gm.flags", flags );
+	}
+	
+	
+	/*
 		APPEARANCE
 	*/
 	
@@ -330,7 +345,6 @@ public class GMBody extends GMObject
 	// anytime its called
 	public function GMUpdateLook( event = null )
 	{
-		GMControl.Log( "GMUpdateLook" );
 		wasMoving = isMoving;
 		isMoving = ctrl.isMoving();
 		wasSleeping = isSleeping;
@@ -360,7 +374,7 @@ public class GMBody extends GMObject
 					roomVMove = ( currentPositionReal[2] - lastPosition[2] ) * scale;
 					if ( movePathDestReal != null )
 					{
-						movePathAmount = ( gml.point_distance( currentPositionReal[0], currentPositionReal[2], movePathDestReal[0], movePathDestReal[2] ) / movePathLength );
+						movePathAmount = ( point_distance( currentPositionReal[0], currentPositionReal[2], movePathDestReal[0], movePathDestReal[2] ) / movePathLength );
 					}
 				}
 			}
@@ -444,14 +458,13 @@ public class GMBody extends GMObject
 		moveSpeed = _speed;
 		moveSpeedReal = Math.max( 50, moveSpeed * timescale_fps * scale );
 		ctrl.setMoveSpeed( moveSpeedReal );
-		
-		//GMControl.Log( "moveSpeed = " + moveSpeed );
+		// GMControl.Log( "moveSpeed = " + moveSpeed );
 		
 		// disabling this behaviour for a multitude of reasons
 		// including rate limiting, lag, and errors
 		if ( false )
 		{
-			if ( changed && ( configFlags & GMBody.CONFIG_DYNAMIC_MOVESPEED ) &&  isMoving && ( movePathDest != null ) )
+			if ( changed && isMoving && ( movePathDest != null ) )
 			{
 				// start moving again to the same point to update the walk speed
 				// warning! if you spam this, whirled lags and delays your movement
@@ -470,6 +483,7 @@ public class GMBody extends GMObject
 		GMControl.debugTracker = "GMEntityMoved";
 		if ( event == null )
 			return;
+		var Entity = GMControl.GetEntity( event.name );
 		if ( event.name == GMControl.entityID )
 		{
 			GMControl.debugTracker = "GMEntityMoved - self";
@@ -556,8 +570,8 @@ public class GMBody extends GMObject
 	{
 		movePathAmount = 0;
 		movePathLength = 0;
-		movePathDirection = gml.point_direction( x1, y2, x2, y1 );
-		movePathLength = gml.point_distance( x1, y1, x2, y2 );
+		movePathDirection = point_direction( x1, y2, x2, y1 );
+		movePathLength = point_distance( x1, y1, x2, y2 );
 	}
 	
 	public function OnMoveStart() {}
@@ -762,6 +776,7 @@ public class GMBody extends GMObject
 	{
 		GMControl.Log( "Adding action \"" + actionname + "\" with data " + actionvalue );
 		var Action = {};
+		Action.initname = actionname;
 		Action.name = actionname;
 		Action.value = actionvalue;
 		Action.hidden = 0;
@@ -774,14 +789,25 @@ public class GMBody extends GMObject
 		return Action;
 	}
 	
-	public function AddAction_Options( actionname = "option", actionfunc = null, options = null )
+	public function AddAction_Options( actionname = "option", actionfunc = null, options = null, startval = null )
 	{
 		if ( !options )
-			options = [ 0, 1 ];
+			options = [ false, true ];
+		if ( startval == null )
+			startval = options[0];
 		
 		var Action = AddAction( actionname, actionfunc, options[0] );
 		Action.option = 0;
 		Action.options = options;
+		
+		for ( var i = 0; i < options.length; ++i )
+		{
+			var _name = Action.initname + " (currently: " + options[i] + ")";
+			actions[_name] = Action;
+			trace( _name );
+			if ( options[i] == startval )
+				Action.name = _name;
+		}
 		
 		Action.OnTriggered = function()
 		{
@@ -797,11 +823,17 @@ public class GMBody extends GMObject
 		// memory will be toggled between the options, or assumed [false, true] by default
 		if ( memoryname == null )
 			return;
+		var startval = null;
+		var memory = memories[memoryname];
+		if ( memory )
+			startval = memory.value;
+		
+		
 		if ( options == null )
 			options = [ false, true ];
-		var Action = AddAction( actionname, null );
+		var Action = AddAction_Options( actionname, null, options, startval );
+		
 		Action.togglememory = [ memoryname, options ];
-		var memval = GetMemory( memval );
 		
 		return Action;
 	}
@@ -838,6 +870,7 @@ public class GMBody extends GMObject
 	
 	public function TriggerAction( _action = "", _data = null )
 	{
+		GM.debugTracker = "GMBody.TriggerAction";
 		if ( typeof _action == "object" )
 			_action = _action.name;
 		if ( ctrl.isConnected() )
@@ -858,11 +891,22 @@ public class GMBody extends GMObject
 				var _mem = memories[ Action.togglememory[0] ];
 				if ( _mem )
 				{
+					var i = 0;
 					if ( _mem.value == Action.togglememory[1][0] )
+					{
 						SetMemory( _mem, Action.togglememory[1][1] );
+						i = 1;
+					}
 					else
 						SetMemory( _mem, Action.togglememory[1][0] );
+					Action.name = Action.initname + " (currently: " + Action.togglememory[1][i] + ")";
+					RegisterActions();
 				}
+				else
+				{
+					GM.Log( "ToggleMemory failed" );
+				}
+				return;
 			}
 			else if ( Action.options )
 			{
@@ -936,13 +980,6 @@ public class GMBody extends GMObject
 		
 		GMProcessEvents();
 		
-		// hide previous sprite incase we're not using it this frame
-		if ( _lastsprite != null )
-		{
-			_lastsprite.symbol.visible = false;
-			_lastsprite = null;
-		}
-		
 		if ( false ) // only works in birdseye. rip.
 		{
 			currentPositionReal = GetPositionReal();
@@ -989,15 +1026,18 @@ public class GMBody extends GMObject
 		var yy = originY;
 		var hh = ( -( 65500 ) );
 		
-		_usenametag = ( ( configFlags & GMBody.CONFIG_CUSTOM_NAMETAG ) && ( nametag ) )
-		if ( !_usenametag )
+		_usenametag = ( ( nametag ) )
+		if ( nametag == 0 )
+		{
+			
+		}
+		else if ( !_usenametag )
 			hh = ( ( originY - y ) * scale ) + ( characterH * scale );
 		
 		// ctrl.setHotSpot( xx, yy, hh );
 		
 		GMUpdateView( xx, yy, hh );
 		
-		_lastsprite = sprite_current;
 		stepEndTime = getTimer();
 		// duration = stepEndTime - stepStartTime;
 	}
@@ -1117,10 +1157,20 @@ public class GMBody extends GMObject
 	{
 		if ( typeof name == "object" )
 			name = name.name;
+		var memory = memories[name];
 		if ( ctrl.isConnected() )
-			ctrl.setMemory( memories[name].name, value );
+		{
+			ctrl.setMemory( memory.name, value );
+		}
 		else
-			OnMemoryChanged( name, value );
+		{
+			memory.value = value;
+			var event = {};
+			event.type = ControlEvent.MEMORY_CHANGED;
+			event.name = memory.name;
+			event.value = memory.value;
+			GMControl.GMControlEvent( event );
+		}
 	}
 	
 	// Retrieve a memory from its AddMemory name
@@ -1134,7 +1184,7 @@ public class GMBody extends GMObject
 	public function OnMemoryChanged( key, value )
 	{
 		var Memory = memories[key];
-		GM.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
+		//GM.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
 		if ( Memory )
 		{
 			Memory.value = value;
@@ -1148,12 +1198,12 @@ public class GMBody extends GMObject
 		ctrl.sendMessage( message, data );
 	}
 	
-	public function OnReceiveSignal( message )
+	public function OnReceiveMessage( message )
 	{
 		
 	}
 	
-	public function OnReceiveMessage( message )
+	public function OnReceiveSignal( message )
 	{
 		
 	}

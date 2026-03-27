@@ -8,6 +8,7 @@ package gamemaker
 import flash.display.*;
 import flash.errors.*;
 import flash.events.*;
+import flash.geom.*;
 import flash.text.*;
 import flash.ui.*;
 import flash.utils.*;
@@ -16,8 +17,11 @@ import com.whirled.*;
 import com.threerings.*;
 import com.threerings.util.*;
 
-public class GM
+public class GM extends EventDispatcher
 {
+	public static const LOG_ENTRY = "gm:logEntry";
+	
+	
 	// Debug
 	public static var debug = false;
 	public static var debug_log = [];
@@ -29,9 +33,12 @@ public class GM
 	public static var isLoaded = false;
 	public static var gm;
 	public static var root;
+	
 	public static var media;
-	public static var container;
-	public static var g;
+	
+	public static var container; // primary surface
+	public static var overlay; // "HUD" surface ranging from 0,0 at the top-left to stageW/H at the bottom right
+	
 	public static var stageW = 600;
 	public static var stageH = 450;
 	public static var scale = 1;
@@ -56,34 +63,43 @@ public class GM
 	public static var _tempdrawsprites = [];
 	public static var internaldrawalpha = 1;
 	public static var internaldrawcolor = 0xFFFFFF;
+	public static var internaldrawmatrix = new Matrix();
 	public static var internaldrawfont = { name: "_sans", size: 12 };
 	public static var internaldrawhalign = 0;
 	public static var internaldrawvalign = 0;
 	public static var internaldrawtextformat = new TextFormat();
 	public static var internalblendmode = BlendMode.NORMAL;
 	public static var internalfog = null;
-	
+	public static var internalrendertarget;
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
-	
 	public static var internalsoundlist = [];
 	public static var internalsoundmap = {};
 	
 	
+	public static var graphics; // current graphics target
+	
 	// Gamemaker
+	public static var g_GlobalAlpha = 1.0;
+	
+	public static var g_GlobalColorTransform = new ColorTransform();
+	
+	
+	// Globals
+	
 	
 	public static var global = {};
 	
 	public static var instances = [];
+	public static var instance_index = 0;
 	public static var instances_of = {};
 	
 	
-	public static var view_x = 0;
-	public static var view_y = 0;
 	public static var view_width = stageW;
 	public static var view_height = stageH;
+	public static var view_x = 0;
+	public static var view_y = 0;
 	
-	// 
 	
 	public function GM( _media, _width = null, _height = null )
 	{
@@ -126,11 +142,15 @@ public class GM
 		
 		media.cacheAsBitmap = false;
 		
-		GM.container = new Sprite();
-		GM.container.cacheAsBitmap = false; // must be false so effects can pass through it
-		GM.g = container.graphics;
+		container = new Sprite();
+		container.cacheAsBitmap = false; // must be false for effects to pass through (e.g blend modes)
+		InternalSetDrawTarget( container );
+		
+		overlay = new Sprite();
+		overlay.cacheAsBitmap = false;
 		
 		media.addChild( GM.container );
+		media.addChild( GM.overlay );
 	}
 	
 	/*
@@ -157,6 +177,7 @@ public class GM
 	
 	public static  function GMProcessEvents()
 	{
+		GM.debugTracker = "GM.GMProcessEvents";
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
 			debugTracker = "GMProcessEvents";
@@ -240,7 +261,9 @@ public class GM
 		symbol.y = -1024;
 		symbol.alpha = 0;
 
-		var spr = new GMInternalSprite( symbol );
+		var spr = new GMSprite();
+		spr.CreateFromSymbol( symbol );
+		
 		internalspritelist.push( spr );
 		internalspritemap[sprname] = spr;
 		
@@ -248,8 +271,8 @@ public class GM
 		
 		var Parent = symbol.parent;
 		Parent.removeChild( symbol );
-		if ( container )
-			container.addChild( symbol );
+		//if ( container )
+		//	container.addChild( symbol );
 
 		symbol.gotoAndStop( 1 );
 	}
@@ -264,7 +287,7 @@ public class GM
 			Warn( sndname + " already exists" );
 		}
 		
-		var snd = new GMInternalSound( audio );
+		var snd = new GMSound( audio );
 		internalsoundlist.push( snd );
 		internalsoundmap[sndname] = snd;
 		
@@ -294,7 +317,6 @@ public class GM
 			if ( !hasErrored )
 			{
 				hasErrored = true;
-				// OpenControlPanel();
 			}
 		}
 		hasErrored = true;
@@ -320,6 +342,10 @@ public class GM
 		if ( debug_log.length > 64 )
 			debug_log.shift();
 		
+		
+		// var ev = new GMEvent( GM.LOG_ENTRY, text );
+		// dispatchEvent( ev );
+		
 		if ( controlPanel )
 			controlPanel.Relayout();
 	}
@@ -331,8 +357,8 @@ public class GM
 	
 	public static function GetControlPanel()
 	{
-		var ww = 1280;
-		var hh = 720;
+		var ww = 690;
+		var hh = 470;
 		
 		if ( ctrl != null )
 		{
@@ -341,10 +367,9 @@ public class GM
 				ww = 320;
 				hh = 240;
 			}
-			else if ( ctrl.getEnvironment() == EntityControl.ENV_ROOM )
+			else //if ( ctrl.getEnvironment() == EntityControl.ENV_ROOM )
 			{
-				ww = 640;
-				hh = 420;
+				
 			}
 		}
 		if ( !controlPanel )
@@ -383,11 +408,11 @@ public class GM
 			
 			// GMUpdateView();
 			
-			var transformMatrix = media.transform.concatenatedMatrix;
+			var transformMatrix = container.transform.concatenatedMatrix;
 			unscaleX = ( 1 / transformMatrix.a );
 			unscaleY = ( 1 / transformMatrix.d );
 			
-			// sort by draw depth
+			// sort instances by draw depth
 			if ( true )
 			{
 				instances.sort( function( A, B )
@@ -419,10 +444,11 @@ public class GM
 				sym.y = container.y - ( 1024 );
 			}
 			
-			// container.graphics.clear();
-			// media.graphics.clear();
 			
-			g.clear();
+			container.graphics.clear();
+			overlay.graphics.clear();
+			
+			internalrendertarget = container;
 			
 			GMDraw();
 		}
@@ -431,7 +457,7 @@ public class GM
 			Caught( e );
 		}
 		media.gotoAndPlay( 2 );
-		//trace( debugTracker );
+		GM.debugTracker = "After GM.Loop";
 	}
 	
 	public static function GMStep()
@@ -442,12 +468,10 @@ public class GM
 		if ( controlPanel )
 			controlPanel.Step();
 		
-		for ( i = instances.length - 1; i >= 0; --i )
+		for ( instance_index = instances.length - 1; instance_index >= 0; --instance_index )
 		{
-			var inst = instances[i];
+			var inst = instances[instance_index];
 			inst.GMStep();
-			if ( i >= instances.length )
-				i = instances.length;
 		}
 		
 		if ( GMControl.ctrl )
@@ -460,44 +484,192 @@ public class GM
 	
 	public static function GMDraw()
 	{
-		debugTracker = "GM.GMDraw";
-		for ( var i = 0; i < instances.length; ++i )
-		{
-			var inst = instances[i];
-			inst.Draw(); //GMDraw();
-		}
+		debugTracker = "Before GMControl.GMDraw";
+		GMObject.surface_set_target( container );
+		
 		
 		if ( GMControl.ctrl )
 			GMControl.GMDraw();
+		
+		debugTracker = "GM.GMDraw Instances";
+		
+		for ( instance_index = 0; instance_index < instances.length; ++instance_index )
+		{
+			var inst = instances[instance_index];
+			inst.Draw(); //GMDraw();
+		}
+		
+		GMObject.surface_reset_target();
 	}
 	
 	/*
 		Internal Functions
 	*/
 	
+	
+	
+	
+	
+	
+	// yyGraphics 
+	
+	public static var g_Matrix = new Matrix();
+	public static function Graphics_TextureDraw( _bmd, _xoff, _yoff, _x, _y, _xscale, _yscale, _ang, _col, _alpha )
+	{
+		if ( !_bmd )
+			return;
+		_col &= 0xFFFFFF;
+		if ( ( Math.abs( _xscale ) <= 0.0001 ) || ( Math.abs( _yscale ) <= 0.0001 ) || ( _alpha <= 0.004 ) )
+			return;
+		var ox = 0 - _xoff;
+		var oy = 0 - _yoff;
+		
+		if ( ( _col != 0xFFFFFF ) || ( _alpha < 1 ) )
+		{
+			_alpha = Math.floor( _alpha * 128 ) / 128;
+			// Get color blended bitmapdata
+			var _newbmd; // = Graphics_GetBlendedBitmapData;
+			if ( !_newbmd )
+			{
+				var _r = ( ( _col >> 16 ) & 0xFF ) / 255;
+				var _g = ( ( _col >> 8 ) & 0xFF ) / 255;
+				var _b = ( ( _col ) & 0xFF ) / 255;
+				_bmd = _bmd.clone();
+				_bmd.colorTransform( _bmd.rect, new ColorTransform( _r, _g, _b, _alpha ) );
+			}
+		}
+		// var r = Math.abs( _ang );
+		var hasrot = ( Math.abs( _ang ) > 0.0001 );
+		var hasscale = ( ( _xscale != 1 ) || ( _yscale != 1 ) );
+		// hasrot = true;
+		if ( hasrot )
+		{
+			g_Matrix.identity();
+			g_Matrix.translate( ox, oy );
+			g_Matrix.rotate( _ang );
+			g_Matrix.scale( _xscale, _yscale );
+			
+			var _angh = _ang * ( Math.PI / 180 );
+			var _angv = ( _ang + 90 ) * ( Math.PI / 180 );
+			
+			var ww = _bmd.width * _xscale;
+			var hh = _bmd.height * _yscale;
+			
+			var xinc_w = ww;
+			var yinc_w = 0;
+			var xinc_h = 0;
+			var yinc_h = hh;
+			
+			var _x1 = _x;
+			var _y1 = _y;
+			
+			_x1 += ox;
+			_y1 += oy;
+			
+			var _x2 = _x1 + xinc_w;
+			var _y2 = _y1 + yinc_w;
+			
+			var _x3 = _x2 + xinc_h;
+			var _y3 = _y2 + yinc_h;
+			
+			var _x4 = _x1 + xinc_h;
+			var _y4 = _y1 + yinc_h;
+			
+			
+			Graphics_TextureDrawPos( _bmd, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+		}
+		else if ( hasscale )
+		{
+			g_Matrix.identity();
+			g_Matrix.scale( _xscale, _yscale );
+			g_Matrix.tx = _x + ( ox * _xscale );
+			g_Matrix.ty = _y + ( oy * _yscale );
+			graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
+			graphics.drawRect( _x + ( ox * _xscale ), _y + ( oy * _yscale ), _bmd.width * _xscale, _bmd.height * _yscale );
+			graphics.endFill();
+		}
+		else
+		{
+			// simple draw;
+			g_Matrix.identity();
+			g_Matrix.tx = _x;
+			g_Matrix.ty = _y;
+			graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
+			graphics.drawRect( _x, _y, _bmd.width, _bmd.height );
+			graphics.endFill();
+		}
+	}
+	
+	public static function Graphics_TextureDrawSimple( _bmd, _x, _y, _alpha )
+	{
+		if ( !_bmd )
+			return;
+		if ( _alpha <= 0.004 )
+			return;
+		_x += 0;
+		_y += 0;
+		g_Matrix.identity();
+		g_Matrix.tx = _x;
+		g_Matrix.ty = _y;
+		graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
+		graphics.endFill();
+	}
+	
+	public static var TextureDrawPos_vertices = new <Number>[ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 ];
+	public static var TextureDrawPos_indices = new <int>[ 0, 1, 2, 3, 4, 5 ];
+	public static var TextureDrawPos_uvtData = new <Number>[ 0, 0,  1, 0,  1, 1,  1, 1,  0, 1,  0, 0 ];
+	public static function Graphics_TextureDrawPos( _bmd, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha )
+	{
+		g_Matrix.identity();
+		graphics.beginBitmapFill( _bmd, null, true, false );
+		//graphics.beginFill( 0xFF00FF, 1 );
+		TextureDrawPos_vertices[0] = _x1;
+		TextureDrawPos_vertices[1] = _y1;
+		TextureDrawPos_vertices[2] = _x2;
+		TextureDrawPos_vertices[3] = _y2;
+		TextureDrawPos_vertices[4] = _x3;
+		TextureDrawPos_vertices[5] = _y3;
+		TextureDrawPos_vertices[6] = _x3;
+		TextureDrawPos_vertices[7] = _y3;
+		TextureDrawPos_vertices[8] = _x4;
+		TextureDrawPos_vertices[9] = _y4;
+		TextureDrawPos_vertices[10] = _x1;
+		TextureDrawPos_vertices[11] = _y1;
+		graphics.drawTriangles( TextureDrawPos_vertices, TextureDrawPos_indices, TextureDrawPos_uvtData );
+		graphics.endFill();
+	}
+	
+	
+	
+	
+	// 
+	
+	
+	public static function InternalSetDrawTarget( target )
+	{
+		if ( !target )
+			target = container;
+		GM.internalrendertarget = target;
+		GM.graphics = internalrendertarget.graphics;
+	}
+	
 	// Instances
 	
-	public static function InternalInstanceCreate( _x, _y, _obj )
+	public static function AddInstance( _x, _y, _obj, _basis = null )
 	{
-		debugTracker = "InternalInstanceCreate";
-		Log( "Create instance " + _obj );
-		
-		if ( !_obj )
+		var o = _obj;
+		if ( !o )
 			return;
 		GMObject._createx = _x;
 		GMObject._createy = _y;
-		var Inst = new _obj();
-		if ( true )
-			debugTracker += " - " + _obj;
-		
-		container.addChild( Inst );
-		instances.push( Inst );
-		
-		Inst.Create();
-		
-		return Inst;
+		var inst = new o();
+		inst.x = _x;
+		inst.y = _y;
+		inst.xstart = _x;
+		inst.ystart = _y;
+		GM.instances.splice( GM.instance_index++, 0, inst );
+		return inst;
 	}
-	
 	
 	public static function InternalInstanceDestroy( _inst )
 	{
@@ -507,36 +679,73 @@ public class GM
 		var pos = instances.indexOf( _inst );
 		if ( pos < 0 )
 			return;
-		instances.splice( pos, 1 );
+		Log( "Destroy instance " + _inst );
 		_inst.Cleanup();
 		_inst.exists = false;
-		// Remove from container
-		pos = container.getChildIndex( _inst )
-		if ( pos < 0 )
-			return;
-		container.removeChild( _inst );
+		
+		instances.splice( pos, 1 );
+		--instance_index;
 	}
 	
-	// Sprites
+	// Old - use "global.spritename" instead
+	public static function InternalSpriteGet( sprname )
+	{
+		var spr;
+		if ( typeof sprname == "string" )
+			spr = internalspritemap[ sprname ];
+		else
+			spr = internalspritemap[ sprname.name ];
+		if ( spr == null )
+			return -1;
+		return spr;
+	}
 	
 	public static function InternalSpriteDraw( _sprite, _image, _x, _y, _xscale = 1, _yscale = 1, _angle = 0, _blend = 0xFFFFFF, _alpha = 1 )
 	{
-		if ( !_sprite || ( _sprite == -1 ) )
-			return;
-		//trace( "draw " + _sprite.name + "[" + _image + "] at " + _x + ", " + _y );
-		// real bitmap cached drawing not implemented yet
-		// currently just moves symbols into place and hides them next frame
+		// Todo - draw _subimg.bitmapdata with container.graphics instead
 		
+		if ( !_sprite || ( _sprite < 0 ) )
+			return;
 		var _symbol = _sprite.symbol;
 		if ( !_symbol )
 			return;
 		var _subimg = Math.floor( _image % _symbol.totalFrames );
 		var usebitmap = true;
-		if ( !_symbol.visible && !usebitmap )
+		var _spriteImage;
+		
+		if ( false && usebitmap )
+		{ 
+			// wip - draw straight to container
+			internaldrawmatrix = new Matrix();
+			internaldrawmatrix.tx = 0;
+			internaldrawmatrix.ty = 0;
+			internaldrawmatrix.scale( _xscale, _yscale );
+			_spriteImage = _sprite.GetImage( _subimg );
+			if ( _spriteImage )
+			{
+				var g = internalrendertarget.graphics;
+				var x1 = _x - ( _sprite.x * _xscale );
+				var y1 = _y - ( _sprite.y * _yscale );
+				var x2 = x1 + ( _sprite.width * _xscale );
+				var y2 = y1 + ( _sprite.height * _yscale );
+				
+				g.beginFill( 0xFFFFFF, 1 );
+				
+				g.endFill();
+				
+			}
+			return;
+		}
+		
+		if ( false && !_symbol.visible )
 		{
 			_tempdrawsprites.push( _symbol );
-			var pos = container.numChildren;
-			container.setChildIndex( _symbol, pos - 1 );
+			var pos = internalrendertarget.numChildren;
+			if ( pos > 0 )
+			{
+				--pos;
+				internalrendertarget.setChildIndex( _symbol, pos );
+			}
 			if ( _symbol.totalFrames > 1 )
 				_symbol.gotoAndStop( _subimg + 1 );
 		}
@@ -550,7 +759,7 @@ public class GM
 			}
 			//else
 			{
-				var _spriteImage = _sprite.GetImage( _subimg );
+				_spriteImage = _sprite.GetImage( _subimg );
 				if ( _spriteImage.bitmapdata )
 				{
 					var _shape = new Bitmap( _spriteImage.bitmapdata );
@@ -561,19 +770,14 @@ public class GM
 					_shape.y = 0 -_sprite.y;
 				}
 			}
-			container.addChild( _symbol );
+			internalrendertarget.addChild( _symbol );
 			_tempsymbols.push( _symbol );
-			if ( _tempsymbols.length > 200 )
+			if ( _tempsymbols.length > 280 )
 			{
 				var _get = _tempsymbols.shift();
 				_get.parent.removeChild( _get );
 			}
 		}
-		
-		var r = ( ( _blend >> 16 ) & 0xFF ) / 255;
-		var g = ( ( _blend >> 8 ) & 0xFF ) / 255;
-		var b = ( ( _blend ) & 0xFF ) / 255;
-		
 		var color;
 		if ( internalfog )
 		{
@@ -583,13 +787,16 @@ public class GM
 		}
 		else
 		{
+			var _r = ( ( _blend >> 16 ) & 0xFF ) / 255;
+			var _g = ( ( _blend >> 8 ) & 0xFF ) / 255;
+			var _b = ( ( _blend ) & 0xFF ) / 255;
 			color = _symbol.transform.colorTransform;
 			color.redOffset = 0;
 			color.greenOffset = 0;
 			color.blueOffset = 0;
-			color.redMultiplier = r;
-			color.greenMultiplier = g;
-			color.blueMultiplier = b;
+			color.redMultiplier = _r;
+			color.greenMultiplier = _g;
+			color.blueMultiplier = _b;
 			color.alphaMultiplier = 1;
 			_symbol.transform.colorTransform = color;
 		}
@@ -612,6 +819,7 @@ public class GM
 	
 	public static function InternalSpriteDrawPart( _sprite, _subimg, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _colour, _alpha )
 	{
+		// Todo - use bitmapdata cropped region
 		var _symbol = GM.InternalSpriteDraw( _sprite, _subimg, _x, _y, _xscale, _yscale, 0, _colour, _alpha );
 		if ( !_symbol )
 			return;
@@ -622,11 +830,12 @@ public class GM
 		
 		if ( true )
 		{
+			var g;// = internalrendertarget.graphics;
 			var _mask = new Shape();
-			container.addChild( _mask );
+			internalrendertarget.addChild( _mask );
 			_mask.x = 0;
 			_mask.y = 0;
-			var g = _mask.graphics;
+			g = _mask.graphics;
 			g.beginFill( 0, 1 );
 			g.drawRect( _x, _y, _width * _xscale, _height * _yscale );
 			g.endFill();
@@ -637,33 +846,51 @@ public class GM
 		return _symbol;
 	}
 	
-	public static function InternalSpriteGet( sprname )
+	public static function InternalSpriteDrawPos( _sprite, _subimg, x1, y1, x2, y2, x3, y3, x4, y4, alpha )
 	{
-		var spr;
-		if ( typeof sprname == "string" )
-			spr = internalspritemap[ sprname ];
-		else
-			spr = internalspritemap[ sprname.name ];
-		if ( spr == null )
-			return -1;
-		return spr;
+		if ( !_sprite || ( _sprite == -1 ) )
+			return;
+		var _subimg = Math.floor( _subimg % ( _sprite.count ) );
+		var _spriteImage = _sprite.GetImage( _subimg );
+		var _bitmapData = _spriteImage.bitmapdata;
+		var g = internalrendertarget.graphics;
+		
+		g.beginBitmapFill( _bitmapData, null, false, false );
+		//
+		TextureDrawPos_vertices[0] = x1;
+		TextureDrawPos_vertices[1] = y1;
+		TextureDrawPos_vertices[2] = x2;
+		TextureDrawPos_vertices[3] = y2;
+		TextureDrawPos_vertices[4] = x3;
+		TextureDrawPos_vertices[5] = y3;
+		TextureDrawPos_vertices[6] = x3;
+		TextureDrawPos_vertices[7] = y3;
+		TextureDrawPos_vertices[8] = x4;
+		TextureDrawPos_vertices[9] = y4;
+		TextureDrawPos_vertices[10] = x1;
+		TextureDrawPos_vertices[11] = y1;
+		TextureDrawPos_uvtData[0] = 0;
+		TextureDrawPos_uvtData[1] = 0;
+		TextureDrawPos_uvtData[2] = 1;
+		TextureDrawPos_uvtData[3] = 0;
+		TextureDrawPos_uvtData[4] = 1;
+		TextureDrawPos_uvtData[5] = 1;
+		TextureDrawPos_uvtData[6] = 1;
+		TextureDrawPos_uvtData[7] = 1;
+		TextureDrawPos_uvtData[8] = 0;
+		TextureDrawPos_uvtData[9] = 1;
+		TextureDrawPos_uvtData[10] = 0;
+		TextureDrawPos_uvtData[11] = 0;
+		g.drawTriangles( TextureDrawPos_vertices, null, TextureDrawPos_uvtData );
+		//
+		g.endFill();
 	}
 	
 	// Drawing
 	
-	public static function InternalSetColor( col )
-	{
-		internaldrawcolor = col;
-	}
-	
-	public static function InternalSetAlpha( alpha )
-	{
-		internaldrawalpha = alpha;
-	}
-	
 	public static function InternalDrawLine( x1, y1, x2, y2, w, a = null )
 	{
-		var g = container.graphics;
+		var g = internalrendertarget.graphics;
 		if ( a == null )
 			a = internaldrawalpha;
 		g.lineStyle( w, internaldrawcolor, a );
@@ -673,7 +900,7 @@ public class GM
 	
 	public static function InternalDrawRectangle( x1, y1, x2, y2, outline = false )
 	{
-		var g = container.graphics;
+		var g = internalrendertarget.graphics;
 		var a = null;
 		if ( a == null )
 			a = internaldrawalpha;
@@ -749,6 +976,7 @@ public class GM
 import gamemaker.*;
 
 import flash.display.*;
+import flash.events.*;
 import flash.geom.*;
 import flash.media.*;
 
@@ -756,103 +984,25 @@ import com.threerings.*;
 import com.whirled.*;
 
 
-// sprite data automatically generated
-// from symbols in the scene when the body is created
-// 
-class GMInternalSprite
+class GMEvent extends Event
 {
-	public var symbol;
-	public var name = "sprite";
-	public var count = 0;
-	public var images = [];
-	public var x = 0;
-	public var y = 0;
-	public var width = 0;
-	public var height = 0;
-	public var bounds;
-	
-	public var isBitmap = true;
-	
-	public function GMInternalSprite( _symbol = null, _isbitmap = true )
+	public var value;
+	public function GMEvent( type, value = null )
 	{
-		symbol = _symbol;
-		isBitmap = _isbitmap;
-		// 
-		symbol.x = 0;
-		symbol.y = 0;
-		symbol.scaleX = 1; // 5;
-		symbol.scaleY = 1; // 5;
-		
-		var transformMatrix = symbol.transform.concatenatedMatrix;
-		symbol.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
-		symbol.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
-		bounds = symbol.transform.pixelBounds;
-		
-		//var getshape = symbol.getChildAt( 0 ) as Shape;
-		//var data = getshape.graphics;
-		
-		name = symbol.name;
-		width = symbol.width;
-		height = symbol.height;
-		
-		x = -bounds.x;
-		y = -bounds.y;
-		width = bounds.width;
-		height = bounds.height;
-		
-		// trace( name + ", " + "x:" + x + " y:" + y + ", w:" + width + " h:" + height );
-		
-		for ( var i = 0; i < symbol.totalFrames; ++i )
-		{
-			if ( symbol.numChildren < 1 )
-				continue;
-			++count;
-			GetImage( i );
-		}
+		super( type );
+		this.value = value;
 	}
-	
-	public function Cleanup()
-	{
-		while ( images.length > 0 )
-		{
-			var frame = images.pop();
-			if ( !frame || !frame.bitmapdata )
-				continue;
-			frame.bitmapdata.dispose();
-		}
-	}
-	
-	public function GetImage( index )
-	{
-		var i = Math.floor( index ) % count;
-		var frame = images[i];
-		if ( !frame )
-		{
-			var pre_x = symbol.x;
-			var pre_y = symbol.y;
-			trace( "get bitmap data for " + name + ":" + i );
-			frame = {};
-			images[i] = frame;
-			frame.symbol = symbol;
-			frame.bitmapdata = new BitmapData( width, height, true, 0x00FFFFFF );
-			symbol.gotoAndStop( i + 1 );
-			var offset = new Matrix();
-			offset.tx = x;
-			offset.ty = y;
-			frame.bitmapdata.draw( symbol, offset );
-		}
-		return frame;
-	}
-	
 }
 
-class GMInternalSound
+// Sound asset
+
+class GMSound
 {
 	public var audio;
 	public var sound;
 	public var inst;
 	
-	public function GMInternalSound( _audio )
+	public function GMSound( _audio )
 	{
 		audio = _audio;
 		sound = new audio();
@@ -873,4 +1023,190 @@ class GMInternalSound
 			inst = null;
 		}
 	}
+}
+
+
+// sprite data automatically generated
+// from symbols in the scene when the body is created
+// 
+class GMSprite
+{
+	public var symbol;
+	public var name = "sprite";
+	public var count = 0;
+	public var images = [];
+	public var x = 0;
+	public var y = 0;
+	public var width = 0;
+	public var height = 0;
+	public var bounds;
+	
+	public var isBitmap = true;
+	
+	public function GMSprite()
+	{
+		
+	}
+	
+	public function Cleanup()
+	{
+		while ( images.length > 0 )
+		{
+			var frame = images.pop();
+			if ( !frame || !frame.bitmapdata )
+				continue;
+			frame.bitmapdata.dispose();
+		}
+	}
+	
+	
+	public function CreateFromSymbol( symbol )
+	{
+		this.symbol = symbol;
+		name = symbol.name;
+		
+		symbol.x = 0;
+		symbol.y = 0;
+		symbol.scaleX = 1; // 5;
+		symbol.scaleY = 1; // 5;
+		
+		var transformMatrix = symbol.transform.concatenatedMatrix;
+		symbol.scaleX = Math.min( transformMatrix.a, 1 / transformMatrix.a );
+		symbol.scaleY = Math.min( transformMatrix.d, 1 / transformMatrix.d );
+		bounds = symbol.transform.pixelBounds;
+		
+		x = -bounds.x;
+		y = -bounds.y;
+		width = bounds.width;
+		height = bounds.height;
+		
+		count = 0;
+		for ( var i = 0; i < symbol.totalFrames; ++i )
+		{
+			if ( symbol.numChildren < 1 )
+				continue;
+			++count;
+			GetImage( i );
+		}
+	}
+	
+	public function GetImage( index )
+	{
+		var i = Math.floor( index ) % this.count;
+		if ( i < 0 )
+			i += this.count;
+		var frame = images[i];
+		if ( !frame )
+		{
+			var symbol = this.symbol;
+			frame = {};
+			images[i] = frame;
+			if ( symbol )
+			{
+				var pre_x = symbol.x;
+				var pre_y = symbol.y;
+				trace( "get bitmap data for " + name + ":" + i );
+				frame.symbol = symbol;
+				frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00FFFFFF );
+				symbol.gotoAndStop( i + 1 );
+				var offset = new Matrix();
+				offset.tx = this.x;
+				offset.ty = this.y;
+				frame.bitmapdata.draw( symbol, offset );
+			}
+		}
+		return frame;
+	}
+	
+	public function Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha )
+	{
+		if ( this.count <= 0 )
+			return;
+		_subimg = _subimg % this.count;
+		if ( _subimg < 0 )
+			_subimg += this.count;
+		var image = this.GetImage( _subimg );
+		var bmd = image.bitmapdata;
+		if ( bmd )
+		{
+			GM.Graphics_TextureDraw( bmd, this.x, this.y, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
+			return;
+		}
+	}
+	
+	public function DrawSimple( _subimg, _x, _y, _alpha )
+	{
+		if ( this.count <= 0 )
+			return;
+		_subimg = _subimg % this.count;
+		if ( _subimg < 0 )
+			_subimg += this.count;
+		var image = this.GetImage( _subimg );
+		var bmd = image.bitmapdata;
+		if ( bmd )
+		{
+			GM.Graphics_TextureDrawSimple( bmd, _x - this.x, _y - this.y, _alpha );
+			return;
+		}
+	}
+	
+	public function DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha )
+	{
+		if ( this.count <= 0 )
+			return;
+		_subimg = _subimg % this.count;
+		if ( _subimg < 0 )
+			_subimg += this.count;
+		var image = this.GetImage( _subimg );
+		var bmd = image.bitmapdata;
+		
+		GM.Graphics_TextureDrawPos( bmd, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+	}
+	
+	public function DrawTiled(  )
+	{
+		
+	}
+}
+
+// Surface - TBA
+
+class GMSurface
+{
+	public var surface = new Sprite();
+	public var mask = new Shape();
+	
+	public var width = 0;
+	public var height = 0;
+	
+	public function GMSurface( ww, hh )
+	{
+		width = ww;
+		height = hh;
+		
+		surface.addchild( mask );
+	}
+	
+	public function Resize( ww, hh )
+	{
+		mask.graphics.clear();
+		mask.graphics.beginFill( 0, 1 );
+		mask.graphics.drawrect( 0, 0, ww, hh );
+		mask.graphics.endFill();
+	}
+}
+
+// Texture Item
+
+class GMTextureImage
+{
+	
+	public var bitmapdata;
+	public var bitmapdata_cache = {};
+	
+	public function GMTextureImage( bitmapdata )
+	{
+		this.bitmapdata = bitmapdata;
+	}
+	
 }
