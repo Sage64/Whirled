@@ -25,16 +25,20 @@ import com.whirled.*
 
 public class DeltarunePlayerBody extends DeltaruneBody
 {
+	public static const INPUT_DOWN = 0;
+	public static const INPUT_RIGHT = 1;
+	public static const INPUT_UP = 2;
+	public static const INPUT_LEFT = 3;
+	
+	public static const FLAG_AUTORUN = 11;
+	
 	public var chara;
+	
+	public var menu_object;
 	
 	public var swordmode = false;
 	public var heroname = "Hero";
 	public var herocolor = 0xFFFFFF;
-	
-	public var namecol_lw = 0xFFFFFF;
-	public var namecol_dw = 0xFFFFFF;
-	public var nameout_lw = 0x000000;
-	public var nameout_dw = 0x000000
 	
 	public var partylist = [];    // All remote members of the party
 	
@@ -42,24 +46,36 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	public var followtargethistory = []; // movement history of the party member im following
 	public var followtargetdelay = 20;
 	
+	public var keyboardInputPanel;
+	
 	public function DeltarunePlayerBody()
 	{
-		global.obj_mainchara = obj_mainchara;
-		
 		super();
 		use_delta = false;
-		
 		
 		global.input_pressed = new Array( 10 );
 		global.input_held = new Array( 10 );
 		
-		// 
+		InitMenu();
+		
+		myactions["keyboardmode"] = AddAction( "[Open Keyboard Control]", Action_OpenKeyboardControl );
 		
 		mymemories["autorun"] = AddMemory( "deltarune.autorun", 0, SetAutorun );
 		myactions["autorun_toggle"] = AddAction_ToggleMemory( "[Toggle Autorun]", "deltarune.autorun" );
 		
-		myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
-		myactions["battlemode"].hidden = true;
+		// myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
+		// myactions["battlemode"].hidden = true;
+		
+		if ( false )
+		{
+			ctrl.registerCustomConfig( GetKeyboardPopup );
+			myactions["devpanel"].hidden = false;
+		}
+	}
+	
+	public function InitMenu()
+	{
+		myactions["deltarune.menu"] = AddAction( "[Open Menu]", Action_OpenMenu );
 	}
 	
 	override public function OnStateChanged()
@@ -68,8 +84,6 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		
 		if ( !curState )
 			return;
-		
-		
 	}
 	
 	override public function OnUpdateLook()
@@ -106,7 +120,7 @@ public class DeltarunePlayerBody extends DeltaruneBody
 				global.input_held[INPUT_UP] = 0;
 			}
 		}
-		global.facing = ( Math.round( ( ( 360 + 90 ) - direction ) / 45 ) ) % 8;
+		global.facing = ( Math.round( ( ( 360 + 90 ) - direction ) / 90 ) ) % 4;
 	}
 	
 	public function PetStep()
@@ -121,266 +135,160 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	
 	public function Action_ToggleAutorun( data = null )
 	{
-		SetMemory( "deltarune.autorun", ( global.flag[DeltaruneBody.FLAG_AUTORUN] == 1 ) ? 0 : 1 );
+		SetMemory( "deltarune.autorun", ( global.flag[FLAG_AUTORUN] == 1 ) ? 0 : 1 );
 	}
 	
 	public function SetAutorun( data = 0 )
 	{
 		if ( data )
-			global.flag[DeltaruneBody.FLAG_AUTORUN] = 1;
+			global.flag[FLAG_AUTORUN] = 1;
 		else
-			global.flag[DeltaruneBody.FLAG_AUTORUN] = 0;
-		GMControl.Log( "deltarune flag[" + DeltaruneBody.FLAG_AUTORUN + "] = " + global.flag[DeltaruneBody.FLAG_AUTORUN] );
+			global.flag[FLAG_AUTORUN] = 0;
+		GMControl.Log( "deltarune flag[" + FLAG_AUTORUN + "] = " + global.flag[FLAG_AUTORUN] );
+	}
+	
+	//
+	
+	public function GetKeyboardPopup()
+	{
+		if ( !keyboardInputPanel )
+			keyboardInputPanel = new KeyboardControlPopup();
+		return keyboardInputPanel;
+	}
+	
+	public function Action_OpenKeyboardControl( data = null )
+	{
+		if ( !keyboardInputPanel )
+			keyboardInputPanel = new KeyboardControlPopup();
+		GMControl.DoPopup( keyboardInputPanel, keyboardInputPanel.size_w, keyboardInputPanel.size_h );
 	}
 	
 	public function Action_OpenBattleBox( data = null )
 	{
-		// ctrl.DoPopup(  );
+		
 	}
 	
+	public function Action_OpenMenu( data = null )
+	{
+		if ( !GMControl.isControl )
+			return;
+		if ( instance_exists( menu_object ) )
+		{
+			instance_destroy( menu_object );
+			ctrl.clearPopup();
+			return;
+		}
+		menu_object = instance_create( 0, 0, obj_darkmenu );
+		if ( menu_object.surf == GMControl.popup_surface )
+		{
+			var res = GMControl.DoPopup( null, 640, 420 );
+		}
+	}
 	
 }
 } // Package
 
+
 import gamemaker.*;
 import deltarune.*;
 import deltarune.objects.*;
-
 import flash.display.*;
 import flash.events.*;
-import flash.text.*;
-import flash.utils.*;
+import flash.geom.*;
+import flash.ui.*;
 
-import com.threerings.util.*
-import com.whirled.*
-
-
-class obj_mainchara extends DeltaruneObject
+class KeyboardControlPopup extends Sprite
 {
-	public var darkmode = 0;
 	
-	// Input
-	public var press_l = 0;
-	public var press_r = 0;
-	public var press_d = 0;
-	public var press_u = 0;
-	public var nopress = 0;
-	public var fun = 0;
+	public var s;
+	public var g;
 	
-	// Movement
-	public var px = 0;
-	public var py = 0;
-	public var walk = 0;
-	public var walkbuffer = 0;
-	public var walktimer = 0;
-	public var bwspeed = 3;
-	public var wspeed = 3;
-	public var runheld = false;
-	public var run = 0;
-	public var autorun = 0;
-	public var runtimer = 0;
-	public var runmove = 0;
-	public var canrun = true;
-	public var runcounter = 0;
+	var size_w = 200;
+	var size_h = 128;
 	
-	// Appearance
-	public var offset_x = 0;
-	public var offset_y = 0;
-	public var facing = 0;
-	public var dsprite = -1;
-	public var rsprite = -1;
-	public var usprite = -1;
-	public var lsprite = -1;
+	public function KeyboardControlPopup()
+	{
+		addEventListener( Event.UNLOAD, Cleanup );
+		name = "Input Handler";
+		s = this;
+		g = s.graphics;
+		
+		g.clear();
+		g.beginFill( 0 );
+		g.drawRect( 0, 0, size_w, size_h );
+		g.endFill();
+		
+		s.addEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
+		GM.media.stage.focus = s;
+	}
 	
-	// Battle
-	public var battlemode = 0;
+	public function Cleanup( ... ignored )
+	{
+		s.removeEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
+	}
 	
-	public function obj_mainchara()
+	public function OnKeyDown( ev )
+	{
+		GM.Log( "key down" );
+	}
+	
+	public function OnKeyUp( ev )
+	{
+		GM.Log( "key up" );
+	}
+}
+
+class obj_darkmenu extends DeltaruneObject
+{
+	public var surf;
+	
+	public var menuw = 640;
+	public var menuh = 420;
+	
+	public function obj_darkmenu()
 	{
 		super();
 		
-		image_speed = 0;
-		
-		darkmode = global.darkzone;
-		
-		dsprite = global.spr_krisd;
-		rsprite = global.spr_krisr;
-		usprite = global.spr_krisu;
-		lsprite = global.spr_krisl;
-		
-		sprite_set( dsprite );
-		
-		offset_x = ( sprite_get_width( dsprite ) / 2 );
-		offset_y = ( sprite_get_height( dsprite ) - 1 );
+		width = menuw;
+		height = menuh;
 	}
 	
-	override public function Create()
+	override public function Cleanup()
 	{
-		
+		GM.Log( "Remove surf" );
+		surf = null;
 	}
 	
-	
-	override public function Step()
+	public function SetSize( _w = null, _h = null )
 	{
-		super.Step();
-		GMControl.debugTracker = "DeltarunePlayerBody.Step";
-		if ( fun == 0 )
-			PlayerControl();
-		else
-			runtimer = 0;
-		if ( fun == 0 )
-			AnimateWalk();
+		if ( _w != null )
+			width = _w;
+		if ( _h != null )
+			height = _h;
 	}
 	
 	override public function Draw()
 	{
-		var x = this.x - ( offset_x * image_xscale );
-		var y = this.y - ( offset_y * image_yscale );
-		
-		
-		
-		scr_draw_chaseaura( sprite_current, image_index, x, y );
-		
-		draw_sprite_ext( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
-		
-		if ( battlemode == 1 )
+		if ( !GM.overlay.visible )
 		{
-			
+			GM.Log( "popup not visible" );
+			return;
 		}
+		surface_set_target( GM.overlay );
+		
+		DrawMenu();
+		
+		surface_reset_target();
 	}
 	
-	// Simulate how the player animates
-	// based on current movement
-	public function PlayerControl()
+	public function DrawMenu()
 	{
-		//
-		TestSpeed();
+		var x1 = 0;
+		var y1 = 0;
+		var x2 = menuw;
+		var y2 = menuh;
 		
-		// 
-		if ( run )
-			runtimer += timescale;
-		else
-			runtimer = 0;
 		
-		// 
-		
-		px = 0;
-		py = 0;
-		
-		if ( press_r )
-		{
-			px = wspeed;
-		}
-		if ( press_l )
-		{
-			px = -wspeed;
-		}
-		if ( press_d )
-		{
-			py = wspeed;
-		}
-		if ( press_u )
-		{
-			py = -wspeed;
-		}
-		
-		// 
-		
-		nopress = 0;
-		
-		//
-		
-		runmove = 0;
-		
-		if ( ( run  == 1) && ( px != 0 || py != 0 ) )
-		{
-			runmove = 1;
-			runtimer += timescale;
-			runcounter += timescale;
-		}
-		else
-			runtimer = 0;
+		scr_darkbox( x1, y1, x2, y2 );
 	}
-	
-	// Adjust move speed based on various factors
-	public function TestSpeed()
-	{
-		run = global.flag[DeltaruneBody.FLAG_AUTORUN];
-		if ( runheld )
-			run = !run;
-		if ( autorun > 0 )
-		{
-			run = 1;
-			if ( autorun == 1 )
-			{
-				runtimer = 200;
-			}
-			else if ( autorun == 2 )
-			{
-				runtimer = 50;
-			}
-		}
-		if ( !canrun )
-			run = 0;
-		if ( run == 1 )
-		{
-			if ( darkmode )
-			{
-				if ( runtimer > 60 )
-					wspeed = bwspeed + 5;
-				else if ( runtimer > 10 )
-					wspeed = bwspeed + 4;
-				else
-					wspeed = bwspeed + 2;
-			}
-			else
-			{
-				if ( runtimer > 60 )
-					wspeed = bwspeed + 3;
-				else if ( runtimer > 10 )
-					wspeed = bwspeed + 2;
-				else
-					wspeed = bwspeed + 1;
-			}
-		}
-		else
-			wspeed = bwspeed;
-		if ( body && body.leader == this )
-			body.SetMoveSpeed( wspeed );
-	}
-	
-	// 
-	
-	public function AnimateWalk()
-	{
-		walk = 0;
-		if ( nopress == 0 )
-		{
-			if ( px != 0 || py != 0 )
-				walk = 1;
-		}
-		if ( walk == 1 )
-			walkbuffer = 6;
-		if ( walkbuffer > 3 )
-		{
-			walktimer += ( runmove ? 3 : 1.5 ) * timescale;
-			walktimer = walktimer % 40;
-			image_index = Math.floor( walktimer / 10 );
-		}
-		if ( walkbuffer <= 0 )
-		{
-			if ( walktimer < 10 )
-				walktimer = 9.5;
-			if ( walktimer >= 10 && walktimer < 20 )
-				walktimer = 19.5;
-			if ( walktimer >= 20 && walktimer < 30 )
-				walktimer = 29.5;
-			if ( walktimer >= 30 )
-				walktimer = 39.5
-			image_index = 0;
-		}
-		walkbuffer -= 0.75 * timescale;
-	}
-	
 }
-

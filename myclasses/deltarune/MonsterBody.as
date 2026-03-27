@@ -48,6 +48,10 @@ public class MonsterBody extends DeltaruneBody
 		
 		// Deltarune
 		
+		SetMemory( "deltarune.forcedarkzone", 1 );
+		
+		global.darkzone = 1;
+		
 		darkmode = true;
 		if ( darkmode )
 		{

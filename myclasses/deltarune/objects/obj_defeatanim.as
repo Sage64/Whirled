@@ -45,8 +45,15 @@ public class obj_defeatanim extends DeltaruneObject
 		if ( t == 0 )
 			draw_self();
 		
-		if ( g <= 5 || ( g >= 9 && g <= 15 ) )
-			draw_sprite_ext( global.spr_defeatsweat, 0, x - 6, y - 6, xsign, 1 );
+		if ( ( g > 0 && g <= 5 ) || ( g >= 9 && g <= 15 ) )
+		{
+			// sprite_update(); // updates offset/width values
+			
+			var _xx = x - sprite_xoffset;
+			var _yy = y - sprite_yoffset;
+			
+			draw_sprite_ext( global.spr_defeatsweat, 0, _xx - ( 6 * xsign ), _yy, xsign, 1, image_angle, image_alpha, image_blend );
+		}
 		
 		if ( t >= 1 )
 		{

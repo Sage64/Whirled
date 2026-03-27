@@ -49,7 +49,7 @@ public class obj_deathanim extends DeltaruneObject
 			x -= sprite_get_xoffset( sprite_index ) * image_xscale;
 			y -= sprite_get_yoffset( sprite_index ) * image_yscale;
 			truew = sprite_get_width(sprite_index);
-			trueh = sprite_get_width(sprite_index);
+			trueh = sprite_get_height(sprite_index);
 			imgx = image_xscale;
 			imgy = image_yscale;
 			if ( truew >= 100 || truew >= 100 )
@@ -107,7 +107,7 @@ public class obj_deathanim extends DeltaruneObject
 			return;
 		}
 		var i,j;
-		var sprite_index = sprite_current;
+		//var sprite_index = sprite_current;
 		for ( i = 0; i <= xs; i += 1 )
 		{
 			for ( j = 0; j <= ys; j += 1 )

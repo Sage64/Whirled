@@ -155,7 +155,7 @@ public class MikeBody extends MonsterBody
 			var doomed;
 			
 			// Pluey
-			if ( spr == spr_mike_m || spr == spr_mike_m_sad )
+			if ( spr == global.spr_mike_m || spr == global.spr_mike_m_sad )
 			{
 				if ( !instance_exists( mike_m ) )
 				{
@@ -179,7 +179,7 @@ public class MikeBody extends MonsterBody
 				mike_m = null;
 			}
 			// Jongler
-			if ( spr == spr_mike_big )
+			if ( spr == global.spr_mike_big )
 			{
 				if ( !instance_exists( mike_b ) )
 				{

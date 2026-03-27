@@ -31,8 +31,6 @@ import com.whirled.*
 
 public class HolyWaterBody extends MonsterBody
 {
-	public var spr_watercooler = sprite_get( "spr_watercooler" );
-	
 	public var mizzle;
 	public var singer;
 	public var watercooler;
@@ -82,8 +80,11 @@ public class HolyWaterBody extends MonsterBody
 				
 				watercooler.x = originX;
 				watercooler.y = originY;
-				watercooler.x -= ( spr_watercooler.x * 2 );
-				watercooler.y -= ( spr_watercooler.y * 2 );
+				if ( global.spr_watercooler )
+				{
+					watercooler.x -= ( global.spr_watercooler.x * 2 );
+					watercooler.y -= ( global.spr_watercooler.y * 2 );
+				}
 				watercooler.inst = null;
 				
 				characterH = ( 43 + 2 ) * 2;
@@ -251,10 +252,10 @@ class obj_mizzle_enemy extends obj_monsterparent
 	public function OnUpdateLook()
 	{
 		if ( monsterstatus == 1 )
-			idlesprite = ( mercymod >= 100 ) ? spr_holywater_idle_pink : spr_holywater_idle;
+			idlesprite = ( mercymod >= 100 ) ? global.spr_holywater_idle_pink : global.spr_holywater_idle;
 		else
-			idlesprite = ( mercymod >= 100 ) ? spr_holywater_alarm_pink : spr_holywater_alarm;
-		hurtsprite = ( mercymod >= 100 ) ? spr_holywater_hurt_pink : spr_holywater_hurt;
+			idlesprite = ( mercymod >= 100 ) ? global.spr_holywater_alarm_pink : global.spr_holywater_alarm;
+		hurtsprite = ( mercymod >= 100 ) ? global.spr_holywater_hurt_pink : global.spr_holywater_hurt;
 		sparedsprite = idlesprite;
 		if ( body.nametag )
 			body.nametag.alpha = alpha;
@@ -302,14 +303,12 @@ class obj_mizzle_enemy extends obj_monsterparent
 
 class obj_mizzle_singer extends DeltaruneObject
 {
-	public var spr_holywater_sing = sprite_get( "spr_holywater_sing" );
-	
 	public var animtimer = 0;
 	
 	public function obj_mizzle_singer()
 	{
 		super();
-		sprite_set( spr_holywater_sing );
+		sprite_set( global.spr_holywater_sing );
 		image_speed = 0.1;
 		
 		image_xscale = -body.image_xscale;

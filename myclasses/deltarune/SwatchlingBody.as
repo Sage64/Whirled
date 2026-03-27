@@ -74,7 +74,7 @@ public class SwatchlingBody extends MonsterBody
 			instance_destroy( actor );
 			if ( !instance_exists( enemy ) )
 				enemy = instance_create( x, y, obj_swatchling_enemy );
-			characterH = enemy.sprite_height * ( image_yscale );
+			characterH = enemy.sprite_height;
 			characterH += 16;
 		}
 		else
@@ -102,8 +102,8 @@ public class SwatchlingBody extends MonsterBody
 				actor.walksprite = null;
 				actor.sprite_set( actor.idlesprite );
 			}
-			actor.offset_x = ( actor.sprite_width / 2 );
-			actor.offset_y = ( actor.sprite_height - 2 );
+			actor.offset_x = sprite_get_width( actor.sprite_current ) / 2;
+			actor.offset_y = sprite_get_height( actor.sprite_current ) - 2;
 			actor.image_speed = 0;
 			actor.idlespeed = 0.25;
 			switch ( actor.idlesprite )
@@ -139,7 +139,7 @@ public class SwatchlingBody extends MonsterBody
 					actor.offset_y += 2;
 					break;
 			}
-			characterH = actor.sprite_height * ( image_yscale );
+			characterH = actor.sprite_height;
 			characterH += 16;
 		}
 		SetViewOffset( 0, 0 - ( 10 + ( characterH / 2 ) ) );
@@ -315,6 +315,8 @@ class obj_swatchling_enemy extends obj_monsterparent
 		
 		image_speed = ( 1 / 6 );
 		
+		// image_blend = c_red;
+		
 		idlesprite = global.spr_swatchling_body;
 		hurtsprite = global.spr_swatchling_hurt;
 		sparedsprite = global.spr_swatchling_spared;
@@ -325,8 +327,8 @@ class obj_swatchling_enemy extends obj_monsterparent
 		monsterat = 9;
 		monsterdf = 0;
 		
-		offset_x = ( sprite_width / 2 ) + 9;
-		offset_y = ( sprite_height - 2 ) + 0.5;
+		offset_x = ( sprite_get_width( idlesprite ) / 2 ) + 9;
+		offset_y = ( sprite_get_height( idlesprite ) - 2 ) + 0.5;
 	}
 	
 	override public function Create()
@@ -362,7 +364,7 @@ class obj_swatchling_enemy extends obj_monsterparent
 		{
 			body.x = this.x;
 			body.y = this.y;
-			body.characterH = sprite_height * ( image_yscale );
+			body.characterH = sprite_height;
 			body.characterH += 16;
 		}
 		

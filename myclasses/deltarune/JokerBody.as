@@ -42,7 +42,7 @@ public class JokerBody extends MonsterBody
 		mystates["scythe"] = EnemyState( "Metamorphosis" );
 		mystates["postbattle"] = EnemyState( "Post-battle" );
 		
-		myactions["toggle_shadow"] = AddAction_Options( "[Toggle Shadow]", Action_ToggleShadow, [0, 1] );
+		myactions["toggle_shadow"] = AddAction_ToggleMemory( "[Toggle Shadow]", mymemories["shadow"], [0, 1] );
 		
 		myactions["snd_joker_oh"] = AddAction( "o", Action_PlaySound, "snd_joker_oh" );
 		myactions["snd_joker_chaos"] = AddAction( "Chaos, Chaos!", Action_PlaySound, "snd_joker_chaos" );

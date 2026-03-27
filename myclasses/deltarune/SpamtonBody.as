@@ -1745,7 +1745,7 @@ class obj_spamton_cherub extends DeltaruneObject
 	{
 		super();
 		
-		sprite_set( spr_spamton_cherub );
+		sprite_set( global.spr_spamton_cherub );
 		
 		y -= 150;
 		yspawn = y;
@@ -1811,8 +1811,8 @@ class obj_spamton_cherub extends DeltaruneObject
 			
 			if ((timer % 2) == 0)
 			{
-				d = instance_create(x + (cos((timer / 3) + offset) * 20), y + (sin((timer / 3) + offset) * 20), obj_animation);
-				d.sprite_set( spr_sparestar_anim );
+				d = instance_create(x + (cos((timer / 3) + offset) * 20), y + (sin((timer / 3) + offset) * 20), obj_animation );
+				d.sprite_set( global.spr_sparestar_anim );
 				d.image_speed = 0.5;
 				d.image_blend = c_lime;
 				d.image_xscale = 2;

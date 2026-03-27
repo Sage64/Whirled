@@ -7,13 +7,43 @@ package deltarune
 import gamemaker.*;
 import deltarune.objects.*;
 
-public class DeltaruneObject extends GMObject
+public dynamic class DeltaruneObject extends GMObject
 {    
-	
+	public static const obj_marker = DeltaruneObject;
 	
 	public function DeltaruneObject()
 	{
 		super();
+		
+	}
+	
+	public function scr_darkbox( x1, y1, x2, y2 )
+	{
+		var cur_jewel = ( ( current_time ) / 1000 ) * 30;
+		
+		var ww = ( x2 - x1 ) - 63;
+		if ( ww < 0 )
+			ww = 0;
+		var hh = ( y2 - y1 ) - 63;
+		if ( hh < 20 )
+			hh = 20;
+		if ( true )
+		{
+			draw_set_color( c_black );
+			draw_rectangle( x1 + 10, y1 + 10, x2 - 10, y2 - 10 );
+		}
+		draw_sprite_ext( global.spr_textbox_top, 0, x1 + 32, y1, ww, 2, 0, c_white, 1 );
+		draw_sprite_ext( global.spr_textbox_top, 0, x1 + 32, y2 + 1, ww, -2, 0, c_white, 1 );
+		if ( hh > 0 )
+		{
+			draw_sprite_ext( global.spr_textbox_left, 0, x2 + 1, y1 + 32, -2, hh, 0, c_white, 1 );
+			draw_sprite_ext( global.spr_textbox_left, 0, x1, y1 + 32, 2, hh, 0, c_white, 1 );
+		}
+		var img = ( cur_jewel / 10 );
+		draw_sprite_ext( global.spr_textbox_topleft, img, x1, y1, 2, 2, 0, c_white, 1 );
+		draw_sprite_ext( global.spr_textbox_topleft, img, x2 + 1, y1, -2, 2, 0, c_white, 1 );
+		draw_sprite_ext( global.spr_textbox_topleft, img, x1, y2 + 1, 2, -2, 0, c_white, 1 );
+		draw_sprite_ext( global.spr_textbox_topleft, img, x2 + 1, y2 + 1, -2, -2, 0, c_white, 1) ;
 		
 	}
 	
@@ -406,8 +436,9 @@ public class DeltaruneObject extends GMObject
 	
 	public function scr_draw_chaseaura( sprite_index, walk_index, x, y )
     {
-		var sprite_width = abs( sprite_get_width( sprite_index ) * image_xscale );
-		var sprite_height = ( sprite_get_height( sprite_index ) * image_yscale );
+		// sprite_update();
+		// var sprite_width = abs( sprite_get_width( sprite_index ) * image_xscale );
+		// var sprite_height = ( sprite_get_height( sprite_index ) * image_yscale );
 		
 		//
 		var facing = ( image_xscale < 0 ? 1 : 0 );

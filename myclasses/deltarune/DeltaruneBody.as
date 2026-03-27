@@ -24,13 +24,6 @@ import com.whirled.*
 
 public class DeltaruneBody extends GMBody
 {
-	public static const INPUT_DOWN = 0;
-	public static const INPUT_RIGHT = 1;
-	public static const INPUT_UP = 2;
-	public static const INPUT_LEFT = 3;
-	
-	public static const FLAG_AUTORUN = 11;
-	
 	// 
 	
 	public var darkmode = false;
@@ -80,19 +73,22 @@ public class DeltaruneBody extends GMBody
 			global.flag = new Array( 100 );
 			global.interact = 0;
 			global.chapter = 1;
+			global.darkzone = 0;
 		}
 		
-		
+		mymemories["chapter"] = AddMemory( "deltarune.chapter", global.chapter, SetChapter );
+		mymemories["forcedarkzone"] = AddMemory( "deltarune.forcedarkzone", global.darkzone, SetForceDarkMode );
 	}
 	
 	public function LWState( statename, sprites = null )
 	{
 		var State = AddState( statename );
 		// 
-		State.darkzone = 0;
-		State.run = 0;
-		State.board = 0;
+		State.darkzone = false;
+		State.run = false;
+		State.board = false;
 		State.sprite = sprites;
+		State.sprites = sprites;
 		State.directional = 0;
 		
 		if ( sprites != null )
@@ -103,16 +99,11 @@ public class DeltaruneBody extends GMBody
 				{
 					State.sprites = sprites;
 					State.directional = 4;
-					State.sprite = [
-						sprite_get( sprites[0] ),
-						sprite_get( sprites[1] ),
-						sprite_get( sprites[2] ),
-						sprite_get( sprites[3] )
-					]
+					State.sprite = sprites[0];
 				}
 			}
 			else
-				State.sprite = sprite_get( sprites );
+				State.sprite = sprites;
 			// trace( "sprite: " + State.sprite );
 		}
 		// 
@@ -139,15 +130,16 @@ public class DeltaruneBody extends GMBody
 	
 	override public function OnStateChanged()
 	{
-		if ( curState && curState.darkzone )
-			global.darkzone = 1;
-		else
-			global.darkzone = 0;
+		super.OnStateChanged();
+		
+		global.darkzone = ( curState && curState.darkzone ) ? 1 : ( mymemories["forcedarkzone"].value ? 1 : 0 );
 	}
 	
 	override public function OnUpdateLook()
 	{
 		super.OnUpdateLook();
+		SetScale ( global.darkzone ? darkscale : bscale  );
+		
 		if ( hDir > 0 )
 			image_xscale = -Math.abs( image_xscale );
 		else
@@ -192,9 +184,10 @@ public class DeltaruneBody extends GMBody
 		var tireddraw = ( isSleeping && nametag );
 		if ( tireddraw && global.spr_tiredmark )
 		{
-			var _sprscale = GM.unscaleX * 1.5;
+			var _tagscale = nametag.scaleX;
+			var _sprscale = _tagscale * 1.5;
 			var xx = nametag.x + ( nametag.width / 2 );
-			xx += ( 4 * _sprscale ) + ( GM.unscaleX * 4 ) + ( 16 * _sprscale / 2 ) - ( global.spr_tiredmark.width * _sprscale / 2 );
+			xx += ( 4 * _sprscale ) + ( _tagscale * 4 ) + ( 16 * _sprscale / 2 ) - ( global.spr_tiredmark.width * _sprscale / 2 );
 			var yy = nametag.y - ( nametag.height / 2 ) - ( global.spr_tiredmark.height * _sprscale / 2 );
 			if ( false )
 			{
@@ -211,21 +204,42 @@ public class DeltaruneBody extends GMBody
 	{
 		// wip follow behaviour for pets
 		return;
-		if ( ctrl.isPet && ( ctrl.getOwnerId() == ctrl.getEntityProperty( EntityControl.PROP_MEMBER_ID, _id ) ) )
-		{
-			var pos = ctrl.getLogicalLocation();
-			var ownerpos = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_LOGICAL, _id );
-			if ( _dest == null )
-				return;
-			if ( ownerpos == null )
-				return;
-			var dir = 90 - gml.point_direction( pos[0], ownerpos[2], ownerpos[0], pos[2] );
-			ctrl.setLogicalLocation( ownerpos[0], ownerpos[1], ownerpos[2], dir );
-		}
+		
 	}
 	
+	public function UpdateSprites( ... ignored )
+	{
+		
+	}
+	
+	public function SetChapter( val = 0 )
+	{
+		global.chapter = val;
+		UpdateSprites();
+	}
+	
+	public function SetForceDarkMode( val = 0 )
+	{
+		OnStateChanged();
+		UpdateSprites();
+	}
 	
 	// Deltarune gamemaker functions
+	
+	public function button1_h()
+	{
+		return false;
+	}
+	
+	public function button2_h()
+	{
+		return false;
+	}
+	
+	public function button3_h()
+	{
+		return false;
+	}
 	
 	public function scr_approach( a, b, amount )
 	{
