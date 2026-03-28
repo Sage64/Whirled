@@ -27,7 +27,7 @@ third argument of "AddBody" is the body class constructor function
 Group common sprites by placing them anywhere within a symbol that is exported for actionscript, and label each sprite within it as neccessary.
 Disable "Export in frame 1" to prevent unneccessary images inflating the file size!
 
-That symbol must be added in the main event to the avatar using "GMControl.AddSprites( <class_name> );"
+That symbol must be added in the main code to the avatar using "GMControl.AddSprites( <class_name> );"
 any amount of these can be added this way
 
 <img width="1292" height="825" alt="image" src="https://github.com/user-attachments/assets/134fd21e-d728-4325-8071-621116a15936" />
