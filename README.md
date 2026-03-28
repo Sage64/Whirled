@@ -1,4 +1,7 @@
-flash actionscript classes for creating/porting stuff based on Gamemaker language
+here's a poorly rushed """guide""" of my flash actionscript classes for creating/porting stuff based on Gamemaker language
+
+until i actually make a real one
+
 
 wanna use my shit?
 add myclasses to your classpaths
