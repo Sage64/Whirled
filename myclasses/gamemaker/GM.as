@@ -562,7 +562,7 @@ public class GM extends EventDispatcher
 			
 			if ( true )
 			{
-				xinc_w = 
+				// xinc_w = 0;
 			}
 			
 			var _x1 = _x;
