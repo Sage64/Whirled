@@ -246,7 +246,7 @@ public class GM extends EventDispatcher
 
 		internalstageitems[sprname] = symbol;
 		var _bitmap = true; //isBitmap;
-		if ( symbol["isBitmap"] == false )
+		if ( false && symbol["isBitmap"] == false )
 		{
 			Log( "isBitmap = false" );
 			_bitmap = false;
@@ -560,11 +560,16 @@ public class GM extends EventDispatcher
 			var xinc_h = 0;
 			var yinc_h = hh;
 			
+			if ( true )
+			{
+				xinc_w = 
+			}
+			
 			var _x1 = _x;
 			var _y1 = _y;
 			
-			_x1 += ox;
-			_y1 += oy;
+			_x1 += ox * _xscale;
+			_y1 += oy * _yscale;
 			
 			var _x2 = _x1 + xinc_w;
 			var _y2 = _y1 + yinc_w;
@@ -620,8 +625,11 @@ public class GM extends EventDispatcher
 	public static var TextureDrawPos_uvtData = new <Number>[ 0, 0,  1, 0,  1, 1,  1, 1,  0, 1,  0, 0 ];
 	public static function Graphics_TextureDrawPos( _bmd, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha )
 	{
+		var texelW = 1 / _bmd.width;
+		var texelH = 1 / _bmd.height;
+		
 		g_Matrix.identity();
-		graphics.beginBitmapFill( _bmd, null, true, false );
+		graphics.beginBitmapFill( _bmd, null, false, false );
 		//graphics.beginFill( 0xFF00FF, 1 );
 		TextureDrawPos_vertices[0] = _x1;
 		TextureDrawPos_vertices[1] = _y1;
@@ -635,8 +643,31 @@ public class GM extends EventDispatcher
 		TextureDrawPos_vertices[9] = _y4;
 		TextureDrawPos_vertices[10] = _x1;
 		TextureDrawPos_vertices[11] = _y1;
+		
+		var uvX = ( 0 - ( texelW ) ) * 0.65;
+		var uvY = ( 0 - ( texelH ) ) * 0.65;
+		
+		var u1 = uvX;
+		var u2 = 1 - uvX;
+		var v1 = uvY;
+		var v2 = 1 - uvY;
+		
+		TextureDrawPos_uvtData[0] = u1;
+		TextureDrawPos_uvtData[1] = v1;
+		TextureDrawPos_uvtData[2] = u2;
+		TextureDrawPos_uvtData[3] = v1;
+		TextureDrawPos_uvtData[4] = u2;
+		TextureDrawPos_uvtData[5] = v2;
+		TextureDrawPos_uvtData[6] = u2;
+		TextureDrawPos_uvtData[7] = v2;
+		TextureDrawPos_uvtData[8] = u1;
+		TextureDrawPos_uvtData[9] = v2;
+		TextureDrawPos_uvtData[10] = u1;
+		TextureDrawPos_uvtData[11] = v1;
+		
+		
 		graphics.drawTriangles( TextureDrawPos_vertices, TextureDrawPos_indices, TextureDrawPos_uvtData );
-		graphics.endFill();
+		//graphics.endFill();
 	}
 	
 	

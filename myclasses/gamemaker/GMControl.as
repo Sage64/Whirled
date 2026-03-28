@@ -23,6 +23,8 @@ import com.threerings.util.*;
 
 public class GMControl extends ActorControl
 {
+	public static var initdone;
+	
 	public static var debug = false;
 	public static const debug_log = GM.debug_log;
 	public static var debugTracker = "";
@@ -105,7 +107,13 @@ public class GMControl extends ActorControl
 		GMControl.isConnected = ctrl.isConnected();
 		
 		super( media );
-		InitWhirled();
+		
+		if ( !initdone )
+		{
+			Init( media );
+		}
+		
+		// InitWhirled();
 		
 		GMUpdateView();
 	}
@@ -135,9 +143,14 @@ public class GMControl extends ActorControl
 	{
 		if ( !GM.gm )
 			GM.Init( media, stageW, stageH );
+		if ( !ctrl )
+		{
+			ctrl = new GMControl( media );
+			return;
+		}
 		
+		GMControl.initdone = true;
 		Log( "GMControl Init" );
-		
 		GMControl.media = media;
 		GMControl.root = media.root;
 		
@@ -151,11 +164,13 @@ public class GMControl extends ActorControl
 		// GMControl.container = new Sprite();
 		// GMControl.container.cacheAsBitmap = true;
 		// media.addChild( GMControl.container );
+		
+		InitWhirled();
 	}
 	
 	public static function InitWhirled( ww = 600, hh = 450 )
 	{
-		Init( media );
+		// Init( media );
 		Log( "GMControl InitWhirled" );
 		
 		GM.ctrl = ctrl;
@@ -430,6 +445,11 @@ public class GMControl extends ActorControl
 	{
 		if ( body )
 			body.GMStateChanged( event );
+	}
+	
+	public static function GMKeyboardDown( ev )
+	{
+		GM.Log( "GMKeyboardDown" );
 	}
 	
 	/*
@@ -786,8 +806,8 @@ public class GMControl extends ActorControl
 		GM.view_width = GM.stageW / _scale;
 		GM.view_height = GM.stageH / _scale;
 		
-		GM.view_x = ( 0 ) - ( GM.stageW / 2 );
-		GM.view_y = ( 0 ) - ( GM.stageH / 2 );
+		GM.view_x = ( offx ) - ( GM.stageW / 2 );
+		GM.view_y = ( offy ) - ( GM.stageH / 2 );
 		
 		if ( GM.isLoaded )
 		{
@@ -845,6 +865,7 @@ public class GMControl extends ActorControl
 		{
 			body.OnMemoryChanged( event.name, event.value );
 			body.OnUpdateLook();
+			body.RegisterActions();
 		}
 	}
 	

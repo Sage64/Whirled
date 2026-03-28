@@ -25,6 +25,12 @@ public class MainPartyBody extends DeltarunePlayerBody
 	
 	public var leader;
 	
+	
+	public var unhappy = 0;
+	public var ralsei_butler = 0;
+	public var churchoutfit = 0;
+	
+	
 	public function MainPartyBody()
 	{
 		super();
@@ -36,16 +42,12 @@ public class MainPartyBody extends DeltarunePlayerBody
 		myactions["chapter_switch"] = AddAction_ToggleMemory( "[Chapter]", "deltarune.chapter", [ 1, 4 ]  );
 		myactions["toggle_darkzone"] = AddAction_ToggleMemory( "[Dark World]", "deltarune.forcedarkzone", [ false, true ] );
 		
-		// Misc.
-		myactions["toggle_church"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
 		
-		// Kris
-		
-		// Susie
-		
-		// Ralsei
 		mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, UpdateSprites );
-		myactions["toggle_ralseibutler"] = AddAction_ToggleMemory( "[Ralsei Butler]", "deltarune.ralsei.butler" );
+		myactions["toggle_ralsei_butler"] = AddAction_ToggleMemory( "[Ralsei Butler]", "deltarune.ralsei.butler" );
+		
+		mymemories["churchoutfit"] = AddMemory( "deltarune.churchoutfit", 0, UpdateSprites );
+		myactions["toggle_churchoutfit"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
 		
 	}
 	
@@ -123,11 +125,16 @@ public class MainPartyBody extends DeltarunePlayerBody
 			// _offy -= sprite_get_height( leader.dsprite ) * leader.image_yscale / 2;
 		}
 		
+		_offy -= 48 * image_yscale;
 		SetViewOffset( _offx, _offy );
 	}
 	
 	override public function UpdateSprites( ... ignored )
 	{
+		unhappy = 0;
+		ralsei_butler = mymemories["ralsei_butler"].value;
+		churchoutfit = mymemories["churchoutfit"].value;
+		
 		x = 0;
 		y = 0;
 		characterH = 24;
@@ -147,6 +154,10 @@ public class MainPartyBody extends DeltarunePlayerBody
 		{
 			Apply_Ralsei( ralsei );
 		}
+		if ( instance_exists( noelle ) )
+		{
+			Apply_Ralsei( noelle );
+		}
 		
 		OnUpdateLook();
 		
@@ -156,11 +167,13 @@ public class MainPartyBody extends DeltarunePlayerBody
 			y = leader.y;
 			characterH = 0;
 			if ( leader == kris )
-				characterH = ( sprite_get_height( global.spr_krisd ) ) * kris.image_yscale;
+				characterH = ( sprite_get_height( global.spr_krisd ) ) * leader.image_yscale;
 			else if ( leader == susie )
-				characterH = ( sprite_get_height( global.spr_susied ) ) * susie.image_yscale;
+				characterH = ( sprite_get_height( global.spr_susied ) ) * leader.image_yscale;
 			else if ( leader == ralsei )
-				characterH = ( sprite_get_height( global.spr_ralseid ) ) * ralsei.image_yscale;
+				characterH = ( sprite_get_height( global.spr_ralseid ) ) * leader.image_yscale;
+			else
+				characterH = ( sprite_get_height( leader.dsprite ) ) * leader.image_yscale;
 		}
 	}
 	
@@ -173,10 +186,30 @@ public class MainPartyBody extends DeltarunePlayerBody
 	{
 		inst.image_xscale = image_xscale;
 		inst.image_yscale = image_yscale;
-		inst.dsprite = ( global.darkzone ) ? global.spr_krisd_dark : global.spr_krisd;
-		inst.rsprite = ( global.darkzone ) ? global.spr_krisr_dark : global.spr_krisr;
-		inst.usprite = ( global.darkzone ) ? global.spr_krisu_dark : global.spr_krisu;
-		inst.lsprite = ( global.darkzone ) ? global.spr_krisl_dark : global.spr_krisl;
+		if ( global.darkzone )
+		{
+			inst.dsprite = global.spr_krisd_dark;
+			inst.rsprite = global.spr_krisr_dark;
+			inst.usprite = global.spr_krisu_dark;
+			inst.lsprite = global.spr_krisl_dark;
+		}
+		else
+		{
+			if ( churchoutfit )
+			{
+				inst.dsprite = global.spr_kris_walk_down_church;
+				inst.rsprite = global.spr_kris_walk_right_church;
+				inst.usprite = global.spr_krisu;
+				inst.lsprite = global.spr_kris_walk_left_church;
+			}
+			else
+			{
+				inst.dsprite = global.spr_krisd;
+				inst.rsprite = global.spr_krisr;
+				inst.usprite = global.spr_krisu;
+				inst.lsprite = global.spr_krisl;
+			}
+		}
 		inst.GetFacingSprite();
 		inst.offset_x = ( sprite_get_width( global.spr_krisd ) / 2 );
 		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
@@ -187,20 +220,33 @@ public class MainPartyBody extends DeltarunePlayerBody
 	{
 		inst.image_xscale = image_xscale;
 		inst.image_yscale = image_yscale;
-		if ( global.chapter > 1 )
+		
+		if ( global.darkzone )
 		{
-			inst.dsprite = ( global.darkzone ) ? global.spr_susie_walk_down_dw : global.spr_susie_walk_down_lw;
-			inst.rsprite = ( global.darkzone ) ? global.spr_susie_walk_right_dw : global.spr_susie_walk_right_lw;
-			inst.usprite = ( global.darkzone ) ? global.spr_susie_walk_up_dw : global.spr_susie_walk_up_lw;
-			inst.lsprite = ( global.darkzone ) ? global.spr_susie_walk_left_dw : global.spr_susie_walk_left_lw;
+			inst.dsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_down_dw : global.spr_susied_dark;
+			inst.rsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_right_dw : global.spr_susier_dark;
+			inst.usprite = ( global.chapter > 1 ) ? global.spr_susie_walk_up_dw : global.spr_susieu_dark;
+			inst.lsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_left_dw : global.spr_susiel_dark;
 		}
 		else
 		{
-			inst.dsprite = ( global.darkzone ) ?  global.spr_susied_dark : global.spr_susied;
-			inst.rsprite = ( global.darkzone ) ? global.spr_susier_dark : global.spr_susier;
-			inst.usprite = ( global.darkzone ) ?  global.spr_susieu_dark : global.spr_susieu;
-			inst.lsprite = ( global.darkzone ) ? global.spr_susiel_dark : global.spr_susiel;
+			if ( churchoutfit )
+			{
+				inst.dsprite = ( unhappy ) ? global.spr_susie_walk_down_church_neutral : global.spr_susie_walk_down_church;
+				inst.rsprite = ( unhappy ) ? global.spr_susie_walk_right_church_neutral : global.spr_susie_walk_right_church;
+				inst.usprite = global.spr_susie_walk_up_church;
+				inst.lsprite = ( unhappy ) ? global.spr_susie_walk_left_church_neutral : global.spr_susie_walk_left_church;
+			}
+			else
+			{
+				inst.dsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_down_lw : global.spr_susied;
+				inst.rsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_right_lw : global.spr_susier;
+				inst.usprite = ( global.chapter > 1 ) ? global.spr_susie_walk_up_lw : global.spr_susieu;
+				inst.lsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_left_lw : global.spr_susiel;
+			}
 		}
+		
+		
 		inst.GetFacingSprite();
 		inst.offset_x = ( sprite_get_width( global.spr_susied ) / 2 );
 		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
@@ -211,7 +257,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 	{
 		inst.image_xscale = image_xscale;
 		inst.image_yscale = image_yscale;
-		if ( mymemories["ralsei_butler"].value )
+		if ( ralsei_butler )
 		{
 			inst.dsprite = global.spr_cutscene_20_ralsei_walk_down_butler;
 			inst.rsprite = global.spr_cutscene_20_ralsei_walk_right_butler;

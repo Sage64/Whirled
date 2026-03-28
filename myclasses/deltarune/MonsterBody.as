@@ -125,6 +125,11 @@ public class MonsterBody extends DeltaruneBody
 	override public function Step()
 	{
 		super.Step();
+		StepEnemy();
+	}
+	
+	public function StepEnemy()
+	{
 		if ( curState && instance_exists( enemy ) )
 		{
 			switch ( curState )

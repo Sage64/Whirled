@@ -47,6 +47,8 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	public var followtargetdelay = 20;
 	
 	public var keyboardInputPanel;
+	public var keyboardMoveX = 0;
+	public var keyboardMoveY = 0;
 	
 	public function DeltarunePlayerBody()
 	{
@@ -59,17 +61,15 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		InitMenu();
 		
 		myactions["keyboardmode"] = AddAction( "[Open Keyboard Control]", Action_OpenKeyboardControl );
+		myactions["keyboardmode"].hidden = true;
 		
 		mymemories["autorun"] = AddMemory( "deltarune.autorun", 0, SetAutorun );
-		myactions["autorun_toggle"] = AddAction_ToggleMemory( "[Toggle Autorun]", "deltarune.autorun" );
-		
-		// myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
-		// myactions["battlemode"].hidden = true;
+		myactions["autorun_toggle"] = AddAction_ToggleMemory( "[Autorun]", "deltarune.autorun" );
 		
 		if ( false )
 		{
-			ctrl.registerCustomConfig( GetKeyboardPopup );
-			myactions["devpanel"].hidden = false;
+			myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
+			myactions["battlemode"].hidden = true;
 		}
 	}
 	
@@ -123,6 +123,29 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		global.facing = ( Math.round( ( ( 360 + 90 ) - direction ) / 90 ) ) % 4;
 	}
 	
+	override public function Step()
+	{
+		super.Step();
+		return;
+		// Keyboard Input Step
+		if ( keyboardInputPanel && ( keyboardInputPanel.HasFocus() ) )
+		{
+			var xmove = ( keyboardInputPanel.press_r - keyboardInputPanel.press_l );
+			var ymove = ( keyboardInputPanel.press_u - keyboardInputPanel.press_d );
+			
+			if ( xmove == 0 && ymove == 0 )
+			{
+			}
+			else
+			{
+				keyboardMoveX += ( body.moveSpeed * xmove );
+				keyboardMoveY += ( body.moveSpeed * ymove );
+			}
+		}
+		
+		
+	}
+	
 	public function PetStep()
 	{
 		if ( followtarget == null )
@@ -152,14 +175,17 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	public function GetKeyboardPopup()
 	{
 		if ( !keyboardInputPanel )
+		{
 			keyboardInputPanel = new KeyboardControlPopup();
+		}
+		keyboardInputPanel.Apply();
 		return keyboardInputPanel;
 	}
 	
 	public function Action_OpenKeyboardControl( data = null )
 	{
-		if ( !keyboardInputPanel )
-			keyboardInputPanel = new KeyboardControlPopup();
+		return;
+		GetKeyboardPopup();
 		GMControl.DoPopup( keyboardInputPanel, keyboardInputPanel.size_w, keyboardInputPanel.size_h );
 	}
 	
@@ -170,7 +196,7 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	
 	public function Action_OpenMenu( data = null )
 	{
-		if ( !GMControl.isControl )
+		if ( false && !GMControl.isControl )
 			return;
 		if ( instance_exists( menu_object ) )
 		{
@@ -206,48 +232,117 @@ class KeyboardControlPopup extends Sprite
 	var size_w = 200;
 	var size_h = 128;
 	
+	public var has_listeners = false;
+	
+	public var press_d = 0;
+	public var press_r = 0;
+	public var press_u = 0;
+	public var press_l = 0;
+	
+	
 	public function KeyboardControlPopup()
 	{
+		this.focusRect = null;
+		
 		addEventListener( Event.UNLOAD, Cleanup );
 		name = "Input Handler";
-		s = this;
-		g = s.graphics;
-		
+		g = graphics;
 		g.clear();
 		g.beginFill( 0 );
 		g.drawRect( 0, 0, size_w, size_h );
 		g.endFill();
-		
-		s.addEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
-		GM.media.stage.focus = s;
 	}
 	
 	public function Cleanup( ... ignored )
 	{
-		s.removeEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
+		this.removeEventListener( Event.UNLOAD, Cleanup );
+		this.removeEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
+		this.removeEventListener( KeyboardEvent.KEY_UP, OnKeyUp  );
+		this.removeEventListener( MouseEvent.CLICK, OnClicked );
+	}
+	
+	// Give focus and add listeners
+	public function Apply( ... ignored )
+	{
+		// GMControl.SetKeyboardListener( this );
+		if ( !has_listeners )
+		{
+			has_listeners = true;
+			this.addEventListener( KeyboardEvent.KEY_DOWN, OnKeyDown );
+			this.addEventListener( KeyboardEvent.KEY_UP, OnKeyUp  );
+			this.addEventListener( MouseEvent.CLICK, OnClicked );
+		}
+		OnClicked();
 	}
 	
 	public function OnKeyDown( ev )
 	{
-		GM.Log( "key down" );
+		switch ( ev.keyCode )
+		{
+			case 37: // LeftArrow
+				press_l = 1;
+				break;
+			case 38: // UpArrow
+				press_u = 1;
+				break;
+			case 39: // RightArrow
+				press_r = 1;
+				break;
+			case 40: // DownArrow
+				press_d = 1;
+				break;
+		}
 	}
 	
 	public function OnKeyUp( ev )
 	{
-		GM.Log( "key up" );
+		switch ( ev.keyCode )
+		{
+			case 37: // LeftArrow
+				press_l = 0;
+				break;
+			case 38: // UpArrow
+				press_u = 0;
+				break;
+			case 39: // RightArrow
+				press_r = 0;
+				break;
+			case 40: // DownArrow
+				press_d = 0;
+				break;
+		}
 	}
+	
+	public function OnClicked( ... ignored )
+	{
+		GM.Log( "KeyboardControl focused" );
+		GM.media.stage.focus = this;
+	}
+	
+	public function HasFocus()
+	{
+		return ( GM.media.stage.focus == this );
+	}
+	
 }
 
 class obj_darkmenu extends DeltaruneObject
 {
 	public var surf;
 	
+	public var menux = 0;
+	public var menuy = 0;
 	public var menuw = 640;
 	public var menuh = 420;
 	
 	public function obj_darkmenu()
 	{
 		super();
+		
+		menux = 0;
+		menuy = 0;
+		menuw = 600;
+		menuh = 180;
 		
 		width = menuw;
 		height = menuh;
@@ -283,10 +378,10 @@ class obj_darkmenu extends DeltaruneObject
 	
 	public function DrawMenu()
 	{
-		var x1 = 0;
-		var y1 = 0;
-		var x2 = menuw;
-		var y2 = menuh;
+		var x1 = menux;
+		var y1 = menuy;
+		var x2 = menux + menuw;
+		var y2 = menuy + menuh;
 		
 		
 		scr_darkbox( x1, y1, x2, y2 );

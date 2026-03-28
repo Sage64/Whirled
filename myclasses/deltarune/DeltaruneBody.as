@@ -7,6 +7,7 @@ package deltarune
 {
 
 import gamemaker.*;
+import deltarune.objects.*;
 
 import flash.display.*;
 import flash.events.*;
@@ -39,6 +40,10 @@ public class DeltaruneBody extends GMBody
 	public var textsound = global.snd_text;
 	public var textsoundinst;
 	
+	
+	public var lwcontroller;
+	public var dwcontroller;
+	
 	public function DeltaruneBody()
 	{
 		var i;
@@ -61,7 +66,7 @@ public class DeltaruneBody extends GMBody
 			// nametag.SetFont( "8bitoperator JVE", true );
 			nametag.SetFont( "Determination Sans", true );
 			nametag.SetSize( _size * 1 );
-			nametag.textInit.outlineWidth = _size / 3.5;
+			nametag.textInit.outlineWidth = _size / 3.75;
 			nametag.textInit.sharpness = 400;
 			//nametag.SetScale( 1 );
 			nametag.Apply();
@@ -133,6 +138,17 @@ public class DeltaruneBody extends GMBody
 		super.OnStateChanged();
 		
 		global.darkzone = ( curState && curState.darkzone ) ? 1 : ( mymemories["forcedarkzone"].value ? 1 : 0 );
+		
+		if ( global.darkzone )
+		{
+			instance_destroy( lwcontroller );
+			dwcontroller = instance_create( 0, 0, obj_darkcontroller );
+		}
+		else
+		{
+			instance_destroy( dwcontroller );
+			lwcontroller = instance_create( 0, 0, obj_overworldc );
+		}
 	}
 	
 	override public function OnUpdateLook()
@@ -144,6 +160,22 @@ public class DeltaruneBody extends GMBody
 			image_xscale = -Math.abs( image_xscale );
 		else
 			image_xscale = Math.abs( image_xscale );
+		
+		var tireddraw = ( isSleeping && nametag );
+		if ( tireddraw && global.spr_tiredmark )
+		{
+			var _sprscale = 1.25;
+			var xx;
+			var yy;
+			if ( true )
+			{
+				surface_set_target( nametag.surf );
+				xx = ( nametag.textObj.width / 2 ) + 4 + ( 4 * _sprscale );
+				yy = ( -nametag.textFormat.size / 2 ) - ( ( sprite_get_height( global.spr_tiredmark ) * _sprscale ) / 2 );
+				draw_sprite_ext( global.spr_tiredmark, 0, xx, yy );
+				surface_reset_target();
+			}
+		}
 	}
 	
 	override public function OnSleep()
@@ -170,7 +202,7 @@ public class DeltaruneBody extends GMBody
 	
 	override public function Step()
 	{
-		
+		super.Step();
 	}
 	
 	override public function Draw()
@@ -181,21 +213,7 @@ public class DeltaruneBody extends GMBody
 	override public function DrawEnd()
 	{
 		super.DrawEnd();
-		var tireddraw = ( isSleeping && nametag );
-		if ( tireddraw && global.spr_tiredmark )
-		{
-			var _tagscale = nametag.scaleX;
-			var _sprscale = _tagscale * 1.5;
-			var xx = nametag.x + ( nametag.width / 2 );
-			xx += ( 4 * _sprscale ) + ( _tagscale * 4 ) + ( 16 * _sprscale / 2 ) - ( global.spr_tiredmark.width * _sprscale / 2 );
-			var yy = nametag.y - ( nametag.height / 2 ) - ( global.spr_tiredmark.height * _sprscale / 2 );
-			if ( false )
-			{
-				for ( var i = 0; i < Math.PI * 2; i += ( Math.PI / 4 ) )
-					draw_sprite_ext( global.spr_tiredmark, 0, xx + ( Math.cos( i ) * _sprscale * 1 ), yy + ( Math.sin( i ) * _sprscale * 1 ), _sprscale, _sprscale, 0, 0x000000, nametag.alpha );
-			}
-			draw_sprite_ext( global.spr_tiredmark, 0, xx, yy, _sprscale, _sprscale, 0, 0xFFFFFF, nametag.alpha );
-		}
+		return;
 	}
 	
 	// 
@@ -416,14 +434,6 @@ class obj_cutscene extends DeltaruneObject
 		}
 	}
 }
-
-// 
-class obj_talkballoon extends DeltaruneObject
-{
-	
-}
-
-
 
 
 

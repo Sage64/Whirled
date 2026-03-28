@@ -43,6 +43,10 @@ import com.whirled.*;
 // 
 public class GMBody extends GMObject
 {
+	public static const FLAG_HIDENAME = 1 << 0;
+	
+	public var gm_flags = 0;
+	
 	public var timescale_fps = 30; 	// base framerate for timing behaviour
 	public var use_delta = true; 	// compensate for lag by increasing the timescale
 	
@@ -107,9 +111,6 @@ public class GMBody extends GMObject
 	public var curState = null;
 	public var prevState = null;
 	
-	public var action = null;
-	public var curAction = null;
-	
 	public var states = {}; // Maps.newMapOf( String );
 	public var stateList :Array = [];
 	public var stateName = ""; // current state name
@@ -118,9 +119,11 @@ public class GMBody extends GMObject
 	public var actions = {}; //Maps.newMapOf( String );
 	public var actionList :Array = [];
 	public var actionName = ""; // current action name
+	public var action; // the current action that caused the event
 	
 	public var memories = {};
 	public var memoryList = [];
+	public var memory; // the current memory that caused the event
 	
 	// structs for simple state references, e.g mystates["attacking"] = AddState( "Swinging Sword" );
 	public var mystates = {};
@@ -166,20 +169,26 @@ public class GMBody extends GMObject
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
 		
-		mystates["devmode"] = AddState( "DevMode", true );
-		mystates["devmode"].hidden = true;
-		
-		myactions["devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
-		myactions["devpanel"].hidden = true;
-		
-		myactions["chatsent"] = AddAction("GMSentChat", GMSentChat, "GMChatSent sent with null message" );
-		myactions["chatsent"].hidden = true;
-		
-		ctrl.registerCustomConfig( GMControl.OpenConfig );
-		
 		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
 		
+		mystates["gm_devmode"] = AddState( "DevMode", true );
+		mystates["gm_devmode"].hidden = true;
+		
+		myactions["gm_devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
+		
+		myactions["gm_chatsent"] = AddAction("GMSentChat", GMSentChat, "GMChatSent with null message" );
+		myactions["gm_chatsent"].hidden = true;
+		
+		myactions["gm_resetmemories"] = AddAction( "[RESET] (2x to confirm)" );
+		
+		myactions["gm_togglename"] = AddAction( "[Toggle Name]", Action_ToggleName );
+		
+		if ( true )
+		{
+			ctrl.registerCustomConfig( GMControl.OpenConfig );
+			myactions["gm_devpanel"].hidden = true;
+		}
 	}
 	
 	// Clean up
@@ -323,10 +332,22 @@ public class GMBody extends GMObject
 	public function GMFlagsChanged( data )
 	{
 		GM.Log( "gm.flags = " + data );
+		gm_flags = data;
+		if ( nametag )
+		{
+			if ( gm_flags & FLAG_HIDENAME )
+				nametag.Hide();
+			else
+				nametag.Show();
+		}
+		OnFlagsChanged( data );
 	}
+	public static function OnFlagsChanged( flags ) {}
 	
 	public function SetFlag( flag = 0, on = true )
 	{
+		if ( !GMControl.isControl )
+			return;
 		var flags = GetMemory( "gm.flags" );
 		if ( on )
 			flags |= ( flag );
@@ -335,6 +356,14 @@ public class GMBody extends GMObject
 		SetMemory( "gm.flags", flags );
 	}
 	
+	
+	public function Action_ToggleName( ... ignored )
+	{
+		if ( !GMControl.isControl )
+			return;
+		var on = ( gm_flags & FLAG_HIDENAME );
+		SetFlag( FLAG_HIDENAME, !on );
+	}
 	
 	/*
 		APPEARANCE
@@ -407,10 +436,18 @@ public class GMBody extends GMObject
 			nametag.Apply();
 		}
 		
+		if ( nametag )
+		{
+			if ( nametag.surf )
+				nametag.surf.graphics.clear();
+		}
+		
 		OnUpdateLook();
 		
 		if ( nametag )
+		{
 			nametag.UpdateLook();
+		}
 	}
 	
 	public function OnUpdateLook()
@@ -782,7 +819,7 @@ public class GMBody extends GMObject
 		Action.hidden = 0;
 		Action.OnTriggered = null;
 		if ( actionfunc )
-			Action.action = actionfunc;
+			Action.func = actionfunc;
 		if ( actions[actionname] == null )
 			actionList.push( Action );
 		actions[actionname] = Action;
@@ -883,23 +920,24 @@ public class GMBody extends GMObject
 	{
 		if ( actionname == null )
 		return;
-		var Action = actions[ actionname ];
-		if ( Action )
+		action = actions[actionname];
+		// var Action = actions[ actionname ];
+		if ( action )
 		{
-			if ( Action.togglememory )
+			if ( action.togglememory )
 			{
-				var _mem = memories[ Action.togglememory[0] ];
+				var _mem = memories[ action.togglememory[0] ];
 				if ( _mem )
 				{
 					var i = 0;
-					if ( _mem.value == Action.togglememory[1][0] )
+					if ( _mem.value == action.togglememory[1][0] )
 					{
-						SetMemory( _mem, Action.togglememory[1][1] );
+						SetMemory( _mem, action.togglememory[1][1] );
 						i = 1;
 					}
 					else
-						SetMemory( _mem, Action.togglememory[1][0] );
-					Action.name = Action.initname + " (currently: " + Action.togglememory[1][i] + ")";
+						SetMemory( _mem, action.togglememory[1][0] );
+					action.name = action.initname + " (currently: " + action.togglememory[1][i] + ")";
 					RegisterActions();
 				}
 				else
@@ -908,24 +946,24 @@ public class GMBody extends GMObject
 				}
 				return;
 			}
-			else if ( Action.options )
+			else if ( action.options )
 			{
-				++Action.option;
-				if ( Action.option > Action.options.length )
-					Action.option = 0;
+				++action.option;
+				if ( action.option > action.options.length )
+					action.option = 0;
 				//actiondata = Action.options[Action.option];
-				if ( Action.action )
-					Action.action( Action.options[Action.option] );
-				actions[Action.actionname] = Action;
-				if ( Action.OnTriggered )
-					Action.OnTriggered();
+				if ( action.func )
+					action.func( action.options[action.option] );
+				actions[action.actionname] = action;
+				if ( action.OnTriggered )
+					action.OnTriggered();
 			}
 			else
 			{
 				if ( actiondata == null )
-					actiondata = Action.value;
-				if ( Action.action )
-					Action.action( actiondata );
+					actiondata = action.value;
+				if ( action.func )
+					action.func( actiondata );
 			}
 		}
 	}
@@ -1026,10 +1064,10 @@ public class GMBody extends GMObject
 		var yy = originY;
 		var hh = ( -( 65500 ) );
 		
-		_usenametag = ( ( nametag ) )
-		if ( nametag == 0 )
+		_usenametag = ( nametag )
+		if ( ( nametag == 0 ) || ( gm_flags & FLAG_HIDENAME ) )
 		{
-			
+			_usenametag = 0;
 		}
 		else if ( !_usenametag )
 			hh = ( ( originY - y ) * scale ) + ( characterH * scale );
@@ -1066,10 +1104,6 @@ public class GMBody extends GMObject
 			if ( _usenametag )
 			{
 				container.setChildIndex( nametag, container.numChildren - 1 )
-			}
-			else
-			{
-				nametag.alpha = 0;
 			}
 		}
 		

@@ -5,8 +5,8 @@
 // https://www.whirled.club/#shop-l_5_3602
 
 /*
-	While the Body class itself can be used as the character, and has a few
-	of the object methods for convenience, using it to instead create
+	While the Body class itself can be used as the character, and extends the object
+	class for convenience, using it to instead create
 	and manage objects is much preferred.
 	This avatar creates/deletes different objects depending on its state
 	

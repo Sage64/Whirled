@@ -14,17 +14,6 @@ import com.whirled.*
 
 public class MikeBody extends MonsterBody
 {
-	public var spr_blush = sprite_get( "spr_blush" );
-	public var spr_mic_2x = sprite_get( "spr_mic_2x" );
-	public var spr_mike_big = sprite_get( "spr_mike_big" );
-	public var spr_mike_m = sprite_get( "spr_mike_m" );
-	public var spr_mike_m_sad = sprite_get( "spr_mike_m_sad" );
-	public var spr_mike_med = spr_mike_m;
-	public var spr_mike_s_mic_up = sprite_get( "spr_mike_s_mic_up" );
-	public var spr_mike_s_point_down = sprite_get( "spr_mike_s_point_down" );
-	public var spr_mike_s_pointing_aggressive = sprite_get( "spr_mike_s_pointing_aggressive" );
-	public var spr_mike_small = sprite_get( "spr_mike_small" );
-	
 	public var mic_timer = 0;
 	public var mic_x = 0;
 	public var mic_y = 0;
@@ -43,20 +32,23 @@ public class MikeBody extends MonsterBody
 		SetUseDamage( false );
 		SetUseMercy( false );
 		
-		mystates["battat"] = DWState( "-BATTAT-", spr_mike_small );
-		mystates["battat_mikeup"] = DWState( "Mic up", spr_mike_s_mic_up );
-		mystates["battat_pointdown"] = DWState( "Point down", spr_mike_s_point_down );
-		mystates["batatt_point_l"] = DWState( "Point left", spr_mike_s_pointing_aggressive );
-		mystates["batatt_point_r"] = DWState( "Point right", spr_mike_s_pointing_aggressive );
+		mystates["battat"] = DWState( "-BATTAT-", global.spr_mike_small );
+		mystates["battat_mikeup"] = DWState( "Mic up", global.spr_mike_s_mic_up );
+		mystates["battat_pointdown"] = DWState( "Point down", global.spr_mike_s_point_down );
+		mystates["batatt_point_l"] = DWState( "Point left", global.spr_mike_s_pointing_aggressive );
+		mystates["batatt_point_r"] = DWState( "Point right", global.spr_mike_s_pointing_aggressive );
 		
-		mystates["pluey"] = DWState( "-PLUEY-", spr_mike_m );
-		mystates["pluey_sad"] = DWState( ":-(", spr_mike_m_sad );
+		mystates["pluey"] = DWState( "-PLUEY-", global.spr_mike_med );
 		
-		mystates["jongler"] = DWState( "-JONGLER-", spr_mike_big );
+		mystates["jongler"] = DWState( "-JONGLER-", global.spr_mike_big );
 		
-		mystates["trio"] = DWState( "-THE BOYS-", spr_mike_small );
+		mystates["trio"] = DWState( "-THE BOYS-", global.spr_mike_small );
 		
-		mystates["mic"] = DWState( "-Mic-", spr_mic_2x );
+		mystates["mic"] = DWState( "-Mic-", global.spr_mic_2x );
+		
+		
+		mymemories["unhappy"] = AddMemory( "deltarune.unhappy", 0 );
+		myactions["toggle_unhappy"] = AddAction_ToggleMemory( "[Unhappy]", "deltarune.unhappy" );
 		
 	}
 	
@@ -127,7 +119,7 @@ public class MikeBody extends MonsterBody
 				mike_m = instance_create( x - 256, y - 64, obj_mike );
 				mike_m.image_alpha = 0;
 			}
-			mike_m.sprite_set( global.spr_mike_m );
+			mike_m.sprite_set( global.spr_mike_med );
 			mike_m.image_index = 0;
 			mike_m.image_speed = 0.25;
 			mike_m.howtall = 60 * 2;
@@ -155,7 +147,7 @@ public class MikeBody extends MonsterBody
 			var doomed;
 			
 			// Pluey
-			if ( spr == global.spr_mike_m || spr == global.spr_mike_m_sad )
+			if ( spr == global.spr_mike_med || spr == global.spr_mike_med_sad )
 			{
 				if ( !instance_exists( mike_m ) )
 				{
@@ -204,7 +196,7 @@ public class MikeBody extends MonsterBody
 			}
 			
 			// Battat
-			if ( spr == spr_mike_small )
+			if ( spr == global.spr_mike_small )
 			{
 				if ( !instance_exists( mike_s ) )
 				{
@@ -280,15 +272,19 @@ public class MikeBody extends MonsterBody
 		
 		if ( instance_exists( mike_s ) )
 		{
-			if ( mike_s.sprite_current == spr_mike_s_point_down )
+			if ( mike_s.sprite_current == global.spr_mike_s_point_down )
 				mike_s.image_xscale = 2;
-			else if ( mike_s.sprite_current == spr_mike_s_pointing_aggressive )
+			else if ( mike_s.sprite_current == global.spr_mike_s_pointing_aggressive )
 				mike_s.image_xscale = 2 * ( curState == mystates["point_l"] ? -1 : 1 );
 			else
 				mike_s.image_xscale = image_xscale;
+			mike_s.sad = ( mymemories["unhappy"].value == 1 ? 1 : 0 );
 		}
 		if ( instance_exists( mike_m ) )
+		{
+			mike_m.sad = ( mymemories["unhappy"].value == 1 ? 1 : 0 );
 			mike_m.image_xscale = image_xscale;
+		}
 		
 		if ( instance_exists( mike_b ) )
 			mike_b.image_xscale = image_xscale;
@@ -321,6 +317,11 @@ public class MikeBody extends MonsterBody
 		{
 			talker = mike_b;
 		}
+		else if ( instance_exists( mike_m ) )
+		{
+			talker = mike_m;
+		}
+		
 		if ( talker )
 		{
 			talker.talking = 1;
@@ -331,19 +332,13 @@ public class MikeBody extends MonsterBody
 		
 		if ( GMControl.isControl )
 		{
-			if ( curState == mystates["pluey"] )
+			if ( message == ":-(" )
 			{
-				if ( message == ":-(" )
-				{
-					SetState( mystates["pluey_sad"].name );
-				}
+				SetMemory( "deltarune.unhappy", 1 );
 			}
-			else if ( curState == mystates["pluey_sad"] )
+			else if ( message == ":-)" )
 			{
-				if ( message == ":-)" )
-				{
-					SetState( mystates["pluey"].name );
-				}
+				SetMemory( "deltarune.unhappy", 0 );
 			}
 		}
 	}
@@ -408,17 +403,6 @@ import com.whirled.*
 
 class obj_mike extends obj_monsterparent
 {
-	public var spr_blush = sprite_get( "spr_blush" );
-	public var spr_mic_2x = sprite_get( "spr_mic_2x" );
-	public var spr_mike_big = sprite_get( "spr_mike_big" );
-	public var spr_mike_m = sprite_get( "spr_mike_m" );
-	public var spr_mike_m_sad = sprite_get( "spr_mike_m_sad" );
-	public var spr_mike_med = spr_mike_m;
-	public var spr_mike_s_mic_up = sprite_get( "spr_mike_s_mic_up" );
-	public var spr_mike_s_point_down = sprite_get( "spr_mike_s_point_down" );
-	public var spr_mike_s_pointing_aggressive = sprite_get( "spr_mike_s_pointing_aggressive" );
-	public var spr_mike_small = sprite_get( "spr_mike_small" );
-	
 	public var anim = new Array( 12 );
 	
 	public var howtall = 0;
@@ -434,6 +418,8 @@ class obj_mike extends obj_monsterparent
 	
 	public function obj_mike()
 	{
+		sprite_set( global.spr_mike_small );
+		
 		for ( var i = 0; i < 12; ++i )
 			anim[i] = 0;
 	}
@@ -447,7 +433,7 @@ class obj_mike extends obj_monsterparent
 	{
 		if ( talk_timer > 0 )
 		{
-			talk_timer -= body.timescale;
+			talk_timer -= timescale;
 			if ( talk_timer <= 0 )
 			{
 				talking = 0;
@@ -458,7 +444,7 @@ class obj_mike extends obj_monsterparent
 		scr_depth();
 		
 		// Small Mike Animation
-		if ( sprite_current == spr_mike_small )
+		if ( sprite_current == global.spr_mike_small )
 		{
 			var _ts = 1;
 			anim[0] += 1 * _ts;
@@ -495,7 +481,7 @@ class obj_mike extends obj_monsterparent
 			anim[8] = 22 + ( -22 * ( 1 - anim[7] ) );
 		}
 		// Big Mike Animation
-		else if ( sprite_current == spr_mike_big )
+		else if ( sprite_current == global.spr_mike_big )
 		{
 			anim[0] += 1;
 			anim[10] += 50;
@@ -533,42 +519,46 @@ class obj_mike extends obj_monsterparent
 	{
 		var x = this.x; //body.originX;
 		var y = this.y; //body.y;
-		if ( sprite_current == spr_mike_small )
+		if ( sprite_current == global.spr_mike_small )
 		{
 			y -= ( 20 * 2 );
 			if ( true )
 			{
-				draw_sprite_ext(spr_mike_small, 1, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_small, 2, x, ( y - anim[8] ) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_small, 1, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_small, 2, x, ( y - anim[8] ) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
 				
-				if (sad && !talking)
-					draw_sprite_ext(spr_mike_small, 10, x, ((y + 2) - anim[8]) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				if ( sad && !talking )
+					draw_sprite_ext(global.spr_mike_small, 10, x, ((y + 2) - anim[8]) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
 				else
-					draw_sprite_ext(spr_mike_small, 3 + gml.clamp(talk_ind, 0, 3), x, (y - anim[8]) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+					draw_sprite_ext(global.spr_mike_small, 3 + gml.clamp(talk_ind, 0, 3), x, (y - anim[8]) + anim[1], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
 				
-				draw_sprite_ext(spr_mike_small, 7, x + anim[2], (y - anim[8]) + anim[3], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_small, 8, x + anim[3], (y - anim[8]) + anim[2], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_small, 9, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_small, 7, x + anim[2], (y - anim[8]) + anim[3], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_small, 8, x + anim[3], (y - anim[8]) + anim[2], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_small, 9, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
 			}
 			else
-				draw_sprite_ext( spr_mike_small, 0, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+				draw_sprite_ext( global.spr_mike_small, 0, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
 		}
-		else if ( sprite_current == spr_mike_big )
+		else if ( sprite_current == global.spr_mike_med || sprite_current == global.spr_mike_med_sad )
+		{
+			draw_sprite_ext( sad ? global.spr_mike_med_sad : global.spr_mike_med, image_index, x, y - sprite_yoffset, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+		}
+		else if ( sprite_current == global.spr_mike_big )
 		{
 			x -= image_xscale * 4;
 			y -= ( 43 * 2 );
 			if ( true )
 			{
-				draw_sprite_ext(spr_mike_big, 1, x + anim[2], (y - anim[8]) + anim[3], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 2, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 3, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 6, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle + anim[1], image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 5, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle + anim[1], image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 4, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle - anim[2], image_blend, image_alpha);
-				draw_sprite_ext(spr_mike_big, 7, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 1, x + anim[2], (y - anim[8]) + anim[3], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 2, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 3, x, y - anim[8], image_xscale * xscale, (image_yscale * yscale) + anim[7], image_angle, image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 6, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle + anim[1], image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 5, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle + anim[1], image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 4, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle - anim[2], image_blend, image_alpha);
+				draw_sprite_ext(global.spr_mike_big, 7, x, y - anim[8], image_xscale * xscale, image_yscale * yscale, image_angle, image_blend, image_alpha);
 			}
 			else
-				draw_sprite_ext( spr_mike_big, 0, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+				draw_sprite_ext( global.spr_mike_big, 0, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
 		}
 		else
 			draw_self();

@@ -330,7 +330,7 @@ public class GMObject extends Sprite
 		spr.DrawSimple( _subimg, _x, _y, GM.g_GlobalAlpha );
 	}
 	
-	public function draw_sprite_ext( _spr, _subimg, _x, _y, _xscale, _yscale, _ang, _col = 0xFFFFFF, _alpha = null )
+	public function draw_sprite_ext( _spr, _subimg, _x, _y, _xscale = 1, _yscale = 1, _ang = 0, _col = 0xFFFFFF, _alpha = null )
 	{
 		var _inst = this;
 		var spr = _spr;
@@ -358,9 +358,10 @@ public class GMObject extends Sprite
 		spr.DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
 	}
 	
-	public function draw_sprite_part_ext( _spr, _subimg, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha )
+	public function draw_sprite_part_ext( _spr, _subimg, _left, _top, _width, _height, _x, _y, _xscale = 1, _yscale = 1, _col = 0xFFFFFF, _alpha = null )
 	{
-		
+		if ( _alpha == null )
+			_alpha = GM.g_GlobalAlpha;
 	}
 	
 	
@@ -368,7 +369,8 @@ public class GMObject extends Sprite
 	
 	public function set sprite_index( _ref )
 	{
-		sprite_current = _ref;
+		// sprite_current = _ref;
+		sprite_set( _ref );
 	}
 	
 	public function get sprite_index()

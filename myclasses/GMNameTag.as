@@ -66,6 +66,8 @@ public class GMNameTag extends Sprite
 	public var customFont = false;
 	public var upper = false;
 	
+	public var surf; // for surface_set_target
+	
 	public var textInit = {
 		textColor: baseColor,
 		selectable: false,
@@ -107,6 +109,7 @@ public class GMNameTag extends Sprite
 	
 	public function Cleanup()
 	{
+		removeChild( surf );
 		removeChild( textObj );
 		container.removeChild( this );
 	}
@@ -135,6 +138,8 @@ public class GMNameTag extends Sprite
 			return;
 		if ( !gotName )
 			SetText( GetName() );
+		
+		var outw = textInit.outlineWidth;
 		if ( ctrl.isSleeping() )
 		{
 			if ( sleepColor == -1 )
@@ -144,10 +149,10 @@ public class GMNameTag extends Sprite
 				visible = show && true;
 				textObj.textColor = sleepColor;
 				
-				if ( textInit.outlineWidth > 0 )
+				if ( outw > 0 )
 				{
-					glowFilter = new GlowFilter( uint( sleepOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
-					textObj.filters = [ glowFilter ];
+					glowFilter = new GlowFilter( uint( sleepOutline ), 1, outw, outw, outlineStrength );
+					this.filters = [ glowFilter ];
 				}
 			}
 		}
@@ -159,10 +164,10 @@ public class GMNameTag extends Sprite
 			{
 				visible = show && true;
 				textObj.textColor = baseColor;
-				if ( textInit.outlineWidth > 0 )
+				if ( outw > 0 )
 				{
-					glowFilter = new GlowFilter( uint( baseOutline ), 1, textInit.outlineWidth, textInit.outlineWidth, outlineStrength );
-					textObj.filters =[ glowFilter ];
+					glowFilter = new GlowFilter( uint( baseOutline ), 1, outw, outw, outlineStrength );
+					this.filters = [ glowFilter ];
 				}
 			}
 		}
@@ -259,9 +264,17 @@ public class GMNameTag extends Sprite
 			this.textObj = null;
 		}
 		this.textObj = TextFieldUtil.createField( text, this.textInit, this.textFormat );
+		this.textObj.filters = [];
 		if ( embed )
 			this.textObj.embedFonts = true;
 		this.addChild( textObj );
+		if ( !this.surf )
+		{
+			this.surf = new Sprite();
+			this.addChild( surf );
+		}
+		surf.x = 0;
+		surf.y = 0;
 		this.textObj.embedFonts = this.customFont;
 		this.textObj.setTextFormat( this.textFormat );
 		this.textObj.antiAliasType = AntiAliasType.ADVANCED;
