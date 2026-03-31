@@ -31,6 +31,7 @@ public class MikeBody extends MonsterBody
 		
 		SetUseDamage( false );
 		SetUseMercy( false );
+		myactions["toggle_chaseaura"].hidden = true;
 		
 		mystates["battat"] = DWState( "-BATTAT-", global.spr_mike_small );
 		mystates["battat_mikeup"] = DWState( "Mic up", global.spr_mike_s_mic_up );
@@ -45,7 +46,6 @@ public class MikeBody extends MonsterBody
 		mystates["trio"] = DWState( "-THE BOYS-", global.spr_mike_small );
 		
 		mystates["mic"] = DWState( "-Mic-", global.spr_mic_2x );
-		
 		
 		mymemories["unhappy"] = AddMemory( "deltarune.unhappy", 0 );
 		myactions["toggle_unhappy"] = AddAction_ToggleMemory( "[Unhappy]", "deltarune.unhappy" );

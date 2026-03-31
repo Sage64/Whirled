@@ -169,6 +169,7 @@ public class GMBody extends GMObject
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
 		
+		AddMemory( "gm", 1 ); // is a "GM" avatar
 		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
 		
@@ -180,7 +181,7 @@ public class GMBody extends GMObject
 		myactions["gm_chatsent"] = AddAction("GMSentChat", GMSentChat, "GMChatSent with null message" );
 		myactions["gm_chatsent"].hidden = true;
 		
-		myactions["gm_resetmemories"] = AddAction( "[RESET] (2x to confirm)" );
+		// myactions["gm_resetmemories"] = AddAction( "[RESET] (2x to confirm)" );
 		
 		myactions["gm_togglename"] = AddAction( "[Toggle Name]", Action_ToggleName );
 		
@@ -189,6 +190,8 @@ public class GMBody extends GMObject
 			ctrl.registerCustomConfig( GMControl.OpenConfig );
 			myactions["gm_devpanel"].hidden = true;
 		}
+		
+		// Action_OpenControlPanel();
 	}
 	
 	// Clean up
@@ -495,24 +498,6 @@ public class GMBody extends GMObject
 		moveSpeed = _speed;
 		moveSpeedReal = Math.max( 50, moveSpeed * timescale_fps * scale );
 		ctrl.setMoveSpeed( moveSpeedReal );
-		// GMControl.Log( "moveSpeed = " + moveSpeed );
-		
-		// disabling this behaviour for a multitude of reasons
-		// including rate limiting, lag, and errors
-		if ( false )
-		{
-			if ( changed && isMoving && ( movePathDest != null ) )
-			{
-				// start moving again to the same point to update the walk speed
-				// warning! if you spam this, whirled lags and delays your movement
-				// incredibly hard for a while
-				var pos = movePathDest;
-				if ( pos == null || pos.length < 3 )
-					return;
-				ctrl.setLogicalLocation( pos[0], pos[1], pos[2], orientation );
-			}
-		}
-		
 	}
 	
 	public function GMEntityMoved( event )
@@ -732,7 +717,7 @@ public class GMBody extends GMObject
 	
 	public function RegisterStates()
 	{
-		GMControl.Log( "Registering states" );
+		// GMControl.Log( "Registering states" );
 		var names = [];
 		
 		var _showStates = this.stateList;
@@ -882,7 +867,7 @@ public class GMBody extends GMObject
 	
 	public function RegisterActions()
 	{
-		GMControl.Log( "Registering actions" );
+		// GMControl.Log( "Registering actions" );
 		var names = [];
 		
 		var _showActions = this.actionList;
@@ -1065,7 +1050,7 @@ public class GMBody extends GMObject
 		var hh = ( -( 65500 ) );
 		
 		_usenametag = ( nametag )
-		if ( ( nametag == 0 ) || ( gm_flags & FLAG_HIDENAME ) )
+		if ( ( nametag == 0 ) ) // || ( gm_flags & FLAG_HIDENAME ) )
 		{
 			_usenametag = 0;
 		}
@@ -1092,16 +1077,20 @@ public class GMBody extends GMObject
 	{
 		Draw();
 		
-		if ( nametag && _usenametag )
+		if ( nametag )
 		{
 			nametag.x = x;
 			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 65500 );
+			
+			// nametag.y = Math.min( nametag.y, GM.view_y + GM.view_height );
+			// nametag.y = Math.max( nametag.y, GM.view_y + nametag.height );
+			
 			nametag.UpdatePosition();
 		}
 		
 		if ( nametag )
 		{
-			if ( _usenametag )
+			if ( true || _usenametag )
 			{
 				container.setChildIndex( nametag, container.numChildren - 1 )
 			}
@@ -1135,7 +1124,7 @@ public class GMBody extends GMObject
 			this.characterH = hh;
 	}
 
-	private function GMUpdateView( xx, yy, hh )
+	public function GMUpdateView( xx, yy, hh )
 	{
 		return GMControl.GMUpdateView( xx, yy, hh );
 	}
@@ -1223,7 +1212,12 @@ public class GMBody extends GMObject
 		{
 			Memory.value = value;
 			if ( Memory.func )
-				Memory.func( value );
+			{
+				if ( Memory.func.length == 0 )
+					Memory.func();
+				else
+					Memory.func( value );
+			}
 		}
 	}
 	

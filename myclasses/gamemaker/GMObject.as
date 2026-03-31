@@ -16,14 +16,14 @@ import flash.text.*;
 import com.threerings.text.TextFieldUtil;
 import com.whirled.*;
 
-public class GMObject extends Sprite
+public class GMObject // extends Sprite
 {
-	// public var parent;
-	// public var name = "GMObject";
-	// public var x = 0;
-	// public var y = 0;
-	// public var width = 0;
-	// public var height = 0;
+	public var parent;
+	public var name = "GMObject";
+	public var x = 0;
+	public var y = 0;
+	public var width = 0;
+	public var height = 0;
 	
 	public static const global = GM.global;
 	
@@ -257,6 +257,13 @@ public class GMObject extends Sprite
 	
 	// Function_Sprite
 	
+	public static function sprite_get_name( _spr )
+	{
+		if ( _spr != null )
+			return _spr.name;
+		return "undefined";
+	}
+	
 	public static function sprite_get_width( _spr )
 	{
 		if ( _spr != null )
@@ -304,13 +311,25 @@ public class GMObject extends Sprite
 		
 	}
 	
+	// If this sprite exists but I don't have it, clone it (e.g remote sprite, added wrongly, etc)
+	public static function sprite_verify( spr )
+	{
+		if ( !spr )
+			return -1;
+		var sprname = sprite_get_name( spr );
+		if ( global[sprname] )
+			return global[sprname];
+		GM.Log( "sprite_verify: cloning sprite " + sprname );
+		return GM.AddSprite_Sprite( sprname, spr );
+	}
+	
 	// Function_Texture
 	
 	public function draw_self()
 	{
 		var _inst = this;
 		var spr = _inst.sprite_current;
-		if ( spr == null )
+		if ( spr == null || spr < 0 )
 			return;
 		var _subimg = ( Math.floor( _inst.image_index ) % spr.count );
 		if ( _subimg < 0 )
@@ -322,7 +341,7 @@ public class GMObject extends Sprite
 	{
 		var _inst = this;
 		var spr = _spr;
-		if ( spr == null )
+		if ( spr == null || spr < 0 )
 			return;
 		var _subimg = ( _subimg % spr.count );
 		if ( _subimg < 0 )
@@ -334,7 +353,7 @@ public class GMObject extends Sprite
 	{
 		var _inst = this;
 		var spr = _spr;
-		if ( spr == null )
+		if ( spr == null || spr < 0 )
 			return;
 		var _subimg = ( _subimg % spr.count );
 		if ( _subimg < 0 )
@@ -350,7 +369,7 @@ public class GMObject extends Sprite
 		// return GM.InternalSpriteDrawPos( _spr, _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
 		var _inst = this;
 		var spr = _spr;
-		if ( spr == null )
+		if ( spr == null || spr < 0 )
 			return;
 		var _subimg = ( _inst.image_index % spr.count );
 		if ( _subimg < 0 )
@@ -404,32 +423,21 @@ public class GMObject extends Sprite
 	
 	public function get mouse_x()
 	{
-		var _xx = mouseX;
+		if ( !GM.internalrendertarget )
+			return 0;
+		var _xx = GM.internalrendertarget.mouseX;
 		
 		return _xx;
 	}
 	
 	public function get mouse_y()
 	{
-		var _yy = mouseY;
+		if ( !GM.internalrendertarget )
+			return 0;
+		var _yy = GM.internalrendertarget.mouseY;
 		
 		return _yy;
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	
 	
@@ -594,14 +602,37 @@ public class GMObject extends Sprite
 		return val * val;
 	}
 	
+	public static function variable_instance_exists( inst, varname )
+	{
+		try
+		{
+			var val = inst[varname];
+			if ( val != null )
+				return true;
+		}
+		catch(e)
+		{
+			return false;
+		}
+	}
+	
 	public static function variable_instance_get( inst, varname )
 	{
-		return inst[varname];
+		try
+		{
+			return inst[varname];
+		}
+		catch(e){}
+		return null;
 	}
 	
 	public static function variable_instance_set( inst, varname, val )
 	{
-		inst[varname] = val;
+		try
+		{
+			inst[varname] = val;
+		}
+		catch(e) {}
 	}
 	
 	
@@ -661,6 +692,7 @@ public class GMObject extends Sprite
 	public static function draw_set_alpha( alpha )
 	{
 		GM.g_GlobalAlpha = alpha;
+		GM.internaldrawalpha = alpha;
 		//return GM.InternalSetAlpha( alpha );
 	}
 	
@@ -680,9 +712,22 @@ public class GMObject extends Sprite
 		return GM.internaldrawcolor;
 	}
 	
+	public static function draw_line( x1, y1, x2, y2 )
+	{
+		return draw_line_width( x1, y1, x2, y2, 1, null );
+	}
+	
 	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
 	{
-		return GM.InternalDrawLine( x1, y1, x2, y2, w, a );
+		var g = GM.internalrendertarget.graphics;
+		if ( a == null )
+			a = GM.g_GlobalAlpha;
+		g.beginFill( GM.internaldrawcolor, a );
+		g.lineStyle( w, GM.internaldrawcolor, a );
+		g.moveTo( x1, y1 );
+		g.lineTo( x2, y2 );
+		g.endFill();
+		g.lineStyle(0, 0, 0);
 	}
 	
 	public static function draw_rectangle( x1, y1, x2, y2, outline = false )

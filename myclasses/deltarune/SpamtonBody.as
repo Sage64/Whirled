@@ -16,8 +16,6 @@ import com.whirled.*
 
 public class SpamtonBody extends MonsterBody
 {
-	public static var spr_spamton_cherub;
-	
 	public var inst;
 	public var sp_actor;
 	public var sneo;
@@ -30,7 +28,6 @@ public class SpamtonBody extends MonsterBody
 	
 	public function SpamtonBody()
 	{
-		spr_spamton_cherub = sprite_get( "spr_spamton_cherub" );
 		
 		super();
 		
@@ -428,7 +425,7 @@ public class SpamtonBody extends MonsterBody
 				var xx = originX + ( xoff * xsc );
 				var yy = originY - yoff;
 				
-				draw_sprite_ext( spr_spamton_cherub, 5, xx, yy, -image_xscale, image_yscale, 0, 0xFFFFFF, 0.1 );
+				draw_sprite_ext( global.spr_spamton_cherub, 5, xx, yy, -image_xscale, image_yscale, 0, 0xFFFFFF, 0.1 );
 			}
 		}
 	}
@@ -842,7 +839,7 @@ class obj_spamton_neo extends obj_monsterparent
 	{
 		var i;
 		
-		var ts = body.timescale_delta;
+		var ts = timescale_delta;
 		var f_d = f * ts;
 		
 		facing = body.hDir < 0 ? 1 : -1;
@@ -876,17 +873,17 @@ class obj_spamton_neo extends obj_monsterparent
 		{
 			partrot[5] = -37 + sin(partsiner[4] / 16);
 			partframe[5] = 1;
-			partsprite[5] = spr_sneo_head;
+			partsprite[5] = global.spr_sneo_head;
 		}
 
 		if (headendcon == 2)
 		{
 			partrot[5] = 15 + sin(partsiner[4] / 16);
-			partsprite[5] = spr_sneo_head; //_sad;
+			partsprite[5] = global.spr_sneo_head; //_sad;
 		}
 
 		if (headendcon == 3)
-			partsprite[5] = spr_sneo_head;
+			partsprite[5] = global.spr_sneo_head;
 		
 		if ( partmode == 36 )
 		{
@@ -1047,7 +1044,9 @@ class obj_spamton_neo extends obj_monsterparent
 							partframe[i] = 0;
 						
 						if (partframe[i] >= 2)
+						{
 							partrot[i] += 20 * f;
+						}
 					}
 				}
 				
@@ -1151,7 +1150,7 @@ class obj_spamton_neo extends obj_monsterparent
 			{
 				headsize = 0;
 				
-				partsprite[5] = spr_sneo_head_preview;
+				partsprite[5] = global.spr_sneo_head_preview;
 				if (partframe[5] == 0)
 					partframe[5] = 1;
 				
@@ -1222,7 +1221,7 @@ class obj_spamton_neo extends obj_monsterparent
 							xx = (_n * 8 * -facing) + x + (partx[5] * facing) + (partxoff[5] * facing) + lastxoff;
 							yy = y + party[5] + partyoff[5]
 							var obj = obj_afterimage_grow;
-							eyeshine = instance_create( xx - offset_x, yy - offset_y, obj );
+							eyeshine = instance_create_depth( xx - offset_x, yy - offset_y, depth - 1, obj );
 							eyeshine.sprite_set( spr_sneo_head_preview );
 							eyeshine.image_index = 0;
 							eyeshine.image_speed = 0;
@@ -1677,14 +1676,14 @@ class obj_spamton_neo extends obj_monsterparent
 	{
 		parts = 0;
 		partframe[1] = 0;
-		partsprite[parts++] = spr_sneo_wingl;
-		partsprite[parts++] = spr_sneo_arml;
-		partsprite[parts++] = spr_sneo_legl;
-		partsprite[parts++] = spr_sneo_legr;
-		partsprite[parts++] = spr_sneo_body;
-		partsprite[parts++] = spr_sneo_head;
-		partsprite[parts++] = spr_sneo_armr;
-		partsprite[parts++] = spr_sneo_wingr;
+		partsprite[parts++] = global.spr_sneo_wingl;
+		partsprite[parts++] = global.spr_sneo_arml;
+		partsprite[parts++] = global.spr_sneo_legl;
+		partsprite[parts++] = global.spr_sneo_legr;
+		partsprite[parts++] = global.spr_sneo_body;
+		partsprite[parts++] = global.spr_sneo_head;
+		partsprite[parts++] = global.spr_sneo_armr;
+		partsprite[parts++] = global.spr_sneo_wingr;
 		partframe[5] = 0;
 	}
 	
@@ -1724,11 +1723,6 @@ class obj_spamton_neo extends obj_monsterparent
 
 class obj_spamton_cherub extends DeltaruneObject
 {
-	public var spr_spamton_cherub = global.spr_spamton_cherub;
-	public var spr_sparestar_anim = global.spr_sparestar_anim;
-	
-	public var snd_sparkle_glock = global.snd_sparkle_glock;
-	
 	public static var inst_snd_sparkle_glock;
 	
 	public var timer = 0;
@@ -1778,7 +1772,7 @@ class obj_spamton_cherub extends DeltaruneObject
 				inst_snd_sparkle_glock.stop();
 				inst_snd_sparkle_glock = null;
 			}
-			inst_snd_sparkle_glock = snd_play( snd_sparkle_glock );
+			inst_snd_sparkle_glock = snd_play( global.snd_sparkle_glock );
 			snd_pitch( inst_snd_sparkle_glock, 1.1 + ( target * 0.2 ) );
 		}
 

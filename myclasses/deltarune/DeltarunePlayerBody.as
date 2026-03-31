@@ -68,14 +68,18 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		
 		if ( false )
 		{
-			myactions["battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
-			myactions["battlemode"].hidden = true;
+			myactions["deltarune.battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
+			myactions["deltarune.battlemode"].hidden = true;
 		}
+		
+		
+		
 	}
 	
 	public function InitMenu()
 	{
 		myactions["deltarune.menu"] = AddAction( "[Open Menu]", Action_OpenMenu );
+		myactions["deltarune.menu"].hidden = true;
 	}
 	
 	override public function OnStateChanged()

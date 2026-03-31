@@ -47,10 +47,18 @@ public class DeltaruneBody extends GMBody
 	public function DeltaruneBody()
 	{
 		var i;
-		
 		if ( !global.damagefont )
 		{
 			global.damagefont = { name: "_sans", size: 12 };
+		}
+		
+		if ( !global.deltarune )
+		{
+			global.deltarune = 1;
+			global.flag = new Array( 100 );
+			global.interact = 0;
+			global.chapter = 1;
+			global.darkzone = 0;
 		}
 		
 		super( 30 );
@@ -72,17 +80,11 @@ public class DeltaruneBody extends GMBody
 			nametag.Apply();
 		}
 		
-		if ( !global.deltarune )
-		{
-			global.deltarune = 1;
-			global.flag = new Array( 100 );
-			global.interact = 0;
-			global.chapter = 1;
-			global.darkzone = 0;
-		}
+		mymemories["deltarune"] = AddMemory( "deltarune", 1 );
+		mymemories["chapter"] = AddMemory( "deltarune.chapter", 1, SetChapter );
+		mymemories["forcedarkzone"] = AddMemory( "deltarune.forcedarkzone", 0, OnStateChanged );
+		mymemories["board"] = AddMemory( "deltarune.board", 0, OnStateChanged );
 		
-		mymemories["chapter"] = AddMemory( "deltarune.chapter", global.chapter, SetChapter );
-		mymemories["forcedarkzone"] = AddMemory( "deltarune.forcedarkzone", global.darkzone, SetForceDarkMode );
 	}
 	
 	public function LWState( statename, sprites = null )
@@ -137,8 +139,12 @@ public class DeltaruneBody extends GMBody
 	{
 		super.OnStateChanged();
 		
-		global.darkzone = ( curState && curState.darkzone ) ? 1 : ( mymemories["forcedarkzone"].value ? 1 : 0 );
-		
+		global.darkzone = ( curState && curState.darkzone );
+		if ( GetMemory( "deltarune.forcedarkzone" ) )
+			global.darkzone = 1;
+		else if ( GetMemory( "deltarune.board" ) )
+			global.darkzone = 1;
+			
 		if ( global.darkzone )
 		{
 			instance_destroy( lwcontroller );
@@ -225,21 +231,10 @@ public class DeltaruneBody extends GMBody
 		
 	}
 	
-	public function UpdateSprites( ... ignored )
-	{
-		
-	}
-	
 	public function SetChapter( val = 0 )
 	{
 		global.chapter = val;
-		UpdateSprites();
-	}
-	
-	public function SetForceDarkMode( val = 0 )
-	{
 		OnStateChanged();
-		UpdateSprites();
 	}
 	
 	// Deltarune gamemaker functions
@@ -380,7 +375,7 @@ class obj_cutscene extends DeltaruneObject
 		var i;
 		if ( wait_timer > 0 )
 		{
-			wait_timer -= body.timescale_delta;
+			wait_timer -= timescale_delta;
 			return;
 		}
 		

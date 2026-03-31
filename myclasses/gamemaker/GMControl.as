@@ -23,6 +23,10 @@ import com.threerings.util.*;
 
 public class GMControl extends ActorControl
 {
+	public static const PROP_CHARACTER = "gm:character";
+	public static const PROP_STATE = "gm:state";
+	
+	
 	public static var initdone;
 	
 	public static var debug = false;
@@ -51,12 +55,17 @@ public class GMControl extends ActorControl
 	
 	public static var isConnected = false;
 	
+	public static var entity;
 	public static var entityID;
 	public static var memberID;
+	public static var entityType;
 	
+	public static var isActor = false;
 	public static var isAvatar = false;
 	public static var isPet = false;
 	public static var isFurni  = false;
+	
+	public static var customProps = {};
 	
 	// AvatarControl
 	protected static var _actions = [];
@@ -74,9 +83,6 @@ public class GMControl extends ActorControl
 	public static var remoteEntities = {};
 	public static var remoteEntitiesList = [];
 	
-	public static var originX = 0;
-	public static var originY = 0;
-	
 	public static var viewXOffset = 0;
 	public static var viewYOffset = 0;
 	public static var baseXOffset = 1<<15;
@@ -89,16 +95,6 @@ public class GMControl extends ActorControl
 	public static var unscaleY = 1;
 	
 	public static var popupPanel = null;
-	
-	public static var _tempsymbols = [];
-	public static var _tempdrawsprites = [];
-	public static var internalstageitems = {};
-	public static var internalspritelist = [];
-	public static var internalspritemap = {};
-	public static var internalspritecur = null;
-	
-	public static var internalsoundlist = [];
-	public static var internalsoundmap = {};
 	
 	public function GMControl( media )
 	{
@@ -171,14 +167,15 @@ public class GMControl extends ActorControl
 	public static function InitWhirled( ww = 600, hh = 450 )
 	{
 		// Init( media );
-		Log( "GMControl InitWhirled" );
+		GM.Log( "GMControl InitWhirled" );
 		
 		GM.ctrl = ctrl;
 		
 		if ( !ctrl.isConnected() )
 		{
 			// Always run in debug mode if not connected to whirled
-			GMControl.Log( "Debug Mode" );
+			GM.Log( "isConnected(): false" );
+			GM.Log( "Debug Mode" );
 			debug = true;
 			GMGotControl();
 			try
@@ -190,28 +187,37 @@ public class GMControl extends ActorControl
 				GMControl.Warn( "tried to add keyboard to stage (security violation)" );
 			} 
 		}
+		else
+		{
+			GM.Log( "isConnected(): true" );
+		}
+		
+		ctrl.registerPropertyProvider( GMPropertyProvider );
 		
 		entityID = ctrl.getMyEntityId();
-		Log( "entityID = " + entityID );
-		
-		GetEntity( entityID );
-		
-		memberID = ctrl.getEntityProperty( PROP_MEMBER_ID, entityID );
-		Log( "memberID = " + memberID );
-		
-		var _type = ctrl.getEntityProperty( PROP_TYPE, entityID );
-		Log( "PROP_TYPE = " + _type );
-		switch( _type )
+		GM.Log( "entityID = " + entityID );
+		entityType = ctrl.getEntityProperty( PROP_TYPE );
+		GM.Log( "PROP_TYPE = " + entityType );
+		switch( entityType )
 		{
 			case TYPE_AVATAR:
 				isAvatar = true;
+				isActor = true;
 				break;
 			case TYPE_PET:
 				isPet = true;
+				isActor = true;
 				break;
 			case TYPE_FURNI:
 				isFurni = true;
 				break;
+		}
+		
+		if ( isActor )
+		{
+			entity = GetEntity( entityID );
+			memberID = entity.GetProperty( PROP_MEMBER_ID );
+			GM.Log( "memberID = " + memberID );
 		}
 		
 		ctrl.setMemory( "GMControl", 1 );
@@ -231,18 +237,20 @@ public class GMControl extends ActorControl
 		AddEventListener( ctrl, ControlEvent.MESSAGE_RECEIVED, GMReceiveMessage );
 		AddEventListener( ctrl, ControlEvent.SIGNAL_RECEIVED, GMReceiveMessage );
 		
-		AddEventListener( ctrl, ControlEvent.ACTION_TRIGGERED, GMActionTriggered );
-		AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
-		AddEventListener( ctrl, ControlEvent.AVATAR_SPOKE, GMAvatarSpoke );
-		AddEventListener( ctrl, ControlEvent.STATE_CHANGED, GMStateChanged );
+		if ( isAvatar || isPet )
+		{
+			AddEventListener( ctrl, ControlEvent.ACTION_TRIGGERED, GMActionTriggered );
+			AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
+			AddEventListener( ctrl, ControlEvent.AVATAR_SPOKE, GMAvatarSpoke );
+			AddEventListener( ctrl, ControlEvent.STATE_CHANGED, GMStateChanged );
+		}
 		
 		if ( ctrl.hasControl() )
 		{
 			GMGotControl();
 		}
 		
-		if ( debug )
-			OpenControlPanel();
+		// ShowControlPanel();
 		
 	}
 	
@@ -266,6 +274,9 @@ public class GMControl extends ActorControl
 		NewChar.internalname = internalname;
 		NewChar.body = null;
 		
+		if ( !curCharacter )
+			curCharacter = NewChar;
+		
 		return NewChar;
 	}
 	
@@ -278,8 +289,6 @@ public class GMControl extends ActorControl
 		GMControl.Log( "Adding Body for character '" + dispname + "'" );
 		body = new bodyclass();
 		NewChar.body = body;
-		
-		// container.addChild( body );
 	}
 	
 	public static function AddSprites( asset )
@@ -447,6 +456,74 @@ public class GMControl extends ActorControl
 			body.GMStateChanged( event );
 	}
 	
+	// Send a signal containing data that otherwise isn't
+	// remotely accessible about us
+	public static function GMSendInfo()
+	{
+		var data = {};
+		data.entity_id = entityID;
+		data.character = ( curCharacter ) ? curCharacter.internalname : "none";
+		data.state = ctrl.getState();
+		
+		
+		ctrl.sendSignal( "gm.entityinfo", data );
+	}
+	
+	public static function GMEntityInfo( data )
+	{
+		var entity_id = data.entity_id;
+		if ( entity_id == null )
+			return;
+		var Entity = GetEntity( entity_id );
+	}
+	
+	public static function GMPropertyProvider( key, entityId = null )
+	{
+		try
+		{
+			if ( !ctrl )
+				return;
+			GM.debugTracker = "GMPropertyProvider";
+			switch( key )
+			{
+				case "state":
+				case "gm:state":
+					return ctrl.getState();
+				case "gm:character":
+					return ( curCharacter ) ? curCharacter.internalname : "none";
+				case "gm:body":
+					return ( body );
+				case PROP_DIMENSIONS:
+				case PROP_HOTSPOT:
+				case PROP_LOCATION_LOGICAL:
+				case PROP_LOCATION_PIXEL:
+				case PROP_MEMBER_ID:
+				case PROP_MOVE_SPEED:
+				case PROP_NAME:
+				case PROP_ORIENTATION:
+				case PROP_TYPE:
+					return ctrl.getEntityProperty( key, entityId );
+			}
+			var val;
+			val = customProps[key];
+			if ( val != null )
+				return val;
+			if ( val != null )
+				return val;
+			// Check memories;
+			val = ctrl.GetMemory( key );
+			if ( val != null )
+				return val;
+			//
+			return val;
+		}
+		catch(e)
+		{
+			Caught(e);
+		}
+		return null;
+	}
+	
 	public static function GMKeyboardDown( ev )
 	{
 		GM.Log( "GMKeyboardDown" );
@@ -463,76 +540,80 @@ public class GMControl extends ActorControl
 		var i;
 		var key = ev.keyCode;
 		// 
-		if ( key >= 48 && key <= 57 )
+		if ( debug || ( isAvatar || isPet ) )
 		{
-			var _num = key - 48;
-			if ( key == 48 )
-				_num += 10;
-			--_num;
-			if ( body )
+			if ( key >= 48 && key <= 57 )
 			{
-				var _getstate = null;
-				if ( ev.shiftKey )
+				var _num = key - 48;
+				if ( key == 48 )
+					_num += 10;
+				--_num;
+				if ( body )
 				{
-					if ( _num < body.actionList.length )
+					var _getstate = null;
+					if ( ev.shiftKey )
 					{
-						_getstate = body.actionList[_num];
-						if ( _getstate )
-							body.TriggerAction( _getstate );
+						if ( _num < body.actionList.length )
+						{
+							_getstate = body.actionList[_num];
+							if ( _getstate )
+								body.TriggerAction( _getstate );
+						}
+					}
+					else
+					{
+						if ( _num < 0 )
+						{
+							body.SetState( null );
+						}
+						else if ( _num < body.stateList.length )
+						{
+							_getstate = body.GetState( body.stateList[_num] );
+							if ( _getstate )
+								body.SetState( _getstate );
+						}
 					}
 				}
-				else
+			} 
+			else if ( key == 189 )
+			{
+				// -
+				trace( "prev state" );
+				for ( i = 1; i < body.stateList.length; ++i )
 				{
-					if ( _num < 0 )
+					if ( body.curState == body.stateList[i] )
 					{
-						body.SetState( null );
-					}
-					else if ( _num < body.stateList.length )
-					{
-						_getstate = body.GetState( body.stateList[_num] );
-						if ( _getstate )
-							body.SetState( _getstate );
+						body.SetState( body.stateList[i - 1] );
+						break;
 					}
 				}
 			}
-		} 
-		else if ( key == 189 )
-		{
-			// -
-			trace( "prev state" );
-			for ( i = 1; i < body.stateList.length; ++i )
+			else if ( key == 187 )
 			{
-				if ( body.curState == body.stateList[i] )
+				// +
+				trace( "next state" );
+				for ( i = 0; ( i + 1 ) < body.stateList.length; ++i )
 				{
-					body.SetState( body.stateList[i - 1] );
-					break;
+					if ( body.curState == body.stateList[i] )
+					{
+						body.SetState( body.stateList[i + 1] );
+						break;
+					}
 				}
 			}
-		}
-		else if ( key == 187 )
-		{
-			// +
-			trace( "next state" );
-			for ( i = 0; ( i + 1 ) < body.stateList.length; ++i )
+			switch( key ) 
 			{
-				if ( body.curState == body.stateList[i] )
-				{
-					body.SetState( body.stateList[i + 1] );
+				case Keyboard.S:
+					GMControl._isSleeping = !GMControl._isSleeping;
+					ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
 					break;
-				}
+				case Keyboard.D:
+					ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+					break;
 			}
 		}
 		
-		switch( key ) 
-		{
-			case Keyboard.S:
-				GMControl._isSleeping = !GMControl._isSleeping;
-				ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
-				break;
-			case Keyboard.D:
-				ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
-				break;
-		}
+		
 	}
 	
 	public static function Caught( e )
@@ -542,6 +623,7 @@ public class GMControl extends ActorControl
 	
 	public static function Log( text = "" )
 	{
+		// Log but only if in control
 		if ( GMControl.isControl )
 			return GM.Log( text );
 	}
@@ -551,11 +633,9 @@ public class GMControl extends ActorControl
 		return GM.Warn( text );
 	}
 	
-	public static function GetControlPanel()
+	public static function GetControlPanel( ww = null, hh = null )
 	{
-		if ( !ctrl.hasControl() )
-			return;
-		return GM.GetControlPanel();
+		return GM.GetControlPanel( ww, hh );
 	}
 	
 	public static function OpenControlPanel()
@@ -575,14 +655,22 @@ public class GMControl extends ActorControl
 		DoPopup( _panel, _panel.width, _panel.height );
 	}
 	
+	public static function ShowControlPanel()
+	{
+		// make the panel at 0,0
+		var _panel = GM.GetControlPanel( 650, 240 );
+		if ( GM.debug )
+		{
+			_panel.x = GM.stageW;
+			trace( _panel.x );
+			_panel.y = 0;
+		}
+		if ( _panel )
+			GM.overlay.addChild( _panel );
+	}
+	
 	public static function OpenConfig()
 	{
-		if ( false )
-		{
-			OpenControlPanel();
-			return null;
-		}
-		
 		var _panel = GetControlPanel();
 		return _panel;
 	}
@@ -632,10 +720,16 @@ public class GMControl extends ActorControl
 		var Entity = remoteEntities[_entityid];
 		if ( Entity == null )
 		{
-			Entity = new GMRemoteEntity( _entityid )
-			remoteEntities[ _entityid ] = Entity;
-			remoteEntitiesList.push( Entity );
-			
+			try
+			{
+				Entity = new GMRemoteEntity( _entityid )
+				remoteEntities[ _entityid ] = Entity;
+				remoteEntitiesList.push( Entity );
+			}
+			catch( e )
+			{
+				Caught( e );
+			}
 		}
 		return Entity;
 	}
@@ -744,7 +838,7 @@ public class GMControl extends ActorControl
 		if ( false )
 		{
 			GMObject.surface_set_target( GM.overlay );
-			for each ( var Entity in remoteEntities )
+			for each ( var Entity in remoteEntitiesList )
 			{
 				GM.debugTracker = "Debug Draw - " + Entity;
 				if ( !Entity )
@@ -778,6 +872,14 @@ public class GMControl extends ActorControl
 		
 		var _w = GM.stageW;
 		var _h = GM.stageH;
+		
+		if ( isActor )
+		{
+		}
+		else
+		{
+			// return;
+		}
 		
 		if ( true )
 		{
@@ -831,7 +933,8 @@ public class GMControl extends ActorControl
 		GM.overlay.x = GM.view_x;
 		GM.overlay.y = GM.view_y;
 		
-		ctrl.setHotSpot( xx - offx, yy - offy, hh );
+		if ( isAvatar || isPet )
+			ctrl.setHotSpot( xx - offx, yy - offy, hh );
 	}
 	
 	public static function SetScale( amount )
@@ -866,11 +969,35 @@ public class GMControl extends ActorControl
 			body.OnMemoryChanged( event.name, event.value );
 			body.OnUpdateLook();
 			body.RegisterActions();
+			body.RegisterStates();
 		}
 	}
 	
 	/*
-		Whirled Control
+		Entity Control
+	*/
+	
+	override protected function entityEntered_v1 (entityId :String) :void
+	{
+		if ( true )
+			dispatchCtrlEvent(ControlEvent.ENTITY_ENTERED, entityId);
+	}
+
+	override protected function entityLeft_v1 (entityId :String) :void
+	{
+		if ( true )
+			dispatchCtrlEvent(ControlEvent.ENTITY_LEFT, entityId);
+	}
+
+	override protected function entityMoved_v2 (entityId :String, destination :Array) :void
+	{
+		if ( true )
+			dispatchCtrlEvent(ControlEvent.ENTITY_MOVED, entityId, destination);
+	}
+	
+	
+	/*
+		Actor Control
 	*/
 	
 	override public function getState() :String
@@ -908,6 +1035,8 @@ public class GMControl extends ActorControl
 		_isSleeping = sleeping;
 		super.appearanceChanged_v2( location, orient, moving, sleeping );
 	}
+	
+	
 	
 	/*
 		AvatarControl
@@ -1008,6 +1137,9 @@ class GMRemoteEntity// extends EntityControl
 	public static const PROP_ORIENTATION :String = "std:orientation";
 	public static const PROP_TYPE :String = "std:type";
 	
+	public static const PROP_CHARACTER :String = "gm:character";
+	public static const PROP_STATE :String = "gm:state";
+	
 	
 	public var entityID;
 	public var memberID
@@ -1023,6 +1155,9 @@ class GMRemoteEntity// extends EntityControl
 	
 	public var name;
 	
+	public var character = "gmcharacter";
+	public var state = "default";
+	
 	public var x = 0;
 	public var y = 0;
 	public var z = 0;
@@ -1030,20 +1165,22 @@ class GMRemoteEntity// extends EntityControl
 	
 	public var xsize = 48;
 	public var ysize = 128;
-	public var zsize = 48;
+	public var zsize = xsize;
 	
 	public var location = [];
 	public var destination = [];
 	
 	public function GMRemoteEntity( _entityid )
 	{
+		var get;
 		GM.debugTracker = "GMRemoteEntity";
 		this.entityID = _entityid;
 		this.memberID = GetProperty( PROP_MEMBER_ID );
 		this.name = GetProperty( PROP_NAME );
 		this.type = GetProperty( PROP_TYPE );
 		GetPosition();
-		GMControl.Log( "new GMRemoteEntity( " + _entityid + " ); - " + name );
+		GM.Log( "new GMRemoteEntity( " + _entityid + " ); - " + name );
+		
 	}
 	
 	public function Cleanup() {}
@@ -1077,11 +1214,19 @@ class GMRemoteEntity// extends EntityControl
 	
 	public function GetProperty( key )
 	{
-		return ctrl.callHostCode( "getEntityProperty_v1", entityID, key ) ;
+		try
+		{
+			return ctrl.callHostCode( "getEntityProperty_v1", entityID, key ) ;
+		}
+		catch(e)
+		{
+			GM.Caught(e);
+		}
 	}
 	
 	public function GetPosition()
 	{
+		GetOrientation();
 		var pos = GetProperty( PROP_LOCATION_PIXEL );
 		if ( pos == null )
 			return;
@@ -1092,6 +1237,16 @@ class GMRemoteEntity// extends EntityControl
 			z = pos[2];
 			return true;
 		}
+	}
+	
+	public function GetOrientation()
+	{
+		var orient = GetProperty( PROP_ORIENTATION );
+		if ( orient )
+			this.orient = orient;
+		else
+			this.orient = 0;
+		return this.orient;
 	}
 	
 	public function IsTouching( Entity )

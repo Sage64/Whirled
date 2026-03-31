@@ -48,7 +48,7 @@ public class JokerBody extends MonsterBody
 		myactions["snd_joker_chaos"] = AddAction( "Chaos, Chaos!", Action_PlaySound, "snd_joker_chaos" );
 		myactions["snd_joker_anything"] = AddAction( "ANYTHING!", Action_PlaySound, "snd_joker_anything" );
 		
-		AddEnemyStates();
+		// AddEnemyStates();
 	}
 	
 	
@@ -641,7 +641,6 @@ class obj_joker_body extends DeltaruneObject
 		{
 			if ( dancelv <= 2 && ( body && body.jev_drawshadow ) )
 			{
-				sprite_width = 0;
 				draw_set_alpha( finalalpha );
 				draw_set_color( c_black );
 				var ypos = ( y );

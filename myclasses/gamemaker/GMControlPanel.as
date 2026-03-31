@@ -49,7 +49,7 @@ public class GMControlPanel extends Sprite
 		rootPanel = new ControlPanel();
 		
 		// debug init
-		if ( GM.debug )
+		if ( false ) //GM.debug )
 		{
 			
 			media = GM.media;

@@ -25,11 +25,10 @@ public class MainPartyBody extends DeltarunePlayerBody
 	
 	public var leader;
 	
-	
 	public var unhappy = 0;
 	public var ralsei_butler = 0;
+	public var boardmode = 0;
 	public var churchoutfit = 0;
-	
 	
 	public function MainPartyBody()
 	{
@@ -42,18 +41,40 @@ public class MainPartyBody extends DeltarunePlayerBody
 		myactions["chapter_switch"] = AddAction_ToggleMemory( "[Chapter]", "deltarune.chapter", [ 1, 4 ]  );
 		myactions["toggle_darkzone"] = AddAction_ToggleMemory( "[Dark World]", "deltarune.forcedarkzone", [ false, true ] );
 		
+		mymemories["unhappy"] = AddMemory( "deltarune.unhappy", 0 );
+		myactions["toggle_unhappy"] = AddAction_ToggleMemory( "[Unhappy]", "deltarune.unhappy" );
+		myactions["toggle_unhappy"].hidden = true;
 		
-		mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, UpdateSprites );
+		mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, OnStateChanged );
 		myactions["toggle_ralsei_butler"] = AddAction_ToggleMemory( "[Ralsei Butler]", "deltarune.ralsei.butler" );
 		
-		mymemories["churchoutfit"] = AddMemory( "deltarune.churchoutfit", 0, UpdateSprites );
+		myactions["toggle_board"] = AddAction_ToggleMemory( "[Board]", "deltarune.board" );
+		
+		mymemories["churchoutfit"] = AddMemory( "deltarune.churchoutfit", 0, OnStateChanged );
 		myactions["toggle_churchoutfit"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
 		
 	}
 	
+	override public function Step()
+	{
+		super.Step();
+		
+		if ( instance_exists( leader ) )
+		{
+			GMControl.customProps["deltarune.sprite"] = sprite_get_name( leader.sprite_index );
+			GMControl.customProps["deltarune.subimage"] = leader.image_index;
+		}
+	}
+	
 	override public function OnStateChanged()
 	{
+		unhappy = mymemories["unhappy"].value;
+		ralsei_butler = mymemories["ralsei_butler"].value;
+		boardmode = mymemories["board"].value;
+		churchoutfit = mymemories["churchoutfit"].value;
+		
 		super.OnStateChanged();
+		
 		x = originX;
 		y = originY;
 		
@@ -66,6 +87,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 				if ( !instance_exists( kris ) )
 				{
 					kris = instance_create( x, y, obj_mainchara );
+					kris.herocolor = 0x8DEDFE;
 					leader = kris;
 				}
 				break;
@@ -76,6 +98,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 				if ( !instance_exists( susie ) )
 				{
 					susie = instance_create( x, y, obj_mainchara );
+					susie.herocolor = 0xF22D81;
 					leader = susie;
 				}
 				break;
@@ -86,6 +109,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 				if ( !instance_exists( ralsei ) )
 				{
 					ralsei = instance_create( x, y, obj_mainchara );
+					ralsei.herocolor = 0x13D26F;
 					leader = ralsei;
 				}
 				break;
@@ -129,44 +153,57 @@ public class MainPartyBody extends DeltarunePlayerBody
 		SetViewOffset( _offx, _offy );
 	}
 	
-	override public function UpdateSprites( ... ignored )
+	public function UpdateSprites( ... ignored )
 	{
-		unhappy = 0;
-		ralsei_butler = mymemories["ralsei_butler"].value;
-		churchoutfit = mymemories["churchoutfit"].value;
-		
 		x = 0;
 		y = 0;
 		characterH = 24;
 		image_xscale = ( global.darkzone ) ? 2 : 1;
 		image_yscale = image_xscale;
 		
-		super.UpdateSprites();
-		if ( instance_exists( kris ) )
-		{
-			Apply_Kris( kris );
-		}
-		if ( instance_exists( susie ) )
-		{
-			Apply_Susie( susie );
-		}
-		if ( instance_exists( ralsei ) )
-		{
-			Apply_Ralsei( ralsei );
-		}
+		
+		
 		if ( instance_exists( noelle ) )
 		{
 			Apply_Ralsei( noelle );
 		}
 		
+		if ( instance_exists( ralsei ) )
+		{
+			Apply_Ralsei( ralsei );
+		}
+		
+		if ( instance_exists( susie ) )
+		{
+			Apply_Susie( susie );
+		}
+		
+		if ( instance_exists( kris ) )
+		{
+			Apply_Kris( kris );
+		}
+		
 		OnUpdateLook();
+		
+		if ( nametag )
+		{
+			nametag.SetBaseColor( 0xFFFFFF ); 
+			nametag.SetBaseOutline( 0x000000 );
+		}
 		
 		if ( instance_exists( leader ) )
 		{
 			x = leader.x;
 			y = leader.y;
 			characterH = 0;
-			if ( leader == kris )
+			
+			if ( true )
+			{
+				characterH = ( sprite_get_height( leader.dsprite ) - sprite_get_yoffset( leader.dsprite ) ) * leader.image_yscale;
+				if ( boardmode )
+					nametag.SetBaseColor( leader.herocolor );
+			}
+			else if ( leader == kris )
 				characterH = ( sprite_get_height( global.spr_krisd ) ) * leader.image_yscale;
 			else if ( leader == susie )
 				characterH = ( sprite_get_height( global.spr_susied ) ) * leader.image_yscale;
@@ -182,16 +219,34 @@ public class MainPartyBody extends DeltarunePlayerBody
 		
 	}
 	
-	public function Apply_Kris( inst )
+	public function Apply_Chara( inst )
 	{
 		inst.image_xscale = image_xscale;
 		inst.image_yscale = image_yscale;
+		
+		inst.boardmode = ( global.darkzone && boardmode );
+	}
+	
+	public function Apply_Kris( inst )
+	{
+		Apply_Chara( inst );
+		
 		if ( global.darkzone )
 		{
-			inst.dsprite = global.spr_krisd_dark;
-			inst.rsprite = global.spr_krisr_dark;
-			inst.usprite = global.spr_krisu_dark;
-			inst.lsprite = global.spr_krisl_dark;
+			if ( inst.boardmode )
+			{
+				inst.dsprite = global.spr_board_kris_walk_down;
+				inst.rsprite = global.spr_board_kris_walk_right;
+				inst.usprite = global.spr_board_kris_walk_up;
+				inst.lsprite = global.spr_board_kris_walk_left;
+			}
+			else
+			{
+				inst.dsprite = global.spr_krisd_dark;
+				inst.rsprite = global.spr_krisr_dark;
+				inst.usprite = global.spr_krisu_dark;
+				inst.lsprite = global.spr_krisl_dark;
+			}
 		}
 		else
 		{
@@ -211,22 +266,34 @@ public class MainPartyBody extends DeltarunePlayerBody
 			}
 		}
 		inst.GetFacingSprite();
-		inst.offset_x = ( sprite_get_width( global.spr_krisd ) / 2 );
+		if ( boardmode )
+			inst.offset_x = sprite_get_width( inst.dsprite ) / 2;
+		else
+			inst.offset_x = ( sprite_get_width( global.spr_krisd ) / 2 );
 		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
 		inst.feet_y = 1;
 	}
 	
 	public function Apply_Susie( inst )
 	{
-		inst.image_xscale = image_xscale;
-		inst.image_yscale = image_yscale;
+		Apply_Chara( inst );
 		
 		if ( global.darkzone )
 		{
-			inst.dsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_down_dw : global.spr_susied_dark;
-			inst.rsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_right_dw : global.spr_susier_dark;
-			inst.usprite = ( global.chapter > 1 ) ? global.spr_susie_walk_up_dw : global.spr_susieu_dark;
-			inst.lsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_left_dw : global.spr_susiel_dark;
+			if ( inst.boardmode )
+			{
+				inst.dsprite = global.spr_board_susie_walk_down;
+				inst.rsprite = global.spr_board_susie_walk_right;
+				inst.usprite = global.spr_board_susie_walk_up;
+				inst.lsprite = global.spr_board_susie_walk_left;
+			}
+			else
+			{
+				inst.dsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_down_dw : global.spr_susied_dark;
+				inst.rsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_right_dw : global.spr_susier_dark;
+				inst.usprite = ( global.chapter > 1 ) ? global.spr_susie_walk_up_dw : global.spr_susieu_dark;
+				inst.lsprite = ( global.chapter > 1 ) ? global.spr_susie_walk_left_dw : global.spr_susiel_dark;
+			}
 		}
 		else
 		{
@@ -246,18 +313,28 @@ public class MainPartyBody extends DeltarunePlayerBody
 			}
 		}
 		
-		
 		inst.GetFacingSprite();
-		inst.offset_x = ( sprite_get_width( global.spr_susied ) / 2 );
+		if ( boardmode )
+			inst.offset_x = sprite_get_width( inst.dsprite ) / 2;
+		else
+			inst.offset_x = ( sprite_get_width( global.spr_susied ) / 2 );
 		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
-		inst.feet_y = ( global.chapter > 1 && global.darkzone ) ? 0 : 1;
+		inst.feet_y = ( !inst.boardmode && global.chapter > 1 && global.darkzone ) ? 0 : 1;
+		
 	}
 	
 	public function Apply_Ralsei( inst )
 	{
-		inst.image_xscale = image_xscale;
-		inst.image_yscale = image_yscale;
-		if ( ralsei_butler )
+		Apply_Chara( inst );
+		
+		if ( inst.boardmode )
+		{
+			inst.dsprite = global.spr_board_ralsei_walk_down;
+			inst.rsprite = global.spr_board_ralsei_walk_right;
+			inst.usprite = global.spr_board_ralsei_walk_up;
+			inst.lsprite = global.spr_board_ralsei_walk_left;
+		}
+		else if ( ralsei_butler )
 		{
 			inst.dsprite = global.spr_cutscene_20_ralsei_walk_down_butler;
 			inst.rsprite = global.spr_cutscene_20_ralsei_walk_right_butler;
@@ -272,7 +349,11 @@ public class MainPartyBody extends DeltarunePlayerBody
 			inst.lsprite = ( global.chapter > 1 ) ? global.spr_ralsei_walk_left : global.spr_ralseil;
 		}
 		inst.GetFacingSprite();
-		inst.offset_x = ( sprite_get_width( inst.dsprite ) / 2 );
+		
+		if ( inst.boardmode )
+			inst.offset_x = sprite_get_width( inst.dsprite ) / 2;
+		else
+			inst.offset_x = ( sprite_get_width( inst.dsprite ) / 2 );
 		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
 		inst.feet_y = ( global.chapter > 1 ) ? 2 : 1;
 	}
@@ -302,6 +383,9 @@ import com.whirled.*
 class obj_mainchara extends DeltaruneObject
 {
 	public var darkmode = 0;
+	public var boardmode = 0;
+	
+	public var herocolor;
 	
 	// Input
 	public var press_l = 0;
@@ -383,7 +467,7 @@ class obj_mainchara extends DeltaruneObject
 			AnimateWalk();
 		GetFacingSprite();
 		
-		if ( GMControl.debug )
+		if ( false && GMControl.debug )
 		{
 			image_angle = point_direction( x, y, mouse_x, mouse_y );
 		}
@@ -441,46 +525,54 @@ class obj_mainchara extends DeltaruneObject
 	// Adjust move speed based on various factors
 	public function TestSpeed()
 	{
-		run = global.flag[DeltarunePlayerBody.FLAG_AUTORUN];
-		if ( false )
-			run = !run;
-		if ( autorun > 0 )
+		if ( boardmode )
 		{
-			run = 1;
-			if ( autorun == 1 )
-			{
-				runtimer = 200;
-			}
-			else if ( autorun == 2 )
-			{
-				runtimer = 50;
-			}
-		}
-		if ( !canrun )
+			wspeed = 4;
 			run = 0;
-		if ( run == 1 )
-		{
-			if ( darkmode )
-			{
-				if ( runtimer > 60 )
-					wspeed = bwspeed + 5;
-				else if ( runtimer > 10 )
-					wspeed = bwspeed + 4;
-				else
-					wspeed = bwspeed + 2;
-			}
-			else
-			{
-				if ( runtimer > 60 )
-					wspeed = bwspeed + 3;
-				else if ( runtimer > 10 )
-					wspeed = bwspeed + 2;
-				else
-					wspeed = bwspeed + 1;
-			}
 		}
 		else
-			wspeed = bwspeed;
+		{
+			run = global.flag[DeltarunePlayerBody.FLAG_AUTORUN];
+			if ( false )
+				run = !run;
+			if ( autorun > 0 )
+			{
+				run = 1;
+				if ( autorun == 1 )
+				{
+					runtimer = 200;
+				}
+				else if ( autorun == 2 )
+				{
+					runtimer = 50;
+				}
+			}
+			if ( !canrun )
+				run = 0;
+			if ( run == 1 )
+			{
+				if ( darkmode )
+				{
+					if ( runtimer > 60 )
+						wspeed = bwspeed + 5;
+					else if ( runtimer > 10 )
+						wspeed = bwspeed + 4;
+					else
+						wspeed = bwspeed + 2;
+				}
+				else
+				{
+					if ( runtimer > 60 )
+						wspeed = bwspeed + 3;
+					else if ( runtimer > 10 )
+						wspeed = bwspeed + 2;
+					else
+						wspeed = bwspeed + 1;
+				}
+			}
+			else
+				wspeed = bwspeed;
+		}
 		if ( body )
 			body.SetMoveSpeed( wspeed );
 	}

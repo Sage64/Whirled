@@ -28,6 +28,7 @@ public class GM extends EventDispatcher
 	public static var debugTracker = "";
 	public static var hasErrored = false;
 	public static var controlPanel;
+	public static var errorsCaught = 0;
 	
 	// Root Level
 	public static var isLoaded = false;
@@ -210,7 +211,7 @@ public class GM extends EventDispatcher
 	public static function PrepareSymbols( media )
 	{
 		debugTracker = "PrepareSymbols";
-		//GMControl.Log( "Preparing symbols" );
+		GMControl.Log( "Adding sprites from " + media.constructor );
 		if ( !media )
 		{
 			Warn( "Invalid media" );
@@ -237,44 +238,98 @@ public class GM extends EventDispatcher
 	public static function AddSprite_Symbol( symbol )
 	{
 		var sprname = symbol.name;
-		Log( "AddSprite \"" + sprname + "\" with " + symbol.totalFrames + " frames" );
+		// Log( "AddSprite \"" + sprname + "\" with " + symbol.totalFrames + " frames" );
 		if ( internalstageitems[sprname] != null )
 		{
-			Log( "already exists" );
+			// Log( "already exists" );
 			return;
 		}
 
-		internalstageitems[sprname] = symbol;
+		internalstageitems[sprname] = 0; //symbol;
 		var _bitmap = true; //isBitmap;
-		if ( false && symbol["isBitmap"] == false )
-		{
-			Log( "isBitmap = false" );
-			_bitmap = false;
-		}
 		if ( _bitmap )
 		{
 			symbol.cacheAsBitmap = true;
 		}
 		symbol.visible = false;
-		symbol.gotoAndStop( 1 );
-		symbol.x = -1024;
-		symbol.y = -1024;
-		symbol.alpha = 0;
+		// symbol.gotoAndStop( 1 );
+		// symbol.x = -1024;
+		// symbol.y = -1024;
+		// symbol.alpha = 0;
 
 		var spr = new GMSprite();
 		spr.CreateFromSymbol( symbol );
 		
 		internalspritelist.push( spr );
 		internalspritemap[sprname] = spr;
-		
 		global[sprname] = spr;
 		
 		var Parent = symbol.parent;
-		Parent.removeChild( symbol );
-		//if ( container )
-		//	container.addChild( symbol );
-
-		symbol.gotoAndStop( 1 );
+		if ( Parent )
+		{
+			Parent.removeChild( symbol );
+		}
+	}
+	
+	public static function AddSprite_Bitmap( sprname, _x, _y, frames )
+	{
+		var spr = internalspritemap[sprname];
+		if ( spr )
+		{
+			GM.Log( "Sprite " + sprname + " already exists!" );
+			return spr;
+		}
+		spr = new GMSprite();
+		spr.name = sprname;
+		spr.x = _x;
+		spr.y = _y;
+		
+		spr.CreateFromBitmap( frames );
+		
+		internalspritelist.push( spr );
+		internalspritemap[sprname] = spr;
+		global[sprname] = spr;
+		
+		return spr;
+	}
+	
+	// Add a sprite by copying another one
+	public static function AddSprite_Sprite( sprname, source )
+	{
+		GM.debugTracker = "AddSprite_Sprite";
+		var spr = internalspritemap[sprname];
+		if ( spr )
+		{
+			GM.Log( "Sprite " + sprname + " already exists!" );
+			return spr;
+		}
+		if ( !source )
+		{
+			GM.Log( "AddSprite_Sprite: no source sprite" );
+			return;
+		}
+		
+		spr = new GMSprite();
+		spr.name = sprname;
+		spr.x = source.x;
+		spr.y = source.y;
+		
+		var frames = [];
+		for ( var i = 0; i < source.count; ++i )
+		{
+			frames[i] = {};
+			var _frame = source.images[i];
+			var bitmapdata = _frame.bitmapdata.clone();
+			frames[i].bitmapData = bitmapdata;
+		}
+		
+		spr.CreateFromBitmap( frames );
+		
+		internalspritelist.push( spr );
+		internalspritemap[sprname] = spr;
+		global[sprname] = spr;
+		
+		return spr;
 	}
 	
 	// Add a sound via its class
@@ -290,7 +345,6 @@ public class GM extends EventDispatcher
 		var snd = new GMSound( audio );
 		internalsoundlist.push( snd );
 		internalsoundmap[sndname] = snd;
-		
 		global[sndname] = snd;
 	}
 	
@@ -303,10 +357,8 @@ public class GM extends EventDispatcher
 	{
 		if ( true )
 		{
-			if ( media )
-				media.alpha = 0.5;
 			Log( "*************************************************************" );
-			Log( "ERROR CAUGHT - please share this with the avatar creator!" );
+			Log( "ERRORS CAUGHT ( " + ++GM.errorsCaught + " ) - please share this with the creator!" );
 			Log( "tracker: " + debugTracker );
 			Log( e.errorID  );
 			Log( e.name  );
@@ -339,7 +391,7 @@ public class GM extends EventDispatcher
 		text = "[" + hh + ":" + mm + ":" + ss +  "]" + String( text );
 		trace( "Log: " + text );
 		debug_log.push( text );
-		if ( debug_log.length > 64 )
+		if ( debug_log.length > 80 )
 			debug_log.shift();
 		
 		
@@ -355,23 +407,17 @@ public class GM extends EventDispatcher
 		Log( "WARNING at " + debugTracker + ": " + text );
 	}
 	
-	public static function GetControlPanel()
+	public static function GetControlPanel( ww = null, hh = null )
 	{
-		var ww = 690;
-		var hh = 470;
+		GM.Log( "GetControlPanel()" );
+		var env;
+		if ( ctrl )
+			env = ctrl.getEnvironment();
 		
-		if ( ctrl != null )
-		{
-			if ( ctrl.getEnvironment() == EntityControl.ENV_SHOP )
-			{
-				ww = 320;
-				hh = 240;
-			}
-			else //if ( ctrl.getEnvironment() == EntityControl.ENV_ROOM )
-			{
-				
-			}
-		}
+		if ( ww == null )
+			ww = ( env == "shop" ) ? 320 : 690;
+		if ( hh == null )
+			hh = ( env == "shop" ) ? 240 : 470;
 		if ( !controlPanel )
 			controlPanel = new GMControlPanel( ww, hh );
 		controlPanel.SetSize( ww, hh );
@@ -471,7 +517,14 @@ public class GM extends EventDispatcher
 		for ( instance_index = instances.length - 1; instance_index >= 0; --instance_index )
 		{
 			var inst = instances[instance_index];
-			inst.GMStep();
+			try
+			{
+				inst.GMStep();
+			}
+			catch(e)
+			{
+				Caught(e);
+			}
 		}
 		
 		if ( GMControl.ctrl )
@@ -488,18 +541,33 @@ public class GM extends EventDispatcher
 		GMObject.surface_set_target( container );
 		
 		
-		if ( GMControl.ctrl )
-			GMControl.GMDraw();
-		
 		debugTracker = "GM.GMDraw Instances";
 		
 		for ( instance_index = 0; instance_index < instances.length; ++instance_index )
 		{
 			var inst = instances[instance_index];
-			inst.Draw(); //GMDraw();
+			debugTracker = "GM.GMDraw - " + inst.name; 
+			try
+			{
+				inst.Draw(); //GMDraw();
+			}
+			catch(e)
+			{
+				Caught(e);
+			}
 		}
 		
 		GMObject.surface_reset_target();
+		
+		if ( GMControl.ctrl )
+			GMControl.GMDraw();
+		
+		if ( errorsCaught > 0 )
+		{
+			GMObject.surface_set_target( overlay );
+			
+			GMObject.surface_reset_target();
+		}
 	}
 	
 	/*
@@ -544,13 +612,14 @@ public class GM extends EventDispatcher
 		// hasrot = true;
 		if ( hasrot )
 		{
-			g_Matrix.identity();
-			g_Matrix.translate( ox, oy );
-			g_Matrix.rotate( _ang );
-			g_Matrix.scale( _xscale, _yscale );
+			// g_Matrix.identity();
+			// g_Matrix.translate( ox, oy );
+			// g_Matrix.rotate( _ang );
+			// g_Matrix.scale( _xscale, _yscale );
 			
-			var _angh = _ang * ( Math.PI / 180 );
-			var _angv = ( _ang + 90 ) * ( Math.PI / 180 );
+			var _torad = ( Math.PI / 180 );
+			var _angh = -_ang * ( _torad );
+			var _angv = ( -_ang + 90 ) * ( _torad );
 			
 			var ww = _bmd.width * _xscale;
 			var hh = _bmd.height * _yscale;
@@ -562,14 +631,19 @@ public class GM extends EventDispatcher
 			
 			if ( true )
 			{
-				// xinc_w = 0;
+				xinc_w = Math.cos( _angh ) * ww;
+				yinc_w = Math.sin( _angh ) * ww;
+				xinc_h = Math.cos( _angv ) * hh;
+				yinc_h = Math.sin( _angv ) * hh;
 			}
 			
 			var _x1 = _x;
 			var _y1 = _y;
 			
-			_x1 += ox * _xscale;
-			_y1 += oy * _yscale;
+			_x1 += Math.cos(_angh ) * ox * _xscale;
+			_y1 += Math.sin( _angh ) * ox * _xscale;
+			_x1 += Math.cos(_angv ) * oy * _yscale;
+			_y1 += Math.sin( _angv ) * oy * _yscale;
 			
 			var _x2 = _x1 + xinc_w;
 			var _y2 = _y1 + yinc_w;
@@ -667,7 +741,7 @@ public class GM extends EventDispatcher
 		
 		
 		graphics.drawTriangles( TextureDrawPos_vertices, TextureDrawPos_indices, TextureDrawPos_uvtData );
-		//graphics.endFill();
+		graphics.endFill();
 	}
 	
 	
@@ -921,6 +995,7 @@ public class GM extends EventDispatcher
 	
 	public static function InternalDrawLine( x1, y1, x2, y2, w, a = null )
 	{
+		return;
 		var g = internalrendertarget.graphics;
 		if ( a == null )
 			a = internaldrawalpha;
@@ -934,7 +1009,7 @@ public class GM extends EventDispatcher
 		var g = internalrendertarget.graphics;
 		var a = null;
 		if ( a == null )
-			a = internaldrawalpha;
+			a = g_GlobalAlpha;
 		// drawcolor;
 		if ( outline )
 		{
@@ -945,7 +1020,7 @@ public class GM extends EventDispatcher
 		}
 		else
 		{
-			g.beginFill( internaldrawcolor, internaldrawalpha );
+			g.beginFill( internaldrawcolor, g_GlobalAlpha );
 			g.drawRect( x1, y1, x2 - x1, y2 - y1 );
 		}
 	}
@@ -1112,12 +1187,34 @@ class GMSprite
 		height = bounds.height;
 		
 		count = 0;
-		for ( var i = 0; i < symbol.totalFrames; ++i )
+		
+		var frames = 1;
+		
+		if ( symbol["totalFrames"] != null )
 		{
-			if ( symbol.numChildren < 1 )
-				continue;
-			++count;
-			GetImage( i );
+			frames = symbol.totalFrames;
+			for ( var i = 0; i < frames; ++i )
+			{
+				if ( !symbol["numChildren"] )
+					continue;
+				++count;
+				GetImage( i );
+			}
+		}
+	}
+	
+	public function CreateFromBitmap( frames )
+	{
+		GM.debugTracker = "GMSprite.CreateFromBitmap";
+		if ( frames.length < 1 )
+			return;
+		width = frames[0].bitmapData.width;
+		height = frames[0].bitmapData.height;
+		for each ( var bitmap in frames )
+		{
+			var frame = {};
+			images[count++] = frame;
+			frame.bitmapdata = bitmap.bitmapData;
 		}
 	}
 	
@@ -1136,7 +1233,7 @@ class GMSprite
 			{
 				var pre_x = symbol.x;
 				var pre_y = symbol.y;
-				trace( "get bitmap data for " + name + ":" + i );
+				// trace( "get bitmap data for " + name + ":" + i );
 				frame.symbol = symbol;
 				frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00FFFFFF );
 				symbol.gotoAndStop( i + 1 );

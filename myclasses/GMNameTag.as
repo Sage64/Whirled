@@ -111,6 +111,7 @@ public class GMNameTag extends Sprite
 	{
 		removeChild( surf );
 		removeChild( textObj );
+		textObj = null;
 		container.removeChild( this );
 	}
 	
@@ -171,7 +172,7 @@ public class GMNameTag extends Sprite
 				}
 			}
 		}
-		if ( visible )
+		if ( true )
 		{
 			textW = textObj.width / 2;
 			textH = textObj.height;
@@ -185,6 +186,8 @@ public class GMNameTag extends Sprite
 	{
 		show = true;
 		UpdateLook();
+		//GetName();
+		// Apply();
 	}
 	
 	public function Hide()
