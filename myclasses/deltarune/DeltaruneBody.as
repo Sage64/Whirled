@@ -26,6 +26,7 @@ import com.whirled.*
 public class DeltaruneBody extends GMBody
 {
 	// 
+	public var instance;
 	
 	public var darkmode = false;
 	
@@ -80,19 +81,19 @@ public class DeltaruneBody extends GMBody
 			nametag.Apply();
 		}
 		
-		mymemories["deltarune"] = AddMemory( "deltarune", 1 );
 		mymemories["chapter"] = AddMemory( "deltarune.chapter", 1, SetChapter );
 		mymemories["forcedarkzone"] = AddMemory( "deltarune.forcedarkzone", 0, OnStateChanged );
+		mymemories["unhappy"] = AddMemory( "deltarune.unhappy", 0 );
 		mymemories["board"] = AddMemory( "deltarune.board", 0, OnStateChanged );
 		
+		customProps["deltarune"] = 1;
 	}
 	
-	public function LWState( statename, sprites = null )
+	override public function AddState( statename, sprites = null )
 	{
-		var State = AddState( statename );
+		var State = super.AddState( statename );
 		// 
-		State.darkzone = false;
-		State.run = false;
+		State.darkzone = null;
 		State.board = false;
 		State.sprite = sprites;
 		State.sprites = sprites;
@@ -117,11 +118,20 @@ public class DeltaruneBody extends GMBody
 		return State;
 	}
 	
+	public function LWState( statename, sprites = null )
+	{
+		var State = AddState( statename, sprites );
+		// 
+		State.darkzone = 0;
+		// 
+		return State;
+	}
+	
 	public function DWState( statename, sprites = null )
 	{
-		var State = LWState( statename, sprites );
+		var State = AddState( statename, sprites );
 		// 
-		State.darkzone = true;
+		State.darkzone = 1;
 		// 
 		return State;
 	}
@@ -142,8 +152,8 @@ public class DeltaruneBody extends GMBody
 		global.darkzone = ( curState && curState.darkzone );
 		if ( GetMemory( "deltarune.forcedarkzone" ) )
 			global.darkzone = 1;
-		else if ( GetMemory( "deltarune.board" ) )
-			global.darkzone = 1;
+		// else if ( GetMemory( "deltarune.board" ) )
+		// 	global.darkzone = 1;
 			
 		if ( global.darkzone )
 		{
@@ -178,7 +188,7 @@ public class DeltaruneBody extends GMBody
 				surface_set_target( nametag.surf );
 				xx = ( nametag.textObj.width / 2 ) + 4 + ( 4 * _sprscale );
 				yy = ( -nametag.textFormat.size / 2 ) - ( ( sprite_get_height( global.spr_tiredmark ) * _sprscale ) / 2 );
-				draw_sprite_ext( global.spr_tiredmark, 0, xx, yy );
+				draw_sprite_ext( global.spr_tiredmark, 0, xx, yy, 1, 1, 0, c_white, 1 );
 				surface_reset_target();
 			}
 		}

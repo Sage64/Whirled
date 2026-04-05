@@ -18,12 +18,14 @@ import com.whirled.*;
 
 public class GMObject // extends Sprite
 {
-	public var parent;
+	// public var parent;
 	public var name = "GMObject";
 	public var x = 0;
 	public var y = 0;
 	public var width = 0;
 	public var height = 0;
+	
+	public var visible = true;
 	
 	public static const global = GM.global;
 	
@@ -107,6 +109,8 @@ public class GMObject // extends Sprite
 		
 		GM.debugTracker = "GMObject";
 		this.body = GMControl.body;
+		
+		
 	}
 	
 	public function Cleanup() {}
@@ -120,11 +124,13 @@ public class GMObject // extends Sprite
 			hspeed += dcos( gravity_direction ) * ( gravity * timescale );
 			vspeed -= dsin( gravity_direction) * ( gravity * timescale );
 		}
-		
 		if ( hspeed != 0 )
 			x += ( hspeed * timescale );
 		if ( vspeed != 0 )
 			y += ( vspeed * timescale );
+		
+		if ( true )
+			GMAlarms();
 		
 		Step();
 		
@@ -139,6 +145,35 @@ public class GMObject // extends Sprite
 		}
 		
 	}
+	
+	public function GMAlarms()
+	{
+		for ( var i = 0; i < 12; ++i )
+		{
+			if ( alarm[i] > 0 )
+			{
+				--alarm[i];
+				if ( alarm[i] == 0 )
+				{
+					this["Alarm_" + i]();
+					alarm[i] = -1;
+				}
+			}
+		}
+	}
+	
+	public function Alarm_0() {}
+	public function Alarm_1() {}
+	public function Alarm_2() {}
+	public function Alarm_3() {}
+	public function Alarm_4() {}
+	public function Alarm_5() {}
+	public function Alarm_6() {}
+	public function Alarm_7() {}
+	public function Alarm_8() {}
+	public function Alarm_9() {}
+	public function Alarm_10() {}
+	public function Alarm_11() {}
 	
 	public function Step() {}
 	
@@ -162,6 +197,29 @@ public class GMObject // extends Sprite
 	/*
 		GM Functions
 	*/
+	
+	
+	// Function_Font
+	
+	public static function draw_set_font( _fnt )
+	{
+		GM.internaldrawfont = _fnt;
+	}
+	
+	public static function draw_set_halign( _h = fa_left )
+	{
+		GM.internaldrawhalign = _h;
+	}
+	public static function draw_set_valign( _v = fa_top )
+	{
+		GM.internaldrawvalign = _v;
+	}
+	
+	public static function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
+	{
+		GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
+		return;
+	}
 	
 	
 	// Function_Graphics
@@ -421,7 +479,24 @@ public class GMObject // extends Sprite
 	
 	// yyIOManager
 	
-	public function get mouse_x()
+	public static function keyboard_check( key = 0 )
+	{
+		if ( key < 0 || key > 255 )
+			return false;
+		return ( GM.g_KeyDown[key] ) ? true : false;
+	}
+	
+	public static function io_clear()
+	{
+		for ( var i = 0; i < 256; ++i )
+		{
+			GM.g_KeyDown[i] = false;
+			GM.g_KeyPressed[i] = false;
+			GM.g_KeyReleased[i] = false;
+		}
+	}
+	
+	public static function get mouse_x()
 	{
 		if ( !GM.internalrendertarget )
 			return 0;
@@ -430,7 +505,7 @@ public class GMObject // extends Sprite
 		return _xx;
 	}
 	
-	public function get mouse_y()
+	public static function get mouse_y()
 	{
 		if ( !GM.internalrendertarget )
 			return 0;
@@ -439,7 +514,33 @@ public class GMObject // extends Sprite
 		return _yy;
 	}
 	
+	public static function window_has_focus()
+	{
+		try
+		{
+			if ( GM.media && GM.media.stage )
+			{
+				var _focus = GM.media.stage.focus;
+				if ( _focus == GMControl.popup_surface )
+					return true;
+			}
+		}
+		catch(e)
+		{
+			return null;
+		}
+		return false;
+	}
 	
+	public static function window_mouse_get_x()
+	{
+		
+	}
+	
+	public static function window_mouse_get_y()
+	{
+		
+	}
 	
 	
 	
@@ -492,12 +593,14 @@ public class GMObject // extends Sprite
 	
 	public static function surface_set_target( _surf )
 	{
+		GM.internalrenderstack.push( GM.internalrendertarget );
 		GM.InternalSetDrawTarget( _surf );
 	}
 	
 	public static function surface_reset_target()
 	{
-		GM.InternalSetDrawTarget( GM.container );
+		var target = ( GM.internalrenderstack.length > 0 ) ? GM.internalrenderstack.pop() : GM.container;
+		GM.InternalSetDrawTarget( target );
 	}
 	
 	public function array_create( len, val = 0 )
@@ -656,9 +759,14 @@ public class GMObject // extends Sprite
 	public static function gpu_set_fog( on, col = c_white, _start = 0, _end = 0 )
 	{
 		if ( on )
-			GM.internalfog = col;
+		{
+			GM.g_GlobalFog[0] = true;
+			GM.g_GlobalFog[1] = col;
+			GM.g_GlobalFog[2] = _start;
+			GM.g_GlobalFog[3] = _end;
+		}
 		else
-			GM.internalfog = null;
+			GM.g_GlobalFog[0] = false;
 	}
 	
 	public static function merge_color( cola, colb, amnt )
@@ -682,18 +790,19 @@ public class GMObject // extends Sprite
 	
 	public function draw_clear_alpha( col, a )
 	{
-		GM.internalrendertarget.graphics.clear();
+		var g = GM.internalrendertarget.graphics;
+		g.clear();
 		if ( a > 0 )
 		{
-			
+			g.beginFill( col, a );
+			g.drawRect( 0, 0, g.width, g.height );
+			g.endFill();
 		}
 	}
 	
 	public static function draw_set_alpha( alpha )
 	{
 		GM.g_GlobalAlpha = alpha;
-		GM.internaldrawalpha = alpha;
-		//return GM.InternalSetAlpha( alpha );
 	}
 	
 	public static function draw_get_alpha()
@@ -703,13 +812,13 @@ public class GMObject // extends Sprite
 	
 	public static function draw_set_color( col )
 	{
-		GM.internaldrawcolor = col;
+		GM.g_GlobalColor = col;
 		//return GM.InternalSetColor( col );
 	}
 	
 	public static function draw_get_color()
 	{
-		return GM.internaldrawcolor;
+		return GM.g_GlobalColor;
 	}
 	
 	public static function draw_line( x1, y1, x2, y2 )
@@ -719,42 +828,42 @@ public class GMObject // extends Sprite
 	
 	public static function draw_line_width( x1, y1, x2, y2, w = 1, a = null )
 	{
-		var g = GM.internalrendertarget.graphics;
-		if ( a == null )
-			a = GM.g_GlobalAlpha;
-		g.beginFill( GM.internaldrawcolor, a );
-		g.lineStyle( w, GM.internaldrawcolor, a );
-		g.moveTo( x1, y1 );
-		g.lineTo( x2, y2 );
-		g.endFill();
-		g.lineStyle(0, 0, 0);
+		with ( GM )
+		{
+			var g = internalrendertarget.graphics;
+			if ( a == null )
+				a = g_GlobalAlpha;
+			g.beginFill( g_GlobalColor, a );
+			g.lineStyle( w, g_GlobalColor, a );
+			g.moveTo( x1, y1 );
+			g.lineTo( x2, y2 );
+			g.endFill();
+			g.lineStyle(0, 0, 0);
+		}
 	}
 	
 	public static function draw_rectangle( x1, y1, x2, y2, outline = false )
 	{
-		return GM.InternalDrawRectangle( x1, y1, x2, y2, outline );
-	}
-	
-	// Text
-	
-	public static function draw_set_font( _fnt )
-	{
-		GM.internaldrawfont = _fnt;
-	}
-	
-	public static function draw_set_halign( _h = fa_left )
-	{
-		GM.internaldrawhalign = _h;
-	}
-	public static function draw_set_valign( _v = fa_top )
-	{
-		GM.internaldrawvalign = _v;
-	}
-	
-	public function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
-	{
-		GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
-		return;
+		with ( GM )
+		{
+			var g = graphics;
+			if ( outline )
+			{
+				g.beginFill( g_GlobalColor, a );
+				g.lineStyle( w, g_GlobalColor, a );
+				g.moveTo( x1, y1 );
+				g.lineTo( x2, y1 );
+				g.lineTo( x2, y2 );
+				g.lineTo( x1, y2 );
+				g.lineTo( x1, y1 );
+				g.endFill();
+				g.lineStyle(0, 0, 0);
+				return;
+			}
+			g.beginFill( g_GlobalColor, g_GlobalAlpha );
+			g.drawRect( x1, y1, x2 - x1, y2 - y1 );
+			g.endFill();
+		}
 	}
 	
 	

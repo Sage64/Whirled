@@ -52,6 +52,7 @@ public class GMBody extends GMObject
 	
 	// Whirled - Init
 	
+	public var gm;
 	public var media;
 	public var container;
 	public var ctrl;
@@ -63,6 +64,8 @@ public class GMBody extends GMObject
 	 };
 	 
 	public var _eventqueue :Array = [];
+	
+	public var customProps = {};
 	
 	public var isMoving = false;
 	public var wasMoving = false;
@@ -153,9 +156,11 @@ public class GMBody extends GMObject
 		image_speed = 0;
 		
 		name = "GMBody";
+		this.gm = GM;
 		this.ctrl = GMControl.ctrl;
 		this.media = GMControl.media; 
 		this.container = GMControl.container;
+		this.body = this;
 		
 		GMControl.Log( "Creating" );
 		
@@ -198,8 +203,6 @@ public class GMBody extends GMObject
 	public function GMCleanup()
 	{
 		GMControl.Log( "Cleaning up" );
-		if ( parent )
-			parent.removeChild( this );
 		Cleanup();
 	}
 	
@@ -234,10 +237,20 @@ public class GMBody extends GMObject
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
 			var event = _eventqueue.shift();
+			if ( !event )
+				continue;
+			GM.debugTracker = "GMBody.GMProcessEvents ( event )";
 			var func = _eventlisteners.func[event.type];
 			if ( !func )
 				continue;
-			func( event );
+			try
+			{
+				func( event );
+			}
+			catch(e)
+			{
+				GMControl.Caught(e);
+			}
 		}
 	}
 	
@@ -287,6 +300,7 @@ public class GMBody extends GMObject
 		DEBUG FUNCTIONS
 	*/
 	
+	
 	public function DoBodyDebug()
 	{
 		
@@ -320,7 +334,7 @@ public class GMBody extends GMObject
 		}
 		if ( !nametag )
 		{
-			nametag = new GMNameTag( ctrl, container );
+			nametag = new GMNameTag( ctrl, media );
 		}
 		if ( text == null )
 			text = GetName();
@@ -382,11 +396,33 @@ public class GMBody extends GMObject
 		wasSleeping = isSleeping;
 		isSleeping = ctrl.isSleeping();
 		orientation = ctrl.getOrientation();
-		
+			
 		direction = 90 - orientation;
+		if ( direction < 0 )
+			direction += 360;
 		
-		hDir = gml.dcos( direction );
-		vDir = gml.dsin( direction );
+		hDir = 0;
+		vDir = 0;
+		switch( direction )
+		{
+			case 0:
+				hDir = 1;
+				break;
+			case 90:
+				vDir = -1;
+				break;
+			case 180:
+				hDir = -1;
+				break;
+			case 270:
+				vDir = 1;
+				break;
+			default:
+				hDir = dcos( direction );
+				vDir = dsin( direction );
+		}
+		
+		//GMControl.Log( "direction = " + direction + ", hDir: " + hDir + ", vDir: " + vDir );
 		
 		currentPosition = GetPosition();
 		currentPositionReal = GetPositionReal();
@@ -484,9 +520,21 @@ public class GMBody extends GMObject
 		POSITION
 	*/
 	
-	public function MoveTo( _x, _y, _z )
+	public function MoveTo( _x, _y, _z, _o = 0 )
 	{
-		
+		if ( ctrl )
+		{
+			ctrl.setPixelLocation( _x, _y, _z, _o );
+		}
+	}
+	public function MoveTo_Speed( _spd, _x, _y, _z, _o = 0 )
+	{
+		if ( ctrl )
+		{
+			ctrl.setMoveSpeed( _spd );
+			ctrl.setPixelLocation( _x, _y, _z, _o );
+			ctrl.setMoveSpeed( moveSpeedReal );
+		}
 	}
 	
 	// SetMoveSpeed
@@ -498,6 +546,8 @@ public class GMBody extends GMObject
 		moveSpeed = _speed;
 		moveSpeedReal = Math.max( 50, moveSpeed * timescale_fps * scale );
 		ctrl.setMoveSpeed( moveSpeedReal );
+		//if ( changed )
+		//	GMControl.Log( "moveSpeedReal = " + moveSpeedReal );
 	}
 	
 	public function GMEntityMoved( event )
@@ -613,6 +663,8 @@ public class GMBody extends GMObject
 	public function GetPositionReal()
 	{
 		currentPositionReal = ctrl.getEntityProperty( EntityControl.PROP_LOCATION_PIXEL, GMControl.entityID );
+		
+		
 		return currentPositionReal;
 	}
 	
@@ -644,6 +696,10 @@ public class GMBody extends GMObject
 		State.hideActions = null;
 		State.hidden = hidden;
 		
+		State.IsHidden = function()
+		{
+			return hidden;
+		}
 		
 		//
 		if ( curState == null )
@@ -730,18 +786,28 @@ public class GMBody extends GMObject
 			if ( State == null )
 				continue;
 			var _state = State;
-			if ( typeof _state == "object" )
+			if ( typeof _state != "object" )
 			{
-				if ( _state.hidden )
-					continue;
-				_state = _state.name;
+				GMControl.Log( "state should be an object" );
+				continue;
+				//_state = states[]
 			}
+			if ( OnRegisterState( _state ) )
+				continue;
+			if ( _state.hidden )
+				continue;
+			_state = _state.name;
 			if ( curState && curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
 				continue;
 			//GMControl.Log( i + ": " + _state );
 			names.push( _state );
 		}
 		ctrl.registerStates( names );
+	}
+	
+	public function OnRegisterState( state )
+	{
+		// override, hide this state if returns true ( or state.hidden = true; )
 	}
 	
 	public function GMStateChanged( event )
@@ -796,7 +862,7 @@ public class GMBody extends GMObject
 	
 	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = null )
 	{
-		GMControl.Log( "Adding action \"" + actionname + "\" with data " + actionvalue );
+		GMControl.Log( "Adding action " + actionList.length + " \"" + actionname + "\" with data " + actionvalue );
 		var Action = {};
 		Action.initname = actionname;
 		Action.name = actionname;
@@ -824,7 +890,7 @@ public class GMBody extends GMObject
 		
 		for ( var i = 0; i < options.length; ++i )
 		{
-			var _name = Action.initname + " (currently: " + options[i] + ")";
+			var _name = Action.initname + " (is: " + options[i] + ")";
 			actions[_name] = Action;
 			trace( _name );
 			if ( options[i] == startval )
@@ -880,6 +946,8 @@ public class GMBody extends GMObject
 			var _action = Action;
 			if ( typeof _action == "object" )
 			{
+				if ( OnRegisterAction( _action ) )
+					continue;
 				if ( _action.hidden )
 					continue;
 				_action = _action.name;
@@ -888,6 +956,10 @@ public class GMBody extends GMObject
 			names.push( _action );
 		}
 		ctrl.registerActions( names );
+	}
+	
+	public function OnRegisterAction( action )
+	{
 	}
 	
 	public function TriggerAction( _action = "", _data = null )
@@ -922,7 +994,7 @@ public class GMBody extends GMObject
 					}
 					else
 						SetMemory( _mem, action.togglememory[1][0] );
-					action.name = action.initname + " (currently: " + action.togglememory[1][i] + ")";
+					action.name = action.initname + " (is: " + action.togglememory[1][i] + ")";
 					RegisterActions();
 				}
 				else
@@ -991,6 +1063,8 @@ public class GMBody extends GMObject
 	
 	override public function GMStep()
 	{
+		GM.debugTracker = "GMBody.GMStep";
+		
 		// Timer
 		stepStartTime = getTimer();
 		timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
@@ -1003,29 +1077,15 @@ public class GMBody extends GMObject
 		
 		GMProcessEvents();
 		
-		if ( false ) // only works in birdseye. rip.
-		{
-			currentPositionReal = GetPositionReal();
-			if ( currentPositionReal != null && lastPosition != null )
-			{
-				roomHMove = ( lastPosition[0] - currentPositionReal[0] ) / scale;
-				roomVMove = ( currentPositionReal[2] - lastPosition[2] ) / scale;
-				if ( ( movePathDestReal != null ) && ( movePathLength > 0 ) )
-				{
-					movePathAmount = ( point_distance( currentPositionReal[0], currentPositionReal[2], movePathDestReal[0], movePathDestReal[2] ) / movePathLength );
-				}
-			}
-		}
-		else
-		{
-			roomHMove = -hspeed;
-			roomVMove = -vspeed / 5;
-		}
+		roomHMove = -hspeed;
+		roomVMove = -vspeed / 5;
 		
 		// Step self
 		
+		GM.debugTracker = "GMBody.Step";
 		Step();
 		
+		GM.debugTracker = "GMBody.GMStep";
 		// Animate self based on image_speed
 		
 		if ( image_speed != 0 && sprite_current )
@@ -1047,7 +1107,7 @@ public class GMBody extends GMObject
 		
 		var xx = originX;
 		var yy = originY;
-		var hh = ( -( 65500 ) );
+		var hh = ( -( 1<<31 ) );
 		
 		_usenametag = ( nametag )
 		if ( ( nametag == 0 ) ) // || ( gm_flags & FLAG_HIDENAME ) )
@@ -1075,12 +1135,23 @@ public class GMBody extends GMObject
 	
 	override public function GMDraw()
 	{
-		Draw();
+		GM.debugTracker = "GMBody.GMDraw"
+		try
+		{
+			Draw();
+		}
+		catch(e)
+		{
+			GMControl.Caught(e);
+		}
 		
 		if ( nametag )
 		{
-			nametag.x = x;
-			nametag.y = ( y - characterH );//( _usenametag ) ? ( y - characterH ) : ( 65500 );
+			nametag.x = x * container.scaleX;
+			nametag.y = ( y - characterH ) * container.scaleY;//( _usenametag ) ? ( y - characterH ) : ( 65500 );
+			
+			nametag.x += container.x;
+			nametag.y += container.y;
 			
 			// nametag.y = Math.min( nametag.y, GM.view_y + GM.view_height );
 			// nametag.y = Math.max( nametag.y, GM.view_y + nametag.height );
@@ -1092,7 +1163,7 @@ public class GMBody extends GMObject
 		{
 			if ( true || _usenametag )
 			{
-				container.setChildIndex( nametag, container.numChildren - 1 )
+				nametag.parent.setChildIndex( nametag, nametag.parent.numChildren - 1 )
 			}
 		}
 		

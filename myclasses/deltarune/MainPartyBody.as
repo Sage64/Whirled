@@ -34,86 +34,94 @@ public class MainPartyBody extends DeltarunePlayerBody
 	{
 		super();
 		
-		mystates["kris"] = LWState( "Kris" );
-		mystates["susie"] = LWState( "Susie" );
-		mystates["ralsei"] = DWState( "Ralsei" );
+		char = "kris";
 		
-		myactions["chapter_switch"] = AddAction_ToggleMemory( "[Chapter]", "deltarune.chapter", [ 1, 4 ]  );
-		myactions["toggle_darkzone"] = AddAction_ToggleMemory( "[Dark World]", "deltarune.forcedarkzone", [ false, true ] );
+		if ( true )
+		{
+			mystates["default"] = LWState( "Default" );
+			mystates["board"] = DWState( "Board" );
+			mystates["church"] = LWState( "Church" );
+			
+			myactions["char_krs"] = AddAction( "[Switch to Kris]", Action_SetCharacter, "kris" );
+			myactions["char_sus"] = AddAction( "[Switch to Susie]", Action_SetCharacter, "susie" );
+			myactions["char_ral"] = AddAction( "[Switch to Ralsei]", Action_SetCharacter, "ralsei" );
+			//myactions["char_nol"] = AddAction( "[Switch to Noelle]", SetCharacter, "noelle" );
+			
+		}
+		else
+		{
+			//mystates["kris"] = LWState( "Kris" );
+			//mystates["susie"] = LWState( "Susie" );
+			//mystates["ralsei"] = DWState( "Ralsei" );
+		}
 		
-		mymemories["unhappy"] = AddMemory( "deltarune.unhappy", 0 );
 		myactions["toggle_unhappy"] = AddAction_ToggleMemory( "[Unhappy]", "deltarune.unhappy" );
 		myactions["toggle_unhappy"].hidden = true;
+		
+		// ch1
+		
+		// ch2
 		
 		mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, OnStateChanged );
 		myactions["toggle_ralsei_butler"] = AddAction_ToggleMemory( "[Ralsei Butler]", "deltarune.ralsei.butler" );
 		
-		myactions["toggle_board"] = AddAction_ToggleMemory( "[Board]", "deltarune.board" );
+		// ch3
+		
+		// myactions["toggle_board"] = AddAction_ToggleMemory( "[Board]", "deltarune.board" );
+		
+		// ch4
 		
 		mymemories["churchoutfit"] = AddMemory( "deltarune.churchoutfit", 0, OnStateChanged );
-		myactions["toggle_churchoutfit"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
+		// myactions["toggle_churchoutfit"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
 		
+		mystates["kris_sit"] = LWState( "Kris - spr_kris_sit", global.spr_kris_sit );
+		mystates["kris_sit"].char = "kris";
+		mystates["kris_sit_wind"] = LWState( "Kris - spr_kris_sit_wind", global.spr_kris_sit_wind );
+		mystates["kris_sit_wind"].char = "kris";
+		
+		// 
 	}
 	
 	override public function Step()
 	{
 		super.Step();
-		
-		if ( instance_exists( leader ) )
-		{
-			GMControl.customProps["deltarune.sprite"] = sprite_get_name( leader.sprite_index );
-			GMControl.customProps["deltarune.subimage"] = leader.image_index;
-		}
 	}
 	
 	override public function OnStateChanged()
 	{
 		unhappy = mymemories["unhappy"].value;
 		ralsei_butler = mymemories["ralsei_butler"].value;
-		boardmode = mymemories["board"].value;
-		churchoutfit = mymemories["churchoutfit"].value;
+		boardmode = ( curState == mystates["board"] ); //mymemories["board"].value;
+		churchoutfit = ( curState == mystates["church"] );// mymemories["churchoutfit"].value;
 		
 		super.OnStateChanged();
 		
 		x = originX;
 		y = originY;
 		
+		GetLeader();
+		
+		leader.fun = 0;
+		
 		switch ( curState )
 		{
+			case null:
+				break;
 			case mystates["kris"]:
-				instance_destroy( susie );
-				instance_destroy( ralsei );
-				instance_destroy( noelle );
+				break;
+			case mystates["kris_sit"]:
+			case mystates["kris_sit_wind"]:
 				if ( !instance_exists( kris ) )
-				{
-					kris = instance_create( x, y, obj_mainchara );
-					kris.herocolor = 0x8DEDFE;
-					leader = kris;
-				}
+					break;
+				kris.fun = 1;
+				kris.sprite_index = curState.sprite;
+				kris.image_speed = 0.1;
 				break;
 			case mystates["susie"]:
-				instance_destroy( kris );
-				instance_destroy( ralsei );
-				instance_destroy( noelle );
-				if ( !instance_exists( susie ) )
-				{
-					susie = instance_create( x, y, obj_mainchara );
-					susie.herocolor = 0xF22D81;
-					leader = susie;
-				}
 				break;
 			case mystates["ralsei"]:
-				instance_destroy( kris );
-				instance_destroy( susie );
-				instance_destroy( noelle );
-				if ( !instance_exists( ralsei ) )
-				{
-					ralsei = instance_create( x, y, obj_mainchara );
-					ralsei.herocolor = 0x13D26F;
-					leader = ralsei;
-				}
 				break;
-		}
+			}
 		
 		UpdateSprites();
 		
@@ -121,15 +129,66 @@ public class MainPartyBody extends DeltarunePlayerBody
 		{
 			x = leader.x;
 			y = leader.y;
-			
-			textsound = global.snd_text;
-			if ( leader == null )
-			{}
-			else if ( leader == susie )
-				textsound = global.snd_txtsus;
-			else if ( leader == ralsei )
-				textsound = global.snd_txtral;
+			SetMoveSpeed( leader.bwspeed );
 		}
+	}
+	
+	override public function GetLeader()
+	{
+		textsound = global.snd_text;
+		
+		instance_destroy( kris );
+		instance_destroy( susie );
+		instance_destroy( ralsei );
+		instance_destroy( noelle );
+		
+		char = GetMemory( "deltarune.character" );
+		
+		switch( char )
+		{
+			case "noelle":
+			case "nol":
+				if ( !instance_exists( noelle ) )
+				{
+					noelle = instance_create( x, y, obj_mainchara );
+					noelle.herocolor = 0x13D26F;
+				}
+				leader = noelle;
+				textsound = global.snd_txtnol;
+				break;
+			case "ralsei":
+			case "ral":
+				if ( !instance_exists( ralsei ) )
+				{
+					ralsei = instance_create( x, y, obj_mainchara );
+					ralsei.herocolor = 0x13D26F;
+				}
+				leader = ralsei;
+				textsound = global.snd_txtral;
+				break;
+			case "susie":
+			case "sus":
+				if ( !instance_exists( susie ) )
+				{
+					susie = instance_create( x, y, obj_mainchara );
+					susie.herocolor = 0xF22D81;
+				}
+				leader = susie;
+				textsound = global.snd_txtsus;
+				break;
+			case "kris":
+			case "krs":
+			default:
+				if ( !instance_exists( kris ) )
+				{
+					kris = instance_create( x, y, obj_mainchara );
+					kris.herocolor = 0x8DEDFE;
+				}
+				leader = kris;
+				break;
+		}
+		
+		return leader;
 	}
 	
 	override public function OnUpdateLook()
@@ -141,6 +200,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 		if ( instance_exists( leader ) )
 		{
 			leader.facing = global.facing;
+			leader.swordfacing = swordfacing;
 			leader.press_d = global.input_held[0];
 			leader.press_r = global.input_held[1];
 			leader.press_u = global.input_held[2];
@@ -149,8 +209,31 @@ public class MainPartyBody extends DeltarunePlayerBody
 			// _offy -= sprite_get_height( leader.dsprite ) * leader.image_yscale / 2;
 		}
 		
-		_offy -= 48 * image_yscale;
+		_offy -= 24 * image_yscale;
 		SetViewOffset( _offx, _offy );
+	}
+	
+	override public function OnRegisterState( state )
+	{
+		if ( super.OnRegisterState( state ) )
+			return true;
+		switch( state.char )
+		{
+			case null:
+				break;
+			case "kris":
+				if ( !instance_exists( kris ) )
+					return true;
+				break;
+			case "susie":
+				if ( !instance_exists( susie ) )
+					return true;
+				break;
+			case "ralsei":
+				if ( !instance_exists( ralsei ) )
+					return true;
+				break;
+		}
 	}
 	
 	public function UpdateSprites( ... ignored )
@@ -199,12 +282,20 @@ public class MainPartyBody extends DeltarunePlayerBody
 			
 			if ( true )
 			{
-				characterH = ( sprite_get_height( leader.dsprite ) - sprite_get_yoffset( leader.dsprite ) ) * leader.image_yscale;
+				if ( leader.fun == 1 )
+					characterH = ( ( sprite_get_height( leader.sprite_index ) + sprite_get_yoffset( leader.sprite_index ) ) * leader.image_yscale );
+				else
+					characterH = ( sprite_get_height( leader.dsprite ) - sprite_get_yoffset( leader.dsprite ) ) * leader.image_yscale;
 				if ( boardmode )
 					nametag.SetBaseColor( leader.herocolor );
 			}
 			else if ( leader == kris )
-				characterH = ( sprite_get_height( global.spr_krisd ) ) * leader.image_yscale;
+			{
+				if ( leader.fun == 1 )
+					characterH = ( ( sprite_get_height( leader.sprite_index ) + sprite_get_yoffset( leader.sprite_index ) ) * leader.image_yscale );
+				else
+					characterH = ( sprite_get_height( global.spr_krisd ) ) * leader.image_yscale;
+			}
 			else if ( leader == susie )
 				characterH = ( sprite_get_height( global.spr_susied ) ) * leader.image_yscale;
 			else if ( leader == ralsei )
@@ -224,6 +315,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 		inst.image_xscale = image_xscale;
 		inst.image_yscale = image_yscale;
 		
+		inst.darkmode = ( global.darkzone );
 		inst.boardmode = ( global.darkzone && boardmode );
 	}
 	
@@ -267,10 +359,21 @@ public class MainPartyBody extends DeltarunePlayerBody
 		}
 		inst.GetFacingSprite();
 		if ( boardmode )
+		{
 			inst.offset_x = sprite_get_width( inst.dsprite ) / 2;
+			inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
+		}
+		else if ( inst.fun == 1 )
+		{
+			inst.offset_x = ( sprite_get_width( inst.sprite_index ) / 2 );
+			inst.offset_y = ( sprite_get_height( inst.sprite_index ) - sprite_get_yoffset( inst.sprite_index ) );
+		}
 		else
+		{
 			inst.offset_x = ( sprite_get_width( global.spr_krisd ) / 2 );
-		inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
+			inst.offset_y = ( sprite_get_height( inst.dsprite ) - sprite_get_yoffset( inst.dsprite ) );
+		}
+		
 		inst.feet_y = 1;
 	}
 	
@@ -430,6 +533,10 @@ class obj_mainchara extends DeltaruneObject
 	// Battle
 	public var battlemode = 0;
 	
+	// Board
+	public var swordmode = 0;
+	public var swordfacing = 1;
+	
 	public function obj_mainchara()
 	{
 		super();
@@ -475,10 +582,38 @@ class obj_mainchara extends DeltaruneObject
 	
 	override public function Draw()
 	{
-		var x = this.x - ( offset_x * image_xscale );
-		var y = this.y - ( ( offset_y - feet_y ) * image_yscale );
+		if ( body )
+		{
+			body.x = this.x;
+			body.y = this.y;
+		}
 		
-		draw_sprite_ext( sprite_current, image_index, x, y, image_xscale, image_yscale, image_angle, image_blend, image_alpha );
+		var _xscale = image_xscale;
+		var _yscale = image_yscale;
+		var _offx = offset_x;
+		var _offy = offset_y - feet_y;
+		if ( fun == 1 )
+		{
+			if ( swordfacing < 0 )
+				_xscale *= -1;
+			switch ( sprite_index )
+			{
+				case global.spr_kris_sit:
+					_offx -= 3;
+					_offy -= 7;
+					break;
+			}
+		}
+		
+		// _xscale = mouse_x / 24;
+		
+		//if ( _xscale < 0 )
+		//	_offx += sprite_get_width( sprite_index );
+		
+		var x = this.x - ( _offx * _xscale );
+		var y = this.y - ( ( _offy ) * _yscale );
+		
+		draw_sprite_ext( sprite_current, image_index, x, y, _xscale, _yscale, image_angle, image_blend, image_alpha );
 		
 		if ( battlemode == 1 )
 		{
@@ -553,6 +688,7 @@ class obj_mainchara extends DeltaruneObject
 			{
 				if ( darkmode )
 				{
+					bwspeed = 4;
 					if ( runtimer > 60 )
 						wspeed = bwspeed + 5;
 					else if ( runtimer > 10 )
@@ -562,6 +698,7 @@ class obj_mainchara extends DeltaruneObject
 				}
 				else
 				{
+					bwspeed = 3;
 					if ( runtimer > 60 )
 						wspeed = bwspeed + 3;
 					else if ( runtimer > 10 )

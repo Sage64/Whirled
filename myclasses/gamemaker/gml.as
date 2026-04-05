@@ -59,12 +59,14 @@ public class gml
 	
 	public static function dcos( dir )
 	{
-		return Math.cos( dir * ( Math.PI / 180 ) )
+		return Math.cos( dir * 0.0174532925 ); 
+		//return Math.cos( dir * ( Math.PI / 180 ) );
 	}
 	
 	public static function dsin( dir )
 	{
-		return Math.sin( dir * ( Math.PI / 180 ) );
+		return Math.sin( dir * 0.0174532925 ); 
+		//return Math.sin( dir * ( Math.PI / 180 ) );
 	}
 	
 	public static function lengthdir_x( dis, dir )

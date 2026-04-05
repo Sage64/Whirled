@@ -479,7 +479,7 @@ public dynamic class DeltaruneObject extends GMObject
 				var aurax = ( aura * 0.75 ) + ( sin( aura / 4 ) * 4 );
 				var auray = 45 * scr_ease_in( aura / 45, 1 );
 				var aurayscale = min( 80 / sprite_height, 1 );
-				_xx = x - ( ( aurax / 180 ) * drawscale * ( sprite_width ) );
+				_xx = x - ( ( aurax / 180 ) * drawscale * ( abs( sprite_width ) ) );
 				_yy = y - ( ( auray / 82)  * sprite_height * aurayscale );
 				_xscale = ( abs( image_xscale ) + ( aurax / 36 ) ) * drawscale;
 				_yscale = image_yscale + ( ( auray / 36 ) * aurayscale );
@@ -490,7 +490,7 @@ public dynamic class DeltaruneObject extends GMObject
 		}
 		if ( true )
 		{
-			var xmult = min((70 / ( sprite_width )) * 4, 4);
+			var xmult = min((70 / ( abs( sprite_width ) )) * 4, 4);
 			var ymult = min((80 / sprite_height) * 5, 5);
 			var ysmult = min((80 / sprite_height) * 0.2, 0.2);
 			_xx = x + superdrawx + ( sin( drawsiner / 5 ) * xmult );
@@ -515,6 +515,8 @@ public dynamic class DeltaruneObject extends GMObject
 		}
 		scr_draw_outline_ext( sprite_index, walk_index, x, y, image_xscale * 1, image_yscale, image_angle, c_red, image_alpha * 0.3, 2 );
 	}
+	
+	// 
 	
 	public static function snd_play( _sound )
 	{

@@ -45,6 +45,8 @@ public class SwatchlingBody extends MonsterBody
 		
 		
 		AddEnemyStates();
+		mystates["enemy_dead"].hidden = true;
+		mystates["enemy_frozen"].hidden = true;
 		
 		if ( false )
 		{
@@ -69,7 +71,7 @@ public class SwatchlingBody extends MonsterBody
 		x = originX;
 		y = originY;
 		characterH = 0;
-		if ( curState.enemy )
+		if ( curState && curState.enemy )
 		{
 			instance_destroy( actor );
 			if ( !instance_exists( enemy ) )
@@ -279,8 +281,8 @@ class obj_npc_swatchling extends obj_overworldenemy_parent
 	
 	override public function Draw()
 	{
-		var sprite_width = ( this.sprite_width * image_xscale );
-		var sprite_height = ( this.sprite_height * image_yscale );
+		// var sprite_width = ( this.sprite_width * image_xscale );
+		// var sprite_height = ( this.sprite_height * image_yscale );
 		
 		var xpos = this.x;
 		var ypos = this.y;
@@ -311,7 +313,7 @@ class obj_swatchling_enemy extends obj_monsterparent
 	public function obj_swatchling_enemy()
 	{
 		super();
-		sprite_set( global.spr_swatchling_body );
+		sprite_index = global.spr_swatchling_body;
 		
 		image_speed = ( 1 / 6 );
 		

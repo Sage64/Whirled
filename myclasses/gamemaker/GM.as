@@ -51,7 +51,7 @@ public class GM extends EventDispatcher
 	public static var _eventlisteners = {
 		list: [],
 		func: {}
-	 };
+	};
 	public static var _eventqueue = [];
 	
 	// Whirled
@@ -62,29 +62,33 @@ public class GM extends EventDispatcher
 	public static var internalstageitems = {};
 	public static var _tempsymbols = [];
 	public static var _tempdrawsprites = [];
-	public static var internaldrawalpha = 1;
-	public static var internaldrawcolor = 0xFFFFFF;
 	public static var internaldrawmatrix = new Matrix();
 	public static var internaldrawfont = { name: "_sans", size: 12 };
 	public static var internaldrawhalign = 0;
 	public static var internaldrawvalign = 0;
 	public static var internaldrawtextformat = new TextFormat();
 	public static var internalblendmode = BlendMode.NORMAL;
-	public static var internalfog = null;
-	public static var internalrendertarget;
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
 	public static var internalsoundlist = [];
 	public static var internalsoundmap = {};
 	
 	
+	public static var internalrendertarget;
+	public static var internalrenderstack = [];
 	public static var graphics; // current graphics target
 	
 	// Gamemaker
 	public static var g_GlobalAlpha = 1.0;
+	public static var g_BlendMode = BlendMode.NORMAL;
+	public static var g_GlobalColor = 0x000000;
+	public static var g_GlobalFog = [ 0, 0, 0, 0 ];
 	
 	public static var g_GlobalColorTransform = new ColorTransform();
 	
+	public static var g_KeyDown = new Array( 256 );
+	public static var g_KeyPressed = new Array( 256 );
+	public static var g_KeyReleased = new Array( 256 );
 	
 	// Globals
 	
@@ -181,13 +185,14 @@ public class GM extends EventDispatcher
 		GM.debugTracker = "GM.GMProcessEvents";
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
-			debugTracker = "GMProcessEvents";
 			var event = _eventqueue.shift();
+			GM.debugTracker = "GM.GMProcessEvents (event)";
 			var func = _eventlisteners.func[event.type];
 			if ( !func )
 				continue;
 			try
 			{
+				debugTracker = "GM.GMProcessEvents - " + func.toString();
 				func( event );
 			}
 			catch ( e )
@@ -283,6 +288,8 @@ public class GM extends EventDispatcher
 		spr.name = sprname;
 		spr.x = _x;
 		spr.y = _y;
+		
+		trace( "adding sprite " + spr.name );
 		
 		spr.CreateFromBitmap( frames );
 		
@@ -409,11 +416,9 @@ public class GM extends EventDispatcher
 	
 	public static function GetControlPanel( ww = null, hh = null )
 	{
-		GM.Log( "GetControlPanel()" );
 		var env;
 		if ( ctrl )
 			env = ctrl.getEnvironment();
-		
 		if ( ww == null )
 			ww = ( env == "shop" ) ? 320 : 690;
 		if ( hh == null )
@@ -423,6 +428,44 @@ public class GM extends EventDispatcher
 		controlPanel.SetSize( ww, hh );
 		return controlPanel;
 	}
+	
+	/*
+		Input
+	*/
+	
+	public static function GMKeyboardDown( ev )
+	{
+		var keycode = ev.keyCode;
+		var charcode = ev.charCode;
+		// GM.Log( "GMKeyboardDown: " + charcode );
+		
+		if ( keycode < 0 || keycode > 255 )
+			return;
+		if ( !g_KeyDown[keycode] )
+		{
+			//Log( "key down" );
+			g_KeyDown[keycode] = true;
+		}
+	}
+	
+	public static function GMKeyboardUp( ev )
+	{
+		var keycode = ev.keyCode;
+		var charcode = ev.charCode;
+		if ( keycode < 0 || keycode > 255 )
+			return;
+		if ( g_KeyDown[keycode] )
+		{
+			//Log( "key up" );
+			g_KeyDown[keycode] = false;
+		}
+	}
+	
+	public static function GMClicked( ev )
+	{
+		
+	}
+	
 	
 	/*
 		MAIN
@@ -537,10 +580,9 @@ public class GM extends EventDispatcher
 	
 	public static function GMDraw()
 	{
-		debugTracker = "Before GMControl.GMDraw";
+		if ( internalrenderstack.length > 0 )
+			internalrenderstack = [];
 		GMObject.surface_set_target( container );
-		
-		
 		debugTracker = "GM.GMDraw Instances";
 		
 		for ( instance_index = 0; instance_index < instances.length; ++instance_index )
@@ -556,13 +598,12 @@ public class GM extends EventDispatcher
 				Caught(e);
 			}
 		}
-		
 		GMObject.surface_reset_target();
 		
 		if ( GMControl.ctrl )
 			GMControl.GMDraw();
 		
-		if ( errorsCaught > 0 )
+		if ( false && errorsCaught > 0 )
 		{
 			GMObject.surface_set_target( overlay );
 			
@@ -671,10 +712,10 @@ public class GM extends EventDispatcher
 		{
 			// simple draw;
 			g_Matrix.identity();
-			g_Matrix.tx = _x;
-			g_Matrix.ty = _y;
+			g_Matrix.tx = _x + ( ox );
+			g_Matrix.ty = _y + ( oy );
 			graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
-			graphics.drawRect( _x, _y, _bmd.width, _bmd.height );
+			graphics.drawRect( _x + ( ox ), _y + ( oy ), _bmd.width, _bmd.height );
 			graphics.endFill();
 		}
 	}
@@ -767,6 +808,7 @@ public class GM extends EventDispatcher
 			return;
 		GMObject._createx = _x;
 		GMObject._createy = _y;
+		trace( "adding instance " + o );
 		var inst = new o();
 		inst.x = _x;
 		inst.y = _y;
@@ -784,7 +826,7 @@ public class GM extends EventDispatcher
 		var pos = instances.indexOf( _inst );
 		if ( pos < 0 )
 			return;
-		Log( "Destroy instance " + _inst );
+		// Log( "Destroy instance " + _inst );
 		_inst.Cleanup();
 		_inst.exists = false;
 		
@@ -884,10 +926,10 @@ public class GM extends EventDispatcher
 			}
 		}
 		var color;
-		if ( internalfog )
+		if ( g_GlobalFog[0] )
 		{
 			color = _symbol.transform.colorTransform;
-			color.color = internalfog;
+			color.color = g_GlobalFog[1];
 			_symbol.transform.colorTransform = color;
 		}
 		else
@@ -993,38 +1035,6 @@ public class GM extends EventDispatcher
 	
 	// Drawing
 	
-	public static function InternalDrawLine( x1, y1, x2, y2, w, a = null )
-	{
-		return;
-		var g = internalrendertarget.graphics;
-		if ( a == null )
-			a = internaldrawalpha;
-		g.lineStyle( w, internaldrawcolor, a );
-		g.moveTo( x1, y1 );
-		g.lineTo( x2, y2 );
-	}
-	
-	public static function InternalDrawRectangle( x1, y1, x2, y2, outline = false )
-	{
-		var g = internalrendertarget.graphics;
-		var a = null;
-		if ( a == null )
-			a = g_GlobalAlpha;
-		// drawcolor;
-		if ( outline )
-		{
-			InternalDrawLine( x1, y1, x2, y1, a );
-			InternalDrawLine( x2, y1, x2, y2, a );
-			InternalDrawLine( x2, y2, x1, y2, a );
-			InternalDrawLine( x1, y2, x1, y1, a );
-		}
-		else
-		{
-			g.beginFill( internaldrawcolor, g_GlobalAlpha );
-			g.drawRect( x1, y1, x2 - x1, y2 - y1 );
-		}
-	}
-	
 	public static function InternalTextDraw( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
 	{
 		var _symbol = new TextField();
@@ -1034,8 +1044,8 @@ public class GM extends EventDispatcher
 		_symbol.y = _y;
 		_symbol.scaleX = _xscale;
 		_symbol.scaleY = _yscale;
-		_symbol.alpha = internaldrawalpha;
-		_symbol.textColor = internaldrawcolor;
+		_symbol.alpha = g_GlobalAlpha;
+		_symbol.textColor = g_GlobalColor;
 		
 		if ( internaldrawfont && internaldrawfont != -1 )
 		{
@@ -1131,10 +1141,8 @@ class GMSound
 	}
 }
 
-
-// sprite data automatically generated
-// from symbols in the scene when the body is created
-// 
+// Sprite asset
+ 
 class GMSprite
 {
 	public var symbol;
@@ -1215,6 +1223,7 @@ class GMSprite
 			var frame = {};
 			images[count++] = frame;
 			frame.bitmapdata = bitmap.bitmapData;
+			trace( "adding bitmapdata" );
 		}
 	}
 	
@@ -1250,7 +1259,11 @@ class GMSprite
 	{
 		if ( this.count <= 0 )
 			return;
-		_subimg = _subimg % this.count;
+		if ( _alpha < 0 )
+			_alpha = 0;
+		else if ( _alpha > 1 )
+			_alpha = 1;
+		_subimg = ( ~~_subimg ) % this.count;
 		if ( _subimg < 0 )
 			_subimg += this.count;
 		var image = this.GetImage( _subimg );
@@ -1266,6 +1279,10 @@ class GMSprite
 	{
 		if ( this.count <= 0 )
 			return;
+		if ( _alpha < 0 )
+			_alpha = 0;
+		else if ( _alpha > 1 )
+			_alpha = 1;
 		_subimg = _subimg % this.count;
 		if ( _subimg < 0 )
 			_subimg += this.count;
@@ -1282,6 +1299,10 @@ class GMSprite
 	{
 		if ( this.count <= 0 )
 			return;
+		if ( _alpha < 0 )
+			_alpha = 0;
+		else if ( _alpha > 1 )
+			_alpha = 1;
 		_subimg = _subimg % this.count;
 		if ( _subimg < 0 )
 			_subimg += this.count;

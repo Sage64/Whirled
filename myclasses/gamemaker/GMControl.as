@@ -46,7 +46,11 @@ public class GMControl extends ActorControl
 	public static var container;
 	public static var ctrl; // the specific instance of GMControl created for the actor
 	public static var body;
+	public var gm;
 	
+	public static var popup_instance; // will be instance_destroy'd when a popup opens
+	public static var popup_width = 0;
+	public static var popup_height = 0;
 	public static var popup_surface; // draw target for a popup
 	
 	public static var isLoaded = false;
@@ -102,6 +106,8 @@ public class GMControl extends ActorControl
 		GMControl.ctrl = this;
 		GMControl.isConnected = ctrl.isConnected();
 		
+		this.gm = GM;
+		
 		super( media );
 		
 		if ( !initdone )
@@ -111,7 +117,7 @@ public class GMControl extends ActorControl
 		
 		// InitWhirled();
 		
-		GMUpdateView();
+		GMUpdateView( 0, 0, 1 << 16 );
 	}
 	
 	public static function GMCleanup()
@@ -154,8 +160,11 @@ public class GMControl extends ActorControl
 		
 		container = GM.container;
 		
-		popup_surface = new Sprite();
+		popup_surface = new GMPopupSurface();
 		popup_surface.cacheAsBitmap = false;
+		AddEventListener( popup_surface, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
+		AddEventListener( popup_surface, KeyboardEvent.KEY_UP, GMKeyboardUp );
+		AddEventListener( popup_surface, MouseEvent.CLICK, GMClicked );
 		
 		// GMControl.container = new Sprite();
 		// GMControl.container.cacheAsBitmap = true;
@@ -180,7 +189,8 @@ public class GMControl extends ActorControl
 			GMGotControl();
 			try
 			{
-				AddEventListener( media.stage, KeyboardEvent.KEY_DOWN, DebugKeyDown );
+				AddEventListener( media.stage, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
+				AddEventListener( media.stage, KeyboardEvent.KEY_UP, GMKeyboardUp );
 			}
 			catch ( e )
 			{
@@ -237,7 +247,7 @@ public class GMControl extends ActorControl
 		AddEventListener( ctrl, ControlEvent.MESSAGE_RECEIVED, GMReceiveMessage );
 		AddEventListener( ctrl, ControlEvent.SIGNAL_RECEIVED, GMReceiveMessage );
 		
-		if ( isAvatar || isPet )
+		if ( debug || isAvatar || isPet )
 		{
 			AddEventListener( ctrl, ControlEvent.ACTION_TRIGGERED, GMActionTriggered );
 			AddEventListener( ctrl, ControlEvent.APPEARANCE_CHANGED, GMUpdateLook );
@@ -247,6 +257,7 @@ public class GMControl extends ActorControl
 		
 		if ( ctrl.hasControl() )
 		{
+			ctrl.clearPopup();
 			GMGotControl();
 		}
 		
@@ -319,19 +330,23 @@ public class GMControl extends ActorControl
 	
 	public static function GMControlEvent( event )
 	{
+		// trace( "GMControlEvent( " + event.toString() + " )" );
 		_eventqueue.push( event );
-		// GMControl.Log( "Event: " + event.type );// + ": \"" + event.name + "\", " + event.value );
 	}
 	
 	private static  function GMProcessEvents()
 	{
+		GM.debugTracker = "GMControl.GMProcessEvents";
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
-			GM.debugTracker = "GMProcessEvents";
 			var event = _eventqueue.shift();
+			GM.debugTracker = "GMControl.GMProcessEvents (event)";
 			var func = _eventlisteners.func[event.type];
 			if ( !func )
+			{
+				trace( "no func in " + event.type );
 				continue;
+			}
 			try
 			{
 				func( event );
@@ -371,21 +386,28 @@ public class GMControl extends ActorControl
 	
 	public static function GMEntityMoved( event )
 	{
+		var _moving = ( event.value ) ? true : false;
 		var Entity = GetEntity( event.name );
 		if ( Entity )
 		{
-			Entity.GetPosition();
-			var bounds = ctrl.getRoomBounds();
-			if ( bounds )
+			if ( _moving )
 			{
-				if ( event.value )
+				var bounds = ctrl.getRoomBounds();
+				if ( bounds )
 				{
-					Entity.destination = bounds;
-					bounds[0] *= event.value[0];
-					bounds[1] *= event.value[1];
-					bounds[2] *= event.value[2];
+					var x = bounds[0];
+					var y = bounds[1];
+					var z = bounds[2];
+					x *= event.value[0];
+					y *= event.value[1];
+					z *= event.value[2];
+					Entity.destination[0] = x;
+					Entity.destination[1] = y;
+					Entity.destination[2] = z;
 				}
 			}
+			Entity.isMoving = _moving;
+			Entity.GetPosition();
 		}
 		if ( body )
 			body.GMEntityMoved( event );
@@ -505,9 +527,16 @@ public class GMControl extends ActorControl
 					return ctrl.getEntityProperty( key, entityId );
 			}
 			var val;
+			if ( body )
+			{
+				val = body.customProps[key];
+				if ( val != null )
+					return val;
+			}
 			val = customProps[key];
 			if ( val != null )
 				return val;
+			
 			if ( val != null )
 				return val;
 			// Check memories;
@@ -526,7 +555,29 @@ public class GMControl extends ActorControl
 	
 	public static function GMKeyboardDown( ev )
 	{
-		GM.Log( "GMKeyboardDown" );
+		if ( debug )
+		{
+			DebugKeyDown( ev );
+		}
+		GM.GMKeyboardDown( ev );
+	}
+	
+	public static function GMKeyboardUp( ev )
+	{
+		GM.GMKeyboardUp( ev );
+	}
+	
+	public static function GMClicked( ev = null )
+	{
+		with( GMObject )
+		{
+			if ( !window_has_focus() )
+			{
+				io_clear();
+			}
+		}
+		GM.media.stage.focus = GMControl.popup_surface;
+		GM.GMClicked( ev );
 	}
 	
 	/*
@@ -605,10 +656,10 @@ public class GMControl extends ActorControl
 			{
 				case Keyboard.S:
 					GMControl._isSleeping = !GMControl._isSleeping;
-					ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+					GMControlEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
 					break;
 				case Keyboard.D:
-					ctrl.dispatchEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+					GMControlEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
 					break;
 			}
 		}
@@ -671,29 +722,49 @@ public class GMControl extends ActorControl
 	
 	public static function OpenConfig()
 	{
+		ctrl.clearPopup();
 		var _panel = GetControlPanel();
+		GMControl.popup_width = _panel.width;
+		GMControl.popup_height = _panel.height;
 		return _panel;
 	}
 	
-	public static function DoPopup( _panel, _w, _h )
+	public static function DoPopup( _panel, _w, _h, _instance = null )
 	{
 		if ( !ctrl )
 		{
 			return;
 		}
+		if ( GMControl.popup_instance )
+		{
+			GM.InternalInstanceDestroy( GMControl.popup_instance );
+			GMControl.popup_instance = null;
+		}
+		ctrl.clearPopup();
+		if ( _instance )
+			GMControl.popup_instance = _instance;
+		
 		var _title = "Popup";
+		GMControl.popup_width = _w;
+		GMControl.popup_height = _h;
 		if ( _panel == null )
 		{
 			_panel = popup_surface;
-			_panel.width = _w;
-			_panel.height = _h;
+			_panel.graphics.clear();
+			_panel.graphics.beginFill( 0, 0 );
+			_panel.graphics.drawRect( 0, 0, GMControl.popup_width, GMControl.popup_height );
+			_panel.graphics.endFill();
+			// _panel.width = _w;
+			// _panel.height = _h;
 		}
+		_panel.x = 0;
+		_panel.y = 0;
+		_panel.scaleX = 1;
+		_panel.scaleY = 1;
 		_title = _panel.name;
 		var res = ctrl.showPopup( _title, _panel, _w, _h, 0x000000, 0 );
-		if ( res )
-		{
-			// _panel.addEventListener( Event.REMOVED, PopupClosedEvent );
-		}
+		GM.media.stage.focus = _panel;
+		GMControl.Log( "DoPopup - "  + _panel.width + ", " + _panel.height );
 	}
 	
 	public static function DoPopupGM()
@@ -710,7 +781,7 @@ public class GMControl extends ActorControl
 		Remote entities
 	*/
 	
-	public static function GetEntity( _entityid )
+	public static function GetEntity( _entityid = null )
 	{
 		if ( _entityid == null )
 		{
@@ -809,6 +880,14 @@ public class GMControl extends ActorControl
 			
 			GMProcessEvents();
 			
+			if ( popup_surface )
+			{
+				popup_surface.graphics.clear();
+				popup_surface.graphics.beginFill( 0, 0 );
+				popup_surface.graphics.drawRect( 0, 0, GMControl.popup_width, GMControl.popup_height );
+				popup_surface.graphics.endFill();
+			}
+			
 			return GM.Loop();
 		}
 		catch (e)
@@ -828,9 +907,6 @@ public class GMControl extends ActorControl
 	
 	public static function GMDraw()
 	{
-		if ( popup_surface )
-			popup_surface.graphics.clear();
-		
 		GM.debugTracker = "GMControl.GMDraw";
 		if ( body )
 			body.GMDraw();
@@ -863,7 +939,7 @@ public class GMControl extends ActorControl
 			viewYOffset = yy;
 	}
 	
-	public static function GMUpdateView( xx = 0, yy = 0, hh = 0 )
+	public static function GMUpdateView( xx = null, yy = null, hh = null )
 	{
 		if ( !media )
 			return;
@@ -934,7 +1010,10 @@ public class GMControl extends ActorControl
 		GM.overlay.y = GM.view_y;
 		
 		if ( isAvatar || isPet )
-			ctrl.setHotSpot( xx - offx, yy - offy, hh );
+		{
+			if ( ( xx != null ) && ( hh != null ) && ( hh != null ) )
+				ctrl.setHotSpot( xx - offx, yy - offy, hh );
+		}
 	}
 	
 	public static function SetScale( amount )
@@ -943,6 +1022,7 @@ public class GMControl extends ActorControl
 			return;
 		scale = amount;
 		GM.Log( "Scale = " + scale );
+		GMUpdateView();
 	}
 	
 	/*
@@ -1115,6 +1195,24 @@ import com.threerings.*;
 import com.whirled.*;
 
 
+
+class GMPopupSurface extends Sprite
+{
+	public var surface_w = 0;
+	public var surface_h = 0;
+	
+	public function GMPopupSurface()
+	{
+		super();
+		name = "GMPopupSurface";
+		focusRect = false;
+	}
+	
+	
+}
+
+
+
 // Another entity that it is in the room
 // 
 class GMRemoteEntity// extends EntityControl
@@ -1167,8 +1265,8 @@ class GMRemoteEntity// extends EntityControl
 	public var ysize = 128;
 	public var zsize = xsize;
 	
-	public var location = [];
-	public var destination = [];
+	public var location = [ 0, 0, 0 ];
+	public var destination = [ 0, 0, 0 ];
 	
 	public function GMRemoteEntity( _entityid )
 	{
@@ -1179,6 +1277,9 @@ class GMRemoteEntity// extends EntityControl
 		this.name = GetProperty( PROP_NAME );
 		this.type = GetProperty( PROP_TYPE );
 		GetPosition();
+		destination[0] = x;
+		destination[1] = y;
+		destination[2] = z;
 		GM.Log( "new GMRemoteEntity( " + _entityid + " ); - " + name );
 		
 	}
@@ -1230,11 +1331,15 @@ class GMRemoteEntity// extends EntityControl
 		var pos = GetProperty( PROP_LOCATION_PIXEL );
 		if ( pos == null )
 			return;
+		
 		if ( pos.length >= 3 )
 		{
 			x = pos[0];
 			y = pos[1];
 			z = pos[2];
+			location[0] = x;
+			location[1] = y;
+			location[2] = z;
 			return true;
 		}
 	}

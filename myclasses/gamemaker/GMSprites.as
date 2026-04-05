@@ -41,6 +41,9 @@ public class GMSprites extends Sprite
 			frames.push( new _class() );
 		}
 		
+		if ( i < 1 )
+			return;
+		
 		return GM.AddSprite_Bitmap( sprname, _x, _y, frames );
 	}
 	

@@ -69,7 +69,7 @@ public class MonsterBody extends DeltaruneBody
 		myactions["damage_weak"] = AddAction( "[Hurt 50]", Action_Hurt, 50 );
 		myactions["damage_strong"] = AddAction( "[Hurt 150]", Action_Hurt, 150 );
 		
-		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, MercyChanged );
+		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, SetMercy );
 		myactions["mercy_0"] = AddAction( "[SetMercy 0%]", Action_SetMercy, 0 );
 		myactions["mercy_100"] = AddAction( "[SetMercy 100%]", Action_SetMercy, 100 );
 		
@@ -118,6 +118,11 @@ public class MonsterBody extends DeltaruneBody
 	override public function OnUpdateLook()
 	{
 		super.OnUpdateLook();
+		
+		if ( instance_exists( enemy ) )
+		{
+			enemy.mercymod = GetMemory( "deltarune.monster.mercy" );
+		}
 	}
 	
 	// 
@@ -226,7 +231,7 @@ public class MonsterBody extends DeltaruneBody
 		SetMemory( mymemories["mercy"].name, data );
 	}
 	
-	public function MercyChanged( val = 0 )
+	public function SetMercy( val = 0 )
 	{
 		OnMercy( val );
 	}
@@ -247,7 +252,6 @@ public class MonsterBody extends DeltaruneBody
 		SetMemory( "deltarune.monster.chasing", chaseaura ? 0 : 1 );
 	}
 	
-	// Functions
 	
 	public static function scr_basicattack( target = null, damage = 100 )
 	{
@@ -314,6 +318,8 @@ public class MonsterBody extends DeltaruneBody
 			}
 		}
 	}
+	
+	
 }
 // 
 }
