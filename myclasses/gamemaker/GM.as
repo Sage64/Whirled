@@ -67,7 +67,6 @@ public class GM extends EventDispatcher
 	public static var internaldrawhalign = 0;
 	public static var internaldrawvalign = 0;
 	public static var internaldrawtextformat = new TextFormat();
-	public static var internalblendmode = BlendMode.NORMAL;
 	public static var internalspritelist = [];
 	public static var internalspritemap = {};
 	public static var internalsoundlist = [];
@@ -537,6 +536,8 @@ public class GM extends EventDispatcher
 			container.graphics.clear();
 			overlay.graphics.clear();
 			
+			container.blendMode = BlendMode.NORMAL;
+			
 			internalrendertarget = container;
 			
 			GMDraw();
@@ -633,11 +634,24 @@ public class GM extends EventDispatcher
 		var ox = 0 - _xoff;
 		var oy = 0 - _yoff;
 		
-		if ( ( _col != 0xFFFFFF ) || ( _alpha < 1 ) )
+		if ( g_GlobalFog[0] )
+		{
+			_col = g_GlobalFog[1];
+			_alpha = Math.floor( _alpha * 128 ) / 128;
+			var _newbmd;
+			if ( !_newbmd )
+			{
+				var _r = ( ( _col >> 16 ) & 0xFF ); // 255;
+				var _g = ( ( _col >> 8 ) & 0xFF ); // 255;
+				var _b = ( ( _col ) & 0xFF ); // 255;
+				_bmd = _bmd.clone();
+				_bmd.colorTransform( _bmd.rect, new ColorTransform( 0, 0, 0, _alpha, _r, _g, _b ) );
+			}
+		}
+		else if ( ( _col != 0xFFFFFF ) || ( _alpha < 1 ) )
 		{
 			_alpha = Math.floor( _alpha * 128 ) / 128;
-			// Get color blended bitmapdata
-			var _newbmd; // = Graphics_GetBlendedBitmapData;
+			var _newbmd;
 			if ( !_newbmd )
 			{
 				var _r = ( ( _col >> 16 ) & 0xFF ) / 255;
@@ -960,7 +974,7 @@ public class GM extends EventDispatcher
 		_symbol.rotation = -_angle;
 		_symbol.alpha = _alpha;
 		_symbol.visible = true;
-		_symbol.blendMode = internalblendmode;
+		_symbol.blendMode = g_BlendMode;
 		return _symbol;
 	}
 	

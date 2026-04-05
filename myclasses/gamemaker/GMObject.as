@@ -751,9 +751,16 @@ public class GMObject // extends Sprite
 	
 	// Draw
 	
-	public static function gpu_set_blendmode( _bm )
+	public static function gpu_set_blendmode( bm )
 	{
-		GM.internalblendmode = _bm;
+		if ( bm == GM.g_BlendMode )
+			return;
+		var _newcont = new Sprite();
+		_newcont.blendMode = bm;
+		GM._tempsymbols.push( _newcont );
+		GM.internalrendertarget.addChild( _newcont );
+		GM.graphics = _newcont.graphics;
+		GM.g_BlendMode = bm;
 	}
 	
 	public static function gpu_set_fog( on, col = c_white, _start = 0, _end = 0 )
