@@ -499,6 +499,7 @@ public class GMControl extends ActorControl
 		var Entity = GetEntity( entity_id );
 	}
 	
+	// ctrl.registerPropertyProvider( GMPropertyProvider );
 	public static function GMPropertyProvider( key, entityId = null )
 	{
 		try
@@ -513,6 +514,7 @@ public class GMControl extends ActorControl
 					return ctrl.getState();
 				case "gm:character":
 					return ( curCharacter ) ? curCharacter.internalname : "none";
+				case "body":
 				case "gm:body":
 					return ( body );
 				case PROP_DIMENSIONS:

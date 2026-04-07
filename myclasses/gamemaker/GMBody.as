@@ -178,8 +178,8 @@ public class GMBody extends GMObject
 		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
 		
-		mystates["gm_devmode"] = AddState( "DevMode", true );
-		mystates["gm_devmode"].hidden = true;
+		// mystates["gm_devmode"] = AddState( "DevMode", true );
+		// mystates["gm_devmode"].hidden = true;
 		
 		myactions["gm_devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
 		
@@ -1252,7 +1252,10 @@ public class GMBody extends GMObject
 		if ( typeof name == "object" )
 			name = name.name;
 		var memory = memories[name];
-		if ( ctrl.isConnected() )
+		if ( !memory )
+			return;
+		//ctrl.SetMemory( memory.name, value );
+		if ( ctrl.isConnected() && ( memory.value != value ) )
 		{
 			ctrl.setMemory( memory.name, value );
 		}

@@ -78,8 +78,8 @@ public class GM extends EventDispatcher
 	public static var graphics; // current graphics target
 	
 	// Gamemaker
-	public static var g_GlobalAlpha = 1.0;
 	public static var g_BlendMode = BlendMode.NORMAL;
+	public static var g_GlobalAlpha = 1.0;
 	public static var g_GlobalColor = 0x000000;
 	public static var g_GlobalFog = [ 0, 0, 0, 0 ];
 	
@@ -88,6 +88,8 @@ public class GM extends EventDispatcher
 	public static var g_KeyDown = new Array( 256 );
 	public static var g_KeyPressed = new Array( 256 );
 	public static var g_KeyReleased = new Array( 256 );
+	
+	public static var g_Matrix = new Matrix();
 	
 	// Globals
 	
@@ -592,6 +594,8 @@ public class GM extends EventDispatcher
 			debugTracker = "GM.GMDraw - " + inst.name; 
 			try
 			{
+				if ( !inst.visible )
+					continue;
 				inst.Draw(); //GMDraw();
 			}
 			catch(e)
@@ -623,7 +627,84 @@ public class GM extends EventDispatcher
 	
 	// yyGraphics 
 	
-	public static var g_Matrix = new Matrix();
+	public static function Graphics_GetBlendedBitmap( _bmd, _col, _alpha = null )
+	{
+		var _newbmd, _r, _g, _b;
+		if ( g_GlobalFog[0] )
+		{
+			_col = g_GlobalFog[1];
+			_alpha = Math.floor( _alpha * 128 ) / 128;
+			if ( !_newbmd )
+			{
+				_r = ( ( _col >> 16 ) & 0xFF ); // 255;
+				_g = ( ( _col >> 8 ) & 0xFF ); // 255;
+				_b = ( ( _col ) & 0xFF ); // 255;
+				_newbmd = _bmd.clone();
+				_newbmd.colorTransform( _bmd.rect, new ColorTransform( 0, 0, 0, _alpha, _r, _g, _b ) );
+			}
+			_bmd = _newbmd;
+		}
+		else if ( ( _col != 0xFFFFFF ) || ( _alpha < 1 ) )
+		{
+			_alpha = Math.floor( _alpha * 128 ) / 128;
+			if ( !_newbmd )
+			{
+				_r = ( ( _col >> 16 ) & 0xFF ) / 255;
+				_g = ( ( _col >> 8 ) & 0xFF ) / 255;
+				_b = ( ( _col ) & 0xFF ) / 255;
+				_newbmd = _bmd.clone();
+				_newbmd.colorTransform( _bmd.rect, new ColorTransform( _r, _g, _b, _alpha ) );
+			}
+			_bmd = _newbmd;
+		}
+		return _bmd;
+	}
+	
+	public static function Graphics_DrawPart( _img, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha )
+	{
+		var _bmd = _img.bitmapdata;
+		if ( !_bmd )
+			return;
+		
+		var _off;
+		if ( _left < _img.x )
+		{
+			_off = _img.x - _left;
+			_x += ( _off * _xscale );
+			_width -= _off;
+			_left = 0;
+		}
+		else
+			_left -= _img.x;
+		if ( _top < _img.y )
+		{
+			_off = _img.y - _top;
+			_y += ( _off * _yscale );
+			_height -= _off;
+			_top = 0;
+		}
+		else
+			_top -= _img.y;
+		_width = Math.min( _width, _img.w - _left );
+		_height = Math.min( _height, _img.h - _top );
+		if ( _width <= 0 || _height <= 0 )
+			return;
+		
+		_col &= 0xFFFFFF;
+		_bmd = Graphics_GetBlendedBitmap( _bmd, _col, _alpha );
+		
+		var _w = ( _width * _xscale );
+		var _h = ( _height * _yscale );
+		g_Matrix.identity();
+		g_Matrix.scale( _xscale, _yscale );
+		g_Matrix.tx = _x - ( _left * _xscale );
+		g_Matrix.ty = _y - ( _top * _yscale );
+		graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
+		graphics.drawRect( _x, _y, _w, _h );
+		graphics.endFill();
+	}
+	
+	
 	public static function Graphics_TextureDraw( _bmd, _xoff, _yoff, _x, _y, _xscale, _yscale, _ang, _col, _alpha )
 	{
 		if ( !_bmd )
@@ -631,53 +712,26 @@ public class GM extends EventDispatcher
 		_col &= 0xFFFFFF;
 		if ( ( Math.abs( _xscale ) <= 0.0001 ) || ( Math.abs( _yscale ) <= 0.0001 ) || ( _alpha <= 0.004 ) )
 			return;
+		
+		_bmd = Graphics_GetBlendedBitmap( _bmd, _col, _alpha );
+		
 		var ox = 0 - _xoff;
 		var oy = 0 - _yoff;
 		
-		if ( g_GlobalFog[0] )
-		{
-			_col = g_GlobalFog[1];
-			_alpha = Math.floor( _alpha * 128 ) / 128;
-			var _newbmd;
-			if ( !_newbmd )
-			{
-				var _r = ( ( _col >> 16 ) & 0xFF ); // 255;
-				var _g = ( ( _col >> 8 ) & 0xFF ); // 255;
-				var _b = ( ( _col ) & 0xFF ); // 255;
-				_bmd = _bmd.clone();
-				_bmd.colorTransform( _bmd.rect, new ColorTransform( 0, 0, 0, _alpha, _r, _g, _b ) );
-			}
-		}
-		else if ( ( _col != 0xFFFFFF ) || ( _alpha < 1 ) )
-		{
-			_alpha = Math.floor( _alpha * 128 ) / 128;
-			var _newbmd;
-			if ( !_newbmd )
-			{
-				var _r = ( ( _col >> 16 ) & 0xFF ) / 255;
-				var _g = ( ( _col >> 8 ) & 0xFF ) / 255;
-				var _b = ( ( _col ) & 0xFF ) / 255;
-				_bmd = _bmd.clone();
-				_bmd.colorTransform( _bmd.rect, new ColorTransform( _r, _g, _b, _alpha ) );
-			}
-		}
 		// var r = Math.abs( _ang );
 		var hasrot = ( Math.abs( _ang ) > 0.0001 );
 		var hasscale = ( ( _xscale != 1 ) || ( _yscale != 1 ) );
 		// hasrot = true;
 		if ( hasrot )
 		{
-			// g_Matrix.identity();
-			// g_Matrix.translate( ox, oy );
-			// g_Matrix.rotate( _ang );
-			// g_Matrix.scale( _xscale, _yscale );
-			
 			var _torad = ( Math.PI / 180 );
 			var _angh = -_ang * ( _torad );
 			var _angv = ( -_ang + 90 ) * ( _torad );
 			
-			var ww = _bmd.width * _xscale;
-			var hh = _bmd.height * _yscale;
+			var ww;
+			var hh;
+			ww = _bmd.width * _xscale;
+			hh = _bmd.height * _yscale;
 			
 			var xinc_w = ww;
 			var yinc_w = 0;
@@ -746,6 +800,7 @@ public class GM extends EventDispatcher
 		g_Matrix.tx = _x;
 		g_Matrix.ty = _y;
 		graphics.beginBitmapFill( _bmd, g_Matrix, false, false );
+		
 		graphics.endFill();
 	}
 	
@@ -773,8 +828,8 @@ public class GM extends EventDispatcher
 		TextureDrawPos_vertices[10] = _x1;
 		TextureDrawPos_vertices[11] = _y1;
 		
-		var uvX = ( 0 - ( texelW ) ) * 0.65;
-		var uvY = ( 0 - ( texelH ) ) * 0.65;
+		var uvX = ( 0 - ( texelW ) ) * 0.5;
+		var uvY = ( 0 - ( texelH ) ) * 0.5;
 		
 		var u1 = uvX;
 		var u2 = 1 - uvX;
@@ -1235,9 +1290,14 @@ class GMSprite
 		for each ( var bitmap in frames )
 		{
 			var frame = {};
+			frame.index = count;
+			frame.x = 0;
+			frame.y = 0;
+			frame.w = width;
+			frame.h = height;
 			images[count++] = frame;
 			frame.bitmapdata = bitmap.bitmapData;
-			trace( "adding bitmapdata" );
+			CropFrame( frame );
 		}
 	}
 	
@@ -1251,6 +1311,11 @@ class GMSprite
 		{
 			var symbol = this.symbol;
 			frame = {};
+			frame.index = i;
+			frame.x = 0;
+			frame.y = 0;
+			frame.w = width;
+			frame.h = height;
 			images[i] = frame;
 			if ( symbol )
 			{
@@ -1258,15 +1323,47 @@ class GMSprite
 				var pre_y = symbol.y;
 				// trace( "get bitmap data for " + name + ":" + i );
 				frame.symbol = symbol;
-				frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00FFFFFF );
+				frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00000000 );
 				symbol.gotoAndStop( i + 1 );
 				var offset = new Matrix();
 				offset.tx = this.x;
 				offset.ty = this.y;
 				frame.bitmapdata.draw( symbol, offset );
 			}
+			CropFrame( frame );
 		}
 		return frame;
+	}
+	
+	public function CropFrame( frame )
+	{
+		if ( frame.cropped != null )
+			return;
+		trace( name + "_" + frame.index );
+		frame.x = 0;
+		frame.y = 0;
+		frame.w = 0;
+		var bmd = frame.bitmapdata;
+		frame.w = bmd.rect.width;
+		frame.h = bmd.rect.height;
+		var bounds = bmd.getColorBoundsRect( 0xFF000000, 0x00000000, false );
+		if ( bounds.width <= 0 || bounds.height <= 0 )
+		{
+			frame.cropped = false;
+		}
+		else if ( bounds.width < frame.w || bounds.height < frame.h || bounds.x > 0 || bounds.y > 0 )
+		{
+			frame.cropped = true;
+			frame.bitmapdata = new BitmapData( bounds.width, bounds.height, true, 0x00000000 );
+			frame.bitmapdata.copyPixels( bmd, bounds, new Point( 0, 0 ) );
+			frame.x = bounds.x;
+			frame.y = bounds.y;
+			frame.w = bounds.width;
+			frame.h = bounds.height;
+		}
+		else
+			frame.cropped = false;
+		
 	}
 	
 	public function Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha )
@@ -1281,12 +1378,14 @@ class GMSprite
 		if ( _subimg < 0 )
 			_subimg += this.count;
 		var image = this.GetImage( _subimg );
-		var bmd = image.bitmapdata;
-		if ( bmd )
+		var xoff = this.x;
+		var yoff = this.y;
+		if ( image.cropped )
 		{
-			GM.Graphics_TextureDraw( bmd, this.x, this.y, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
-			return;
+			xoff -= image.x;
+			yoff -= image.y;
 		}
+		GM.Graphics_TextureDraw( image.bitmapdata, xoff, yoff, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
 	}
 	
 	public function DrawSimple( _subimg, _x, _y, _alpha )
@@ -1301,12 +1400,12 @@ class GMSprite
 		if ( _subimg < 0 )
 			_subimg += this.count;
 		var image = this.GetImage( _subimg );
-		var bmd = image.bitmapdata;
-		if ( bmd )
+		if ( image.cropped )
 		{
-			GM.Graphics_TextureDrawSimple( bmd, _x - this.x, _y - this.y, _alpha );
-			return;
+			_x += image.x;
+			_y += image.y;
 		}
+		GM.Graphics_TextureDrawSimple( image.bitmapdata, _x - this.x, _y - this.y, _alpha );
 	}
 	
 	public function DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha )
@@ -1321,9 +1420,8 @@ class GMSprite
 		if ( _subimg < 0 )
 			_subimg += this.count;
 		var image = this.GetImage( _subimg );
-		var bmd = image.bitmapdata;
-		
-		GM.Graphics_TextureDrawPos( bmd, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+		//var bmd = image.bitmapdata;
+		GM.Graphics_TextureDrawPos( image.bitmapdata, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
 	}
 	
 	public function DrawTiled(  )

@@ -24,7 +24,6 @@ public class GMObject // extends Sprite
 	public var y = 0;
 	public var width = 0;
 	public var height = 0;
-	
 	public var visible = true;
 	
 	public static const global = GM.global;
@@ -370,15 +369,15 @@ public class GMObject // extends Sprite
 	}
 	
 	// If this sprite exists but I don't have it, clone it (e.g remote sprite, added wrongly, etc)
-	public static function sprite_verify( spr )
+	public static function sprite_verify( _spr )
 	{
-		if ( !spr )
+		if ( !_spr )
 			return -1;
-		var sprname = sprite_get_name( spr );
+		var sprname = sprite_get_name( _spr );
 		if ( global[sprname] )
 			return global[sprname];
 		GM.Log( "sprite_verify: cloning sprite " + sprname );
-		return GM.AddSprite_Sprite( sprname, spr );
+		return GM.AddSprite_Sprite( sprname, _spr );
 	}
 	
 	// Function_Texture
@@ -386,59 +385,63 @@ public class GMObject // extends Sprite
 	public function draw_self()
 	{
 		var _inst = this;
-		var spr = _inst.sprite_current;
-		if ( spr == null || spr < 0 )
+		var _spr = _inst.sprite_current;
+		if ( _spr == null || _spr < 0 )
 			return;
-		var _subimg = ( Math.floor( _inst.image_index ) % spr.count );
+		var _subimg = ( Math.floor( _inst.image_index ) % _spr.count );
 		if ( _subimg < 0 )
-			_subimg += spr.count;
-		spr.Draw( _subimg, _inst.x, _inst.y, _inst.image_xscale, _inst.image_yscale, _inst.image_angle, _inst.image_blend, _inst.image_alpha );
+			_subimg += _spr.count;
+		_spr.Draw( _subimg, _inst.x, _inst.y, _inst.image_xscale, _inst.image_yscale, _inst.image_angle, _inst.image_blend, _inst.image_alpha );
 	}
 	
 	public function draw_sprite( _spr, _subimg, _x, _y )
 	{
-		var _inst = this;
-		var spr = _spr;
-		if ( spr == null || spr < 0 )
+		if ( _spr == null || _spr < 0 )
 			return;
-		var _subimg = ( _subimg % spr.count );
+		var _subimg = ( _subimg % _spr.count );
 		if ( _subimg < 0 )
-			_subimg += spr.count;
-		spr.DrawSimple( _subimg, _x, _y, GM.g_GlobalAlpha );
+			_subimg += _spr.count;
+		_spr.DrawSimple( _subimg, _x, _y, GM.g_GlobalAlpha );
 	}
 	
 	public function draw_sprite_ext( _spr, _subimg, _x, _y, _xscale = 1, _yscale = 1, _ang = 0, _col = 0xFFFFFF, _alpha = null )
 	{
-		var _inst = this;
-		var spr = _spr;
-		if ( spr == null || spr < 0 )
+		if ( _spr == null || _spr < 0 )
 			return;
-		var _subimg = ( _subimg % spr.count );
+		_subimg = ( _subimg % _spr.count );
 		if ( _subimg < 0 )
-			_subimg += spr.count;
-		
+			_subimg += _spr.count;
 		if ( _alpha == null )
 			_alpha = GM.g_GlobalAlpha;
-		spr.Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
+		_spr.Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
 	}
 	
 	public function draw_sprite_pos( _spr, _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha = null )
 	{
-		// return GM.InternalSpriteDrawPos( _spr, _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
-		var _inst = this;
-		var spr = _spr;
-		if ( spr == null || spr < 0 )
+		if ( _spr == null || _spr < 0 )
 			return;
-		var _subimg = ( _inst.image_index % spr.count );
+		_subimg = ( _subimg % _spr.count );
 		if ( _subimg < 0 )
-			_subimg += spr.count;
-		spr.DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+			_subimg += _spr.count;
+		if ( _alpha == null )
+			_alpha = GM.g_GlobalAlpha;
+		_spr.DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
 	}
 	
 	public function draw_sprite_part_ext( _spr, _subimg, _left, _top, _width, _height, _x, _y, _xscale = 1, _yscale = 1, _col = 0xFFFFFF, _alpha = null )
 	{
+		if ( _spr == null || _spr < 0 )
+			return;
+		var _subimg = ( _subimg % _spr.count );
+		if ( _subimg < 0 )
+			_subimg += _spr.count;
 		if ( _alpha == null )
 			_alpha = GM.g_GlobalAlpha;
+		var _img = _spr.GetImage( _subimg );
+		var _bmd = _img.bitmapdata;
+		if ( !_bmd )
+			return;
+		GM.Graphics_DrawPart( _img, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha );
 	}
 	
 	
