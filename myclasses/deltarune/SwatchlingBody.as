@@ -33,20 +33,15 @@ public class SwatchlingBody extends MonsterBody
 		mystates["pose"] = DWState( "Arms down", global.spr_npc_swatchling_down );
 		mystates["pose2"] = DWState( "Face Away", global.spr_npc_swatchling_up );
 		mystates["clap"] = DWState( "Clapping", global.spr_npc_butler_clap );
-		mystates["clap_fast"] = DWState( "Clapping (Fast)", global.spr_npc_butler_clap );
 		mystates["sweep"] = DWState( "Sweeping", [ global.spr_npc_swatchling_sweep, global.spr_npc_swatchling_sweep_walk ]  );
-		mystates["sweep_fast"] = DWState( "Sweeping (Fast)", [ global.spr_npc_swatchling_sweep, global.spr_npc_swatchling_sweep_walk ]  );
 		mystates["scared"] = DWState( "Scared", global.spr_npc_swatchling_scared );
-		mystates["scared_fast"] = DWState( "Scared (Fast)", global.spr_npc_swatchling_scared );
 		mystates["peck"] = DWState( "Peck", global.spr_npc_swatchling_peck );
-		mystates["peck_fast"] = DWState( "Peck (Fast)", global.spr_npc_swatchling_peck );
 		mystates["fan"] = DWState( "Fan", global.spr_npc_swatchling_fan );
-		mystates["fan_fast"] = DWState( "Fan (Fast)", global.spr_npc_swatchling_fan );
-		
 		
 		AddEnemyStates();
-		mystates["enemy_dead"].hidden = true;
-		mystates["enemy_frozen"].hidden = true;
+		
+		mymemories["fastanims"] = AddMemory( "deltarune.fastanims", 0, OnStateChanged );
+		myactions["toggle_fastanims"] = AddAction_ToggleMemory( "[Toggle Fast Animations]", "deltarune.fastanims" );
 		
 		if ( false )
 		{
@@ -68,6 +63,9 @@ public class SwatchlingBody extends MonsterBody
 	override public function OnStateChanged()
 	{
 		super.OnStateChanged();
+		
+		var fastanims = ( mymemories["fastanims"].value ? 1 : 0 );
+		
 		x = originX;
 		y = originY;
 		characterH = 0;
@@ -120,23 +118,23 @@ public class SwatchlingBody extends MonsterBody
 				case global.spr_npc_swatchling_up:
 					break;
 				case global.spr_npc_butler_clap:
-					actor.idlespeed = ( curState == mystates["clap_fast"] ) ? 1 : 0.25;
+					actor.idlespeed = ( fastanims ) ? 1 : 0.25;
 					actor.offset_x = ( global.spr_npc_swatchling_down.width / 2 );
 					break;
 				case global.spr_npc_swatchling_scared:
-					actor.idlespeed = ( curState == mystates["scared_fast"] ) ? 1 : 0.25;
+					actor.idlespeed = ( fastanims ) ? 1 : 0.25;
 					actor.offset_y += 2;
 					break;
 				case global.spr_npc_swatchling_sweep:
-					actor.idlespeed = ( curState == mystates["sweep_fast"] ) ? 1 : 0.1;
+					actor.idlespeed = ( fastanims ) ? 1 : 0.1;
 					actor.offset_x += 9;
 					break;
 				case global.spr_npc_swatchling_peck:
-					actor.idlespeed = ( curState == mystates["peck_fast"] ? 1 : 0.2 );
+					actor.idlespeed = ( fastanims ? 1 : 0.2 );
 					actor.offset_x += 9;
 					break;
 				case global.spr_npc_swatchling_fan:
-					actor.idlespeed = ( curState == mystates["fan_fast"] ? 1 : 0.2 );
+					actor.idlespeed = ( fastanims ? 1 : 0.2 );
 					actor.offset_x += 19;
 					actor.offset_y += 2;
 					break;
@@ -150,6 +148,10 @@ public class SwatchlingBody extends MonsterBody
 	override public function OnUpdateLook()
 	{
 		super.OnUpdateLook();
+		
+		image_xscale = 2;
+		image_yscale = 2;
+		flipped = ( hDir > 0 );
 		
 		if ( instance_exists( actor ) )
 		{
@@ -253,9 +255,6 @@ class obj_npc_swatchling extends obj_overworldenemy_parent
 	public var walksprite;
 	public var idlespeed = 0.25;
 	
-	public var offset_x = 0;
-	public var offset_y = 0;
-	
 	public function obj_npc_swatchling()
 	{
 		super();
@@ -278,29 +277,6 @@ class obj_npc_swatchling extends obj_overworldenemy_parent
 	{
 		
 	}
-	
-	override public function Draw()
-	{
-		// var sprite_width = ( this.sprite_width * image_xscale );
-		// var sprite_height = ( this.sprite_height * image_yscale );
-		
-		var xpos = this.x;
-		var ypos = this.y;
-		x = xpos - ( offset_x * image_xscale );
-		y = ypos - ( offset_y * image_yscale );
-		
-		if ( body && body.chaseaura )
-		{
-			scr_draw_chaseaura( sprite_current, image_index, x, y );
-		}
-		
-		draw_self();
-		
-		x = xpos;
-		y = ypos;
-	}
-	
-	
 }
 
 

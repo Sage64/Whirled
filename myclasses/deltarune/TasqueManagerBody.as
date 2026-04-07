@@ -20,14 +20,17 @@ public class TasqueManagerBody extends MonsterBody
 		
 		super();
 		
-		mystates["default"] = DWState( "Default" );
+		mystates["default"] = DWState( "NPC - Idle", global.spr_npc_tasquemanager );
+		mystates["spr_npc_tm_sing"] = DWState( "NPC - Sing", global.spr_npc_tm_sing );
+		mystates["spr_npc_tm_sing"].image_speed = 0.2;
+		
 		
 		AddEnemyStates();
 	}
 	
 	override public function DoBodyDebug()
 	{
-		SetState( mystates["enemy_idle"] );
+		
 	}
 	
 	override public function OnStateChanged()
@@ -37,15 +40,52 @@ public class TasqueManagerBody extends MonsterBody
 		y = originY;
 		characterH = 70 * 2;
 		
-		switch( curState )
+		var _offx = 40;
+		var _offy = 69;
+		
+		if ( !curState )
+		{}
+		else if ( curState.enemy )
 		{
-			default:
-				if ( !instance_exists( enemy ) )
-				{
-					enemy = instance_create( x, y, obj_tasque_manager_enemy );
-				}
-				break;
+			// ENEMY
+			instance_destroy( npc );
+			if ( !instance_exists( enemy ) )
+			{
+				enemy = instance_create_depth( x, y, 0, obj_tasque_manager_enemy );
+			}
+			enemy.offset_x = _offx;
+			enemy.offset_y = _offy;
+			characterH = ( sprite_get_height( enemy.sprite_index ) * image_yscale ) + 5;
 		}
+		else
+		{
+			// NPC
+			instance_destroy( enemy )
+			if ( !instance_exists( npc ) )
+			{
+				npc = instance_create_depth( x, y, 0, obj_npc_tasquemanager );
+			}
+			if ( curState.sprite )
+				npc.sprite_index = curState.sprite;
+			if ( curState.image_speed )
+				npc.image_speed = curState.image_speed;
+			
+			npc.image_xscale = 2;
+			npc.image_yscale = 2;
+			npc.offset_x = _offx;
+			npc.offset_y = _offy;
+			switch( npc.sprite_index )
+			{
+				case global.spr_npc_tm_sing:
+					npc.offset_x = 20;
+					npc.offset_y += 1;
+					npc.image_xscale *= -1;
+					break;
+			}
+			
+			characterH = ( sprite_get_height( npc.sprite_index ) * image_yscale ) + 5;
+		}
+		
 		
 		SetViewOffset( 0, 0 - ( 10 + ( characterH / 2 ) ) );
 	}
@@ -76,6 +116,20 @@ import com.whirled.*
 class obj_npc_tasquemanager extends obj_overworldenemy_parent
 {
 	
+	public function obj_npc_tasquemanager()
+	{
+		super();
+		sprite_index = global.spr_npc_tasquemanager;
+		image_speed = 0;
+		offset_x = 44;
+		offset_y = 69;
+		
+	}
+	
+	override public function Create()
+	{
+		
+	}
 }
 
 
@@ -108,6 +162,8 @@ class obj_tasque_manager_enemy extends obj_monsterparent
 	{
 		super();
 		sprite_index = global.spr_npc_tasquemanager;
+		offset_x = 44;
+		offset_y = 69;
 		
 		image_speed = ( 1 / 6 );
 		
@@ -124,10 +180,6 @@ class obj_tasque_manager_enemy extends obj_monsterparent
 	override public function Create()
 	{
 		super.Create();
-		
-		offset_x = 40;;
-		offset_y = 69;
-		
 	}
 	
 	override public function Step()
@@ -146,14 +198,6 @@ class obj_tasque_manager_enemy extends obj_monsterparent
 		var x = this.x;
 		var y = this.y;
 		
-		if ( body )
-		{
-			body.x = x;
-			body.y = y;
-			body.characterH = ( sprite_get_height( sprite_index ) * image_yscale ) + 5;
-		}
-		
-		
 		x -= ( offset_x * image_xscale );
 		y -= ( offset_y * image_yscale );
 		
@@ -162,7 +206,6 @@ class obj_tasque_manager_enemy extends obj_monsterparent
 		else if ( state == 0 )
 		{
 			var sprite = ( mercymod >= mercymax ) ? this.sprite_spare : this.sprite;
-			
 			var siner = sin( timer / 6 );
 			
 			// tail
@@ -174,10 +217,9 @@ class obj_tasque_manager_enemy extends obj_monsterparent
 			// legs
 			draw_monster_body_part_ext( sprite[5], 0, x + xOffset[5], y + yOffset[5], image_xscale, image_yscale, 0, image_blend, image_alpha );
 			// body
-			draw_monster_body_part_ext( sprite[1], 0, x + xOffset[1], y + yOffset[1] + ( siner * 2 ), image_xscale, image_yscale, -siner * 2, image_blend, image_alpha );
+			draw_monster_body_part_ext( sprite[1], 0, x + xOffset[1], y + yOffset[1] + ( siner * 2 ), image_xscale, image_yscale, 0, image_blend, image_alpha );
 			// head
-			draw_monster_body_part_ext( sprite[0], 0, x + xOffset[0], y + yOffset[0] + ( siner * 3 ), image_xscale, image_yscale, -siner * 10, image_blend, image_alpha );
-			
+			draw_monster_body_part_ext( sprite[0], 0, x + xOffset[0], y + yOffset[0] + ( siner * 3 ), image_xscale, image_yscale, siner * 10, image_blend, image_alpha );
 			
 		}
 		

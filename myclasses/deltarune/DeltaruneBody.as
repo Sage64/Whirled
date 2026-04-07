@@ -7,6 +7,8 @@ package deltarune
 {
 
 import gamemaker.*;
+
+import deltarune.*;
 import deltarune.objects.*;
 
 import flash.display.*;
@@ -60,6 +62,10 @@ public class DeltaruneBody extends GMBody
 			global.interact = 0;
 			global.chapter = 1;
 			global.darkzone = 0;
+			
+			
+			global.char = new Array( 4 );
+			global.charinstances = new Array( 4 );
 		}
 		
 		super( 30 );
@@ -149,11 +155,12 @@ public class DeltaruneBody extends GMBody
 	{
 		super.OnStateChanged();
 		
-		global.darkzone = ( curState && curState.darkzone );
-		if ( GetMemory( "deltarune.forcedarkzone" ) )
-			global.darkzone = 1;
+		global.darkzone = ( darkmode || ( curState && curState.darkzone ) );
+		
+		// if ( GetMemory( "deltarune.forcedarkzone" ) )
+		// global.darkzone = 1;
 		// else if ( GetMemory( "deltarune.board" ) )
-		// 	global.darkzone = 1;
+		// global.darkzone = 1;
 			
 		if ( global.darkzone )
 		{

@@ -133,6 +133,12 @@ public class obj_monsterparent extends DeltaruneObject
 		instance_destroy();
 	}
 	
+	public function draw_monster_body_part_ext( _spr, _subimg, _x, _y, _xsc, _ysc, _ang, _col, _a )
+	{
+		draw_sprite_ext( _spr, _subimg, _x, _y, _xsc, _ysc, _ang, _col, _a );
+		
+	}
+	
 	public function scr_enemy_drawidle_generic( _sinerspd )
 	{
 		var x = this.x - ( offset_x * image_xscale );

@@ -1,12 +1,13 @@
 ﻿package deltarune.objects
 {
 
-import deltarune.*;
 import gamemaker.*;
+
+import deltarune.*;
 
 public class obj_defeatanim extends DeltaruneObject
 {
-	public static const DEFEAT_IMAGE_COUNT = 80;
+	public static const DEFEAT_IMAGE_COUNT = 65;
 	public var t = 0;
 	public var g = 0;
 	public var starcount = 0;
@@ -52,7 +53,7 @@ public class obj_defeatanim extends DeltaruneObject
 			var _xx = x - sprite_xoffset;
 			var _yy = y - sprite_yoffset;
 			
-			draw_sprite_ext( global.spr_defeatsweat, 0, _xx - ( 6 * xsign ), _yy, xsign, 1, image_angle, image_alpha, image_blend );
+			draw_sprite_ext( global.spr_defeatsweat, 0, _xx - ( 6 * xsign ), _yy, xsign, 1, image_angle, image_blend, image_alpha );
 		}
 		
 		if ( t >= 1 )
@@ -63,7 +64,7 @@ public class obj_defeatanim extends DeltaruneObject
 					sprite_current, image_index,
 					x + ( 4 * xsign * i ), y,
 					image_xscale, image_yscale,
-					image_angle, image_blend, ( alpha - ( t / 8 ) + ( i / 200 ) )
+					image_angle, image_blend, ( image_alpha - ( t / 8 ) + ( i / 200 ) )
 				);
 			}
 		}

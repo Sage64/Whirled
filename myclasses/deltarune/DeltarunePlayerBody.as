@@ -8,6 +8,9 @@ package deltarune
 
 import gamemaker.*;
 
+import deltarune.*;
+import deltarune.objects.*;
+
 import flash.display.*;
 import flash.events.*;
 import flash.text.*;
@@ -33,15 +36,25 @@ public class DeltarunePlayerBody extends DeltaruneBody
 	
 	public static const FLAG_AUTORUN = 11;
 	
+	// 
+	
+	public var battleencounter;
+	public var battlecontroller;
 	public var menu_object;
 	
 	public var char;
 	
-	public var swordmode = false;
-	public var swordfacing = 0;
+	public var leader;
 	
+	public var hero;
 	public var heroname = "Hero";
 	public var herocolor = 0xFFFFFF;
+	
+	public var battlemode = 0;
+	
+	public var swordmode = false;
+	public var swordfacing = 0;
+	public var boardmode = 0;
 	
 	public var partylist = [];    // All remote members of the party
 	
@@ -65,27 +78,27 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		global.input_held = new Array( 10 );
 		
 		mymemories["character"] = AddMemory( "deltarune.character", 0, SetCharacter );
+		mymemories["swordfacing"] = AddMemory( "deltarune.swordfacing", 1 );
 		
 		myactions["keyboardmode"] = AddAction( "[Open Keyboard Input]", Action_OpenKeyboardControl );
+		
+		InitActions_Characters();
 		
 		InitMenu();
 		
 		myactions["chapter_switch"] = AddAction_ToggleMemory( "[Chapter]", "deltarune.chapter", [ 1, 4 ]  );
 		myactions["chapter_switch"].hidden = false;
-		myactions["toggle_darkzone"] = AddAction_ToggleMemory( "[Dark World]", "deltarune.forcedarkzone", [ false, true ] );
-		myactions["toggle_darkzone"].hidden = false;
+		//myactions["toggle_darkzone"] = AddAction_ToggleMemory( "[Dark World]", "deltarune.forcedarkzone", [ false, true ] );
+		//myactions["toggle_darkzone"].hidden = true;
 		
 		mymemories["autorun"] = AddMemory( "deltarune.autorun", 0, SetAutorun );
 		myactions["autorun_toggle"] = AddAction_ToggleMemory( "[Autorun]", "deltarune.autorun" );
 		
-		if ( false )
-		{
-			myactions["deltarune.battlemode"] = AddAction( "[Open Battle Box]", Action_OpenBattleBox );
-			myactions["deltarune.battlemode"].hidden = true;
-		}
-		
-		mymemories["swordfacing"] = AddMemory( "deltarune.swordfacing", 1 );
-		
+	}
+	
+	public function InitActions_Characters()
+	{
+		// override and add Switch To (character) actions at the top of the list
 	}
 	
 	public function InitMenu()
@@ -94,15 +107,53 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		myactions["deltarune.menu_dark"] = AddAction( "[DW Menu]", Action_OpenMenu, 1 );
 	}
 	
+	
+	public function BattleState( statename )
+	{
+		var State = DWState( statename );
+		State.battle = 1;
+		return State;
+	}
+	
+	
 	override public function OnStateChanged()
 	{
 		super.OnStateChanged();
 		
-		if ( !curState )
+		x = originX;
+		y = originY;
+		
+		if ( !instance_exists( leader ) )
+			GetLeader();
+		if ( instance_exists( leader ) )
+		{
+			GetLeader();
+			x = leader.x;
+			y = leader.y;
+			SetMoveSpeed( leader.bwspeed );
+			UpdateSprites();
+		}
+		
+		if ( curState == null )
 			return;
+		
+		if ( curState.battle )
+		{
+		
+		}
+		else
+		{
+			
+		}
+		
 	}
 	
 	public function GetLeader()
+	{
+		
+	}
+	
+	public function UpdateSprites( ... ignored )
 	{
 		
 	}
@@ -313,6 +364,9 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		if ( this.char == data )
 			return;
 		this.char = data;
+		
+		instance_destroy( leader );
+		
 		OnStateChanged();
 	}
 	
@@ -370,11 +424,7 @@ public class DeltarunePlayerBody extends DeltaruneBody
 		{
 			menu_object = instance_create_depth( 0, 0, 0, obj_lwmenu );
 		}
-		
-		if ( menu_object.surf == GMControl.popup_surface )
-		{
-			var res = GMControl.DoPopup( GMControl.popup_surface, menu_object.menuw, menu_object.menuh, menu_object );
-		}
+		var res = GMControl.DoPopup( GMControl.popup_surface, menu_object.menuw, menu_object.menuh, menu_object );
 	}
 	
 }
@@ -389,6 +439,8 @@ import flash.events.*;
 import flash.geom.*;
 import flash.ui.*;
 import flash.utils.*;
+
+// Menu
 
 class obj_menu extends DeltaruneObject
 {
@@ -406,7 +458,6 @@ class obj_menu extends DeltaruneObject
 		global.menuno = 0;
 	}
 }
-
 
 class obj_lwmenu extends obj_menu
 {
@@ -506,4 +557,11 @@ class obj_dwmenu extends obj_menu
 		
 		scr_darkbox( x1, y1, x2, y2 );
 	}
+}
+
+// Battle
+
+class obj_battlecontroller extends DeltaruneObject
+{
+	
 }

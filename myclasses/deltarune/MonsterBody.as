@@ -26,6 +26,7 @@ import com.whirled.*
 public class MonsterBody extends DeltaruneBody
 {
 	public var enemy;
+	public var npc;
     
 	public var use_mercy = true;
 	public var use_damage = true;
@@ -63,15 +64,15 @@ public class MonsterBody extends DeltaruneBody
 		}
         
 		mymemories["chase_aura"] = AddMemory( "deltarune.monster.chasing", 0, SetChaseAura );
-		myactions["toggle_chaseaura"] = AddAction_ToggleMemory( "[Toggle NPC Chase Aura]", "deltarune.monster.chasing" );
+		myactions["toggle_chaseaura"] = AddAction_ToggleMemory( "NPC - [Toggle Chase Aura]", "deltarune.monster.chasing" );
 		
 		mymemories["monsterhp"] = AddMemory( "deltarune.monster.hp", -1, HealthChanged );
-		myactions["damage_weak"] = AddAction( "[Hurt 50]", Action_Hurt, 50 );
-		myactions["damage_strong"] = AddAction( "[Hurt 150]", Action_Hurt, 150 );
+		myactions["damage_weak"] = AddAction( "Enemy - [Hurt 50]", Action_Hurt, 50 );
+		myactions["damage_strong"] = AddAction( "Enemy - [Hurt 150]", Action_Hurt, 150 );
 		
 		mymemories["mercy"] = AddMemory( "deltarune.monster.mercy", 0, SetMercy );
-		myactions["mercy_0"] = AddAction( "[SetMercy 0%]", Action_SetMercy, 0 );
-		myactions["mercy_100"] = AddAction( "[SetMercy 100%]", Action_SetMercy, 100 );
+		myactions["mercy_0"] = AddAction( "Enemy - [SetMercy 0%]", Action_SetMercy, 0 );
+		myactions["mercy_100"] = AddAction( "Enemy - [SetMercy 100%]", Action_SetMercy, 100 );
 		
 		mystates["enemy_idle"] = EnemyState( "Enemy - Idle" );
 		mystates["enemy_spared"] = EnemyState( "Enemy - Spared" );
@@ -105,6 +106,7 @@ public class MonsterBody extends DeltaruneBody
 		mystates["enemy_defeated"] = EnemyState( "Enemy - Defeated" );
 		mystates["enemy_dead"] = EnemyState( "Enemy - Dead" );
 		mystates["enemy_frozen"] = EnemyState( "Enemy - Frozen" );
+		mystates["enemy_frozen"].hidden = true;
 	}
 	
 	// 

@@ -4,6 +4,9 @@ package deltarune
 
 import gamemaker.*;
 
+import deltarune.*;
+import deltarune.objects.*;
+
 import flash.display.*;
 import flash.events.*;
 import flash.utils.*;
@@ -16,18 +19,17 @@ import com.whirled.*
 
 public class MainPartyBody extends DeltarunePlayerBody
 {
-	public var inst;
-	
 	public var kris;
+	public var herokris;
 	public var susie;
+	public var herosusie;
 	public var ralsei;
+	public var heroralsei;
 	public var noelle;
-	
-	public var leader;
+	public var heronoelle;
 	
 	public var unhappy = 0;
 	public var ralsei_butler = 0;
-	public var boardmode = 0;
 	public var churchoutfit = 0;
 	
 	public function MainPartyBody()
@@ -36,50 +38,51 @@ public class MainPartyBody extends DeltarunePlayerBody
 		
 		char = "kris";
 		
-		if ( true )
-		{
-			mystates["default"] = LWState( "Default" );
-			mystates["board"] = DWState( "Board" );
-			mystates["church"] = LWState( "Church" );
+		// 
+		mystates["default"] = LWState( "Default" );
+		mystates["church"] = LWState( "Church" );
+		mystates["darkzone"] = DWState( "Dark" );
+		//
+		mystates["battle"] = BattleState( "Battle - Idle" );
+		mystates["battle_attack"] = BattleState( "Battle - Attack Ready" );
+		mystates["battle_act"] = BattleState( "Battle - Act Ready" );
+		mystates["battle_item"] = BattleState( "Battle - Item Ready" );
+		mystates["battle_defend"] = BattleState( "Battle - Defend" );
+		// 
+		mystates["board"] = DWState( "Board" );
 			
-			myactions["char_krs"] = AddAction( "[Switch to Kris]", Action_SetCharacter, "kris" );
-			myactions["char_sus"] = AddAction( "[Switch to Susie]", Action_SetCharacter, "susie" );
-			myactions["char_ral"] = AddAction( "[Switch to Ralsei]", Action_SetCharacter, "ralsei" );
-			//myactions["char_nol"] = AddAction( "[Switch to Noelle]", SetCharacter, "noelle" );
-			
-		}
-		else
-		{
-			//mystates["kris"] = LWState( "Kris" );
-			//mystates["susie"] = LWState( "Susie" );
-			//mystates["ralsei"] = DWState( "Ralsei" );
-		}
-		
 		myactions["toggle_unhappy"] = AddAction_ToggleMemory( "[Unhappy]", "deltarune.unhappy" );
 		myactions["toggle_unhappy"].hidden = true;
 		
-		// ch1
 		
-		// ch2
+		mystates["kris_sit"] = CharState( "kris", "Kris - spr_kris_sit", false, global.spr_kris_sit, 0 );
+		mystates["kris_sit_wind"] = CharState( "kris", "Kris - spr_kris_sit_wind", false, global.spr_kris_sit_wind, 0.1 );
 		
-		mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, OnStateChanged );
-		myactions["toggle_ralsei_butler"] = AddAction_ToggleMemory( "[Ralsei Butler]", "deltarune.ralsei.butler" );
+		// mymemories["ralsei_butler"] = AddMemory( "deltarune.ralsei.butler", 0, OnStateChanged );
+		// myactions["toggle_ralsei_butler"] = AddAction_ToggleMemory( "Ralsei - [Toggle Butler]", "deltarune.ralsei.butler" );
 		
-		// ch3
+		mystates["ralsei_butler"] = CharState( "ralsei", "Ralsei - butler", true );
 		
-		// myactions["toggle_board"] = AddAction_ToggleMemory( "[Board]", "deltarune.board" );
-		
-		// ch4
-		
-		mymemories["churchoutfit"] = AddMemory( "deltarune.churchoutfit", 0, OnStateChanged );
-		// myactions["toggle_churchoutfit"] = AddAction_ToggleMemory( "[Church]", "deltarune.churchoutfit" );
-		
-		mystates["kris_sit"] = LWState( "Kris - spr_kris_sit", global.spr_kris_sit );
-		mystates["kris_sit"].char = "kris";
-		mystates["kris_sit_wind"] = LWState( "Kris - spr_kris_sit_wind", global.spr_kris_sit_wind );
-		mystates["kris_sit_wind"].char = "kris";
 		
 		// 
+	}
+	
+	override public function InitActions_Characters()
+	{
+		super.InitActions_Characters();
+		myactions["char_krs"] = AddAction( "[Switch to Kris]", Action_SetCharacter, "kris" );
+		myactions["char_sus"] = AddAction( "[Switch to Susie]", Action_SetCharacter, "susie" );
+		myactions["char_ral"] = AddAction( "[Switch to Ralsei]", Action_SetCharacter, "ralsei" );
+		//myactions["char_nol"] = AddAction( "[Switch to Noelle]", Action_SetCharacter, "noelle" );
+	}
+	
+	public function CharState( charname, statename, darkzone = 0, sprite = null, image_speed = 0 )
+	{
+		var State = ( ( darkzone ) ? DWState : LWState )( statename );
+		State.char = charname;
+		State.sprite = sprite;
+		State.image_speed = image_speed;
+		return State; 
 	}
 	
 	override public function Step()
@@ -90,57 +93,67 @@ public class MainPartyBody extends DeltarunePlayerBody
 	override public function OnStateChanged()
 	{
 		unhappy = mymemories["unhappy"].value;
-		ralsei_butler = mymemories["ralsei_butler"].value;
+		ralsei_butler = ( curState == mystates["ralsei_butler"] ); //mymemories["ralsei_butler"].value;
 		boardmode = ( curState == mystates["board"] ); //mymemories["board"].value;
 		churchoutfit = ( curState == mystates["church"] );// mymemories["churchoutfit"].value;
 		
 		super.OnStateChanged();
 		
-		x = originX;
-		y = originY;
-		
-		GetLeader();
-		
-		leader.fun = 0;
-		
-		switch ( curState )
+		if ( !curState )
+		{}
+		else if ( curState.battle )
 		{
-			case null:
-				break;
-			case mystates["kris"]:
-				break;
-			case mystates["kris_sit"]:
-			case mystates["kris_sit_wind"]:
-				if ( !instance_exists( kris ) )
-					break;
-				kris.fun = 1;
-				kris.sprite_index = curState.sprite;
-				kris.image_speed = 0.1;
-				break;
-			case mystates["susie"]:
-				break;
-			case mystates["ralsei"]:
-				break;
+			
+		}
+		else
+		{
+			leader.fun = 0;
+			if ( curState.sprite != null )
+			{
+				var target = leader;
+				switch ( curState.char )
+				{
+					case "kris":
+						target = kris;
+						break;
+					case "susie":
+						target = susie;
+						break;
+					case "ralsei":
+						target = ralsei;
+						break;
+					case "noelle":
+						target = noelle;
+						break;
+				}
+				if ( instance_exists( target ) )
+				{
+					target.fun = 1;
+					target.sprite_index = curState.sprite;
+					target.image_speed = curState.image_speed;
+				}
 			}
-		
-		UpdateSprites();
-		
-		if ( instance_exists( leader ) )
-		{
-			x = leader.x;
-			y = leader.y;
-			SetMoveSpeed( leader.bwspeed );
+			UpdateSprites();
+			if ( instance_exists( leader ) )
+			{
+				x = leader.x;
+				y = leader.y;
+				SetMoveSpeed( leader.bwspeed );
+			}
 		}
 	}
 	
 	override public function GetLeader()
 	{
+		darkmode = 0;
 		textsound = global.snd_text;
 		
-		instance_destroy( kris );
-		instance_destroy( susie );
-		instance_destroy( ralsei );
-		instance_destroy( noelle );
+		// instance_destroy( kris );
+		// instance_destroy( susie );
+		// instance_destroy( ralsei );
+		// instance_destroy( noelle );
+		for ( var i = 0; i < 4; ++i )
+			global.char[i] = 0;
 		
 		char = GetMemory( "deltarune.character" );
 		
@@ -153,6 +166,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 					noelle = instance_create( x, y, obj_mainchara );
 					noelle.herocolor = 0x13D26F;
 				}
+				global.char[0] = 4;
 				leader = noelle;
 				textsound = global.snd_txtnol;
 				break;
@@ -163,6 +177,8 @@ public class MainPartyBody extends DeltarunePlayerBody
 					ralsei = instance_create( x, y, obj_mainchara );
 					ralsei.herocolor = 0x13D26F;
 				}
+				darkmode = 1;
+				global.char[0] = 3;
 				leader = ralsei;
 				textsound = global.snd_txtral;
 				break;
@@ -173,6 +189,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 					susie = instance_create( x, y, obj_mainchara );
 					susie.herocolor = 0xF22D81;
 				}
+				global.char[0] = 2;
 				leader = susie;
 				textsound = global.snd_txtsus;
 				break;
@@ -184,11 +201,13 @@ public class MainPartyBody extends DeltarunePlayerBody
 					kris = instance_create( x, y, obj_mainchara );
 					kris.herocolor = 0x8DEDFE;
 				}
+				global.char[0] = 1;
 				leader = kris;
 				break;
 		}
-		
-		return leader;
+		if ( instance_exists( leader ) )
+			return leader;
+		return super.GetLeader();
 	}
 	
 	override public function OnUpdateLook()
@@ -236,7 +255,7 @@ public class MainPartyBody extends DeltarunePlayerBody
 		}
 	}
 	
-	public function UpdateSprites( ... ignored )
+	override public function UpdateSprites( ... ignored )
 	{
 		x = 0;
 		y = 0;
@@ -244,28 +263,14 @@ public class MainPartyBody extends DeltarunePlayerBody
 		image_xscale = ( global.darkzone ) ? 2 : 1;
 		image_yscale = image_xscale;
 		
-		
-		
 		if ( instance_exists( noelle ) )
-		{
 			Apply_Ralsei( noelle );
-		}
-		
 		if ( instance_exists( ralsei ) )
-		{
 			Apply_Ralsei( ralsei );
-		}
-		
 		if ( instance_exists( susie ) )
-		{
 			Apply_Susie( susie );
-		}
-		
 		if ( instance_exists( kris ) )
-		{
 			Apply_Kris( kris );
-		}
-		
 		OnUpdateLook();
 		
 		if ( nametag )
@@ -481,300 +486,6 @@ import flash.utils.*;
 
 import com.threerings.util.*
 import com.whirled.*
-
-
-class obj_mainchara extends DeltaruneObject
-{
-	public var darkmode = 0;
-	public var boardmode = 0;
-	
-	public var herocolor;
-	
-	// Input
-	public var press_l = 0;
-	public var press_r = 0;
-	public var press_d = 0;
-	public var press_u = 0;
-	public var nopress = 0;
-	public var pressdir = -1;
-	public var fun = 0;
-	
-	// Movement
-	public var px = 0;
-	public var py = 0;
-	public var walk = 0;
-	public var walkbuffer = 0;
-	public var walktimer = 0;
-	public var bwspeed = 3;
-	public var wspeed = 3;
-	public var runheld = false;
-	public var run = 0;
-	public var autorun = 0;
-	public var runtimer = 0;
-	public var runmove = 0;
-	public var canrun = true;
-	public var runcounter = 0;
-	
-	// Appearance
-	public var offset_x = 0;
-	public var offset_y = 0;
-	public var feet_y = 0;
-	
-	public var mywidth;
-	public var myheight;
-	public var facing = 0;
-	public var dsprite = -1;
-	public var rsprite = -1;
-	public var usprite = -1;
-	public var lsprite = -1;
-	public var climbing = 0;
-	public var climbsprite = -1;
-	
-	// Battle
-	public var battlemode = 0;
-	
-	// Board
-	public var swordmode = 0;
-	public var swordfacing = 1;
-	
-	public function obj_mainchara()
-	{
-		super();
-		
-		image_speed = 0;
-		
-		darkmode = global.darkzone ? 1 : 0;
-		
-		dsprite = global.spr_krisd;
-		rsprite = global.spr_krisr;
-		usprite = global.spr_krisu;
-		lsprite = global.spr_krisl;
-		
-		if ( darkmode )
-		{
-			image_xscale = 2;
-			image_yscale = 2;
-			dsprite = global.spr_krisd_dark;
-			rsprite = global.spr_krisr_dark;
-			usprite = global.spr_krisu_dark;
-			lsprite = global.spr_krisl_dark;
-		}
-		
-		sprite_set( dsprite );
-	}
-	
-	override public function Step()
-	{
-		super.Step();
-		if ( fun == 0 )
-			PlayerControl();
-		else
-			runtimer = 0;
-		if ( fun == 0 )
-			AnimateWalk();
-		GetFacingSprite();
-		
-		if ( false && GMControl.debug )
-		{
-			image_angle = point_direction( x, y, mouse_x, mouse_y );
-		}
-	}
-	
-	override public function Draw()
-	{
-		if ( body )
-		{
-			body.x = this.x;
-			body.y = this.y;
-		}
-		
-		var _xscale = image_xscale;
-		var _yscale = image_yscale;
-		var _offx = offset_x;
-		var _offy = offset_y - feet_y;
-		if ( fun == 1 )
-		{
-			if ( swordfacing < 0 )
-				_xscale *= -1;
-			switch ( sprite_index )
-			{
-				case global.spr_kris_sit:
-					_offx -= 3;
-					_offy -= 7;
-					break;
-			}
-		}
-		
-		// _xscale = mouse_x / 24;
-		
-		//if ( _xscale < 0 )
-		//	_offx += sprite_get_width( sprite_index );
-		
-		var x = this.x - ( _offx * _xscale );
-		var y = this.y - ( ( _offy ) * _yscale );
-		
-		draw_sprite_ext( sprite_current, image_index, x, y, _xscale, _yscale, image_angle, image_blend, image_alpha );
-		
-		if ( battlemode == 1 )
-		{
-			
-		}
-	}
-	
-	// Simulate how the player animates
-	// based on current movement
-	public function PlayerControl()
-	{
-		//
-		TestSpeed();
-		// 
-		if ( run )
-			runtimer += timescale;
-		else
-			runtimer = 0;
-		px = 0;
-		py = 0;
-		pressdir = -1;
-		if ( press_r )
-			px = wspeed;
-		if ( press_l )
-			px = -wspeed;
-		if ( press_d )
-			py = wspeed;
-		if ( press_u )
-			py = -wspeed;
-		// 
-		nopress = 0;
-		//
-		runmove = 0;
-		if ( ( run  == 1) && ( px != 0 || py != 0 ) )
-		{
-			runmove = 1;
-			runtimer += timescale;
-			runcounter += timescale;
-		}
-		else
-			runtimer = 0;
-	}
-	
-	// Adjust move speed based on various factors
-	public function TestSpeed()
-	{
-		if ( boardmode )
-		{
-			wspeed = 4;
-			run = 0;
-		}
-		else
-		{
-			run = global.flag[DeltarunePlayerBody.FLAG_AUTORUN];
-			if ( false )
-				run = !run;
-			if ( autorun > 0 )
-			{
-				run = 1;
-				if ( autorun == 1 )
-				{
-					runtimer = 200;
-				}
-				else if ( autorun == 2 )
-				{
-					runtimer = 50;
-				}
-			}
-			if ( !canrun )
-				run = 0;
-			if ( run == 1 )
-			{
-				if ( darkmode )
-				{
-					bwspeed = 4;
-					if ( runtimer > 60 )
-						wspeed = bwspeed + 5;
-					else if ( runtimer > 10 )
-						wspeed = bwspeed + 4;
-					else
-						wspeed = bwspeed + 2;
-				}
-				else
-				{
-					bwspeed = 3;
-					if ( runtimer > 60 )
-						wspeed = bwspeed + 3;
-					else if ( runtimer > 10 )
-						wspeed = bwspeed + 2;
-					else
-						wspeed = bwspeed + 1;
-				}
-			}
-			else
-				wspeed = bwspeed;
-		}
-		if ( body )
-			body.SetMoveSpeed( wspeed );
-	}
-	
-	// Animate walking frames
-	public function AnimateWalk()
-	{
-		walk = 0;
-		if ( nopress == 0 )
-		{
-			if ( px != 0 || py != 0 )
-				walk = 1;
-		}
-		if ( walk == 1 )
-			walkbuffer = 6;
-		if ( walkbuffer > 3 )
-		{
-			walktimer += ( runmove ? 3 : 1.5 ) * timescale;
-			walktimer = walktimer % 40;
-			image_index = Math.floor( walktimer / 10 );
-		}
-		if ( walkbuffer <= 0 )
-		{
-			if ( walktimer < 10 )
-				walktimer = 9.5;
-			if ( walktimer >= 10 && walktimer < 20 )
-				walktimer = 19.5;
-			if ( walktimer >= 20 && walktimer < 30 )
-				walktimer = 29.5;
-			if ( walktimer >= 30 )
-				walktimer = 39.5
-			image_index = 0;
-		}
-		walkbuffer -= 0.75 * timescale;
-	}
-	
-	// Get facing sprite
-	public function GetFacingSprite()
-	{
-		if ( fun != 0 )
-			return;
-		if ( climbing )
-		{
-			sprite_set( climbsprite );
-		}
-		else
-		{
-			switch ( facing )
-			{
-				case 0:
-					sprite_set( dsprite );
-					break;
-				case 1:
-					sprite_set( rsprite );
-					break;
-				case 2:
-					sprite_set( usprite );
-					break;
-				case 3:
-					sprite_set( lsprite );
-					break;
-			}
-		}
-	}
-}
 
 import gamemaker.*;
 import deltarune.*;
