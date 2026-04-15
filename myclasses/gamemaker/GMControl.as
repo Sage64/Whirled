@@ -32,6 +32,7 @@ public class GMControl extends ActorControl
 	public static var debug = false;
 	public static const debug_log = GM.debug_log;
 	public static var debugTracker = "";
+	public static var debugMove = true;
 	public static var hasErrored = false;
 	
 	public static var isBitmap = true;
@@ -76,16 +77,15 @@ public class GMControl extends ActorControl
 	protected static var _states = [];
 	protected static var _isSleeping;
 	
-	
 	// 
 	public static var _eventlisteners = {
 		list: [],
 		func: {}
 	 };
+	 
 	public static var _eventqueue = [];
-	
-	public static var remoteEntities = {};
 	public static var remoteEntitiesList = [];
+	public static var remoteEntities = {};
 	
 	public static var viewXOffset = 0;
 	public static var viewYOffset = 0;
@@ -102,6 +102,7 @@ public class GMControl extends ActorControl
 	
 	public function GMControl( media )
 	{
+		GM.debugTracker = "new GMControl()";
 		GMControl.media = media;
 		GMControl.ctrl = this;
 		GMControl.isConnected = ctrl.isConnected();
@@ -143,16 +144,24 @@ public class GMControl extends ActorControl
 	
 	public static function Init( media, stageW = 600, stageH = 450 )
 	{
+		GM.debugTracker = "GMControl.Init";
 		if ( !GM.gm )
 			GM.Init( media, stageW, stageH );
-		if ( !ctrl )
+		if ( !GMControl.ctrl )
 		{
-			ctrl = new GMControl( media );
+			try
+			{
+				GMControl.ctrl = new GMControl( media );
+			}
+			catch(e)
+			{
+				Caught(e);
+			}
 			return;
 		}
 		
 		GMControl.initdone = true;
-		Log( "GMControl Init" );
+		GM.Log( "GMControl Init" );
 		GMControl.media = media;
 		GMControl.root = media.root;
 		
@@ -162,9 +171,8 @@ public class GMControl extends ActorControl
 		
 		popup_surface = new GMPopupSurface();
 		popup_surface.cacheAsBitmap = false;
-		AddEventListener( popup_surface, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
-		AddEventListener( popup_surface, KeyboardEvent.KEY_UP, GMKeyboardUp );
-		AddEventListener( popup_surface, MouseEvent.CLICK, GMClicked );
+		
+		InitInputListeners();
 		
 		// GMControl.container = new Sprite();
 		// GMControl.container.cacheAsBitmap = true;
@@ -173,8 +181,26 @@ public class GMControl extends ActorControl
 		InitWhirled();
 	}
 	
+	public static function InitInputListeners()
+	{
+		GM.debugTracker = "GMControl.InitInputListeners";
+		AddEventListener( popup_surface, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
+		AddEventListener( popup_surface, KeyboardEvent.KEY_UP, GMKeyboardUp );
+		AddEventListener( popup_surface, MouseEvent.CLICK, GMClicked );
+		return;
+		AddEventListener( popup_surface, MouseEvent.RIGHT_CLICK, GMClicked );
+		AddEventListener( popup_surface, MouseEvent.MIDDLE_CLICK, GMClicked );
+		AddEventListener( popup_surface, MouseEvent.MOUSE_DOWN, GMMouse );
+		AddEventListener( popup_surface, MouseEvent.RIGHT_MOUSE_DOWN, GMMouse );
+		AddEventListener( popup_surface, MouseEvent.MIDDLE_MOUSE_DOWN, GMMouse );
+		AddEventListener( popup_surface, MouseEvent.MOUSE_UP, GMMouse );
+		AddEventListener( popup_surface, MouseEvent.RIGHT_MOUSE_UP, GMMouse );
+		AddEventListener( popup_surface, MouseEvent.MIDDLE_MOUSE_UP, GMMouse );
+	}
+	
 	public static function InitWhirled( ww = 600, hh = 450 )
 	{
+		GM.debugTracker = "GMControl.InitWhirled";
 		// Init( media );
 		GM.Log( "GMControl InitWhirled" );
 		
@@ -298,7 +324,14 @@ public class GMControl extends ActorControl
 		if ( NewChar == null )
 			NewChar = AddCharacter( dispname, internalname );
 		GMControl.Log( "Adding Body for character '" + dispname + "'" );
-		body = new bodyclass();
+		try
+		{
+			body = new bodyclass();
+		}
+		catch(e)
+		{
+			Caught(e);
+		}
 		NewChar.body = body;
 	}
 	
@@ -512,10 +545,13 @@ public class GMControl extends ActorControl
 				case "state":
 				case "gm:state":
 					return ctrl.getState();
+				case "character":
 				case "gm:character":
-					return ( curCharacter ) ? curCharacter.internalname : "none";
+					return ( curCharacter ) ? curCharacter.internalname : "unknown";
 				case "body":
 				case "gm:body":
+					if ( body.secure )
+						return null;
 					return ( body );
 				case PROP_DIMENSIONS:
 				case PROP_HOTSPOT:
@@ -531,7 +567,7 @@ public class GMControl extends ActorControl
 			var val;
 			if ( body )
 			{
-				val = body.customProps[key];
+				val = body.OnProperty( key );
 				if ( val != null )
 					return val;
 			}
@@ -557,6 +593,8 @@ public class GMControl extends ActorControl
 	
 	public static function GMKeyboardDown( ev )
 	{
+		//if ( ev.keyCode == 78 ) // N
+		//	GMControl.debug = !GMControl.debug;
 		if ( debug )
 		{
 			DebugKeyDown( ev );
@@ -578,8 +616,17 @@ public class GMControl extends ActorControl
 				io_clear();
 			}
 		}
+		if ( GM.media.stage.focus != GMControl.popup_surface )
+		{
+			GMControl.Log( "focus = popup_surface" );
+		}
 		GM.media.stage.focus = GMControl.popup_surface;
 		GM.GMClicked( ev );
+	}
+	
+	public static function GMMouse( ev = null )
+	{
+		GM.GMMouse( ev );
 	}
 	
 	/*
@@ -731,7 +778,7 @@ public class GMControl extends ActorControl
 		return _panel;
 	}
 	
-	public static function DoPopup( _panel, _w, _h, _instance = null )
+	public static function DoPopup( _panel = null, _w = 600, _h = 450, _instance = null )
 	{
 		if ( !ctrl )
 		{
@@ -769,10 +816,11 @@ public class GMControl extends ActorControl
 		GMControl.Log( "DoPopup - "  + _panel.width + ", " + _panel.height );
 	}
 	
-	public static function DoPopupGM()
+	public static function DoPopupObject( _instance, _w, _h )
 	{
-		
+		return DoPopup( null, _w, _h, _instance );
 	}
+	
 	
 	public static function PopupClosedEvent( ev )
 	{
@@ -885,7 +933,7 @@ public class GMControl extends ActorControl
 			if ( popup_surface )
 			{
 				popup_surface.graphics.clear();
-				popup_surface.graphics.beginFill( 0, 0 );
+				popup_surface.graphics.beginFill( 0, 1 / 255 );
 				popup_surface.graphics.drawRect( 0, 0, GMControl.popup_width, GMControl.popup_height );
 				popup_surface.graphics.endFill();
 			}
@@ -1045,7 +1093,7 @@ public class GMControl extends ActorControl
 	
 	public static function GMMemoryChanged( event )
 	{
-		Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
+		// Log( "Got memory '" + event.name + "' = '" + event.value + "'" );
 		if ( body )
 		{
 			body.OnMemoryChanged( event.name, event.value );

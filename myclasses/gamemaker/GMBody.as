@@ -52,10 +52,10 @@ public class GMBody extends GMObject
 	
 	// Whirled - Init
 	
-	public var gm;
-	public var media;
-	public var container;
-	public var ctrl;
+	public var gm = GM;
+	public var media = GMControl.ctrl;
+	public var container = GMControl.container;
+	public var ctrl = GMControl.ctrl;
 	//public var body = this;
 	
 	public var _eventlisteners = {
@@ -65,6 +65,7 @@ public class GMBody extends GMObject
 	 
 	public var _eventqueue :Array = [];
 	
+	public var secure = false; // if true, don't share body ref through properties
 	public var customProps = {};
 	
 	public var isMoving = false;
@@ -113,11 +114,13 @@ public class GMBody extends GMObject
 	// Whirled - States
 	public var curState = null;
 	public var prevState = null;
+	public var curAction = null;
 	
 	public var states = {}; // Maps.newMapOf( String );
 	public var stateList :Array = [];
 	public var stateName = ""; // current state name
 	public var stateListCurrent :Array = [];
+	public var state; // current state being created by AddState
 	
 	public var actions = {}; //Maps.newMapOf( String );
 	public var actionList :Array = [];
@@ -156,10 +159,10 @@ public class GMBody extends GMObject
 		image_speed = 0;
 		
 		name = "GMBody";
-		this.gm = GM;
-		this.ctrl = GMControl.ctrl;
-		this.media = GMControl.media; 
-		this.container = GMControl.container;
+		gm = GM;
+		media = GMControl.media;
+		container = GMControl.container;
+		ctrl = GMControl.ctrl;
 		this.body = this;
 		
 		GMControl.Log( "Creating" );
@@ -296,6 +299,18 @@ public class GMBody extends GMObject
 		}
 	}
 	
+	public function SetVersion( version = 0 )
+	{
+		AddMemory( "gm.version", version );
+		AddMemory( "gm.purchase_version", version );
+		
+		if ( version > GetMemory( "gm.version" ) )
+		{
+			GMControl.Log( "new version!" );
+		}
+		SetMemory( "gm.version", version );
+	}
+	
 	/*
 		DEBUG FUNCTIONS
 	*/
@@ -340,6 +355,12 @@ public class GMBody extends GMObject
 			text = GetName();
 		nametag.SetText( text );
 		return nametag;
+	}
+	
+	// return custom data from getEntityProperty 
+	public function OnProperty( key = null )
+	{
+		return customProps[key];
 	}
 	
 	/*
@@ -396,11 +417,18 @@ public class GMBody extends GMObject
 		wasSleeping = isSleeping;
 		isSleeping = ctrl.isSleeping();
 		orientation = ctrl.getOrientation();
-			
-		direction = 90 - orientation;
+		
+		direction = orientation - 90; //90 - orientation;
+		
+		if ( GMControl.debug )
+		{
+			direction = point_direction( 0, 0, container.mouseX / container.scaleX, container.mouseY / container.scaleY );
+			trace( direction );
+			GMControl.debugMove = !GMControl.debugMove;
+			isMoving = GMControl.debugMove;
+		}
 		if ( direction < 0 )
 			direction += 360;
-		
 		hDir = 0;
 		vDir = 0;
 		switch( direction )
@@ -419,9 +447,8 @@ public class GMBody extends GMObject
 				break;
 			default:
 				hDir = dcos( direction );
-				vDir = dsin( direction );
+				vDir = -dsin( direction );
 		}
-		
 		//GMControl.Log( "direction = " + direction + ", hDir: " + hDir + ", vDir: " + vDir );
 		
 		currentPosition = GetPosition();
@@ -642,7 +669,7 @@ public class GMBody extends GMObject
 	{
 		movePathAmount = 0;
 		movePathLength = 0;
-		movePathDirection = point_direction( x1, y2, x2, y1 );
+		movePathDirection = point_direction( x1, y1, x2, y2 );
 		movePathLength = point_distance( x1, y1, x2, y2 );
 	}
 	
@@ -676,27 +703,27 @@ public class GMBody extends GMObject
 	public function AddState( statename, hidden = false )
 	{
 		GMControl.Log( "Adding state \"" + statename + "\"" );
-		var State = states[statename];
-		if ( !State )
-			State = {};
-		var _pos = stateList.indexOf( State );
+		state = states[statename];
+		if ( !state )
+			state = {};
+		var _pos = stateList.indexOf( state );
 		if ( _pos >= 0 )
 			stateList.splice( _pos, 1 );
 		
-		State.name = statename;
-		State.substates = null;
-		State.subactions = null;
-		State.func = null;
+		state.name = statename;
+		state.substates = null;
+		state.subactions = null;
+		state.func = null;
 		
 		// Define these as an array to choose what is either selectively
 		// hidden or shown for this state
-		State.showStates = null;
-		State.hideStates = null;
-		State.showActions = null;
-		State.hideActions = null;
-		State.hidden = hidden;
+		state.showStates = null;
+		state.hideStates = null;
+		state.showActions = null;
+		state.hideActions = null;
+		state.hidden = hidden;
 		
-		State.IsHidden = function()
+		state.IsHidden = function()
 		{
 			return hidden;
 		}
@@ -704,14 +731,14 @@ public class GMBody extends GMObject
 		//
 		if ( curState == null )
 		{
-			curState = State;
+			// curState = state;
 			stateName = statename;
 		}
 		//
 		
-		stateList.push( State );
-		states[ statename ] = State;
-		return State;
+		stateList.push( state );
+		states[ statename ] = state;
+		return state;
 	}
 	
 	// force a state swap on the avatar
@@ -792,9 +819,9 @@ public class GMBody extends GMObject
 				continue;
 				//_state = states[]
 			}
-			if ( OnRegisterState( _state ) )
-				continue;
 			if ( _state.hidden )
+				continue;
+			if ( OnRegisterState( _state ) )
 				continue;
 			_state = _state.name;
 			if ( curState && curState.hideStates && ( curState.hideStates.indexOf( _state ) >= 0 ) )
@@ -820,8 +847,8 @@ public class GMBody extends GMObject
 		}
 		stateName = event.name;
 		GMControl.Log( "State set to " + stateName );
-		prevState = curState;
 		curState = GetState( stateName );
+		trace( prevState );
 		if ( curState )
 		{
 			if ( curState.func )
@@ -862,19 +889,26 @@ public class GMBody extends GMObject
 	
 	public function AddAction ( actionname :String = "action", actionfunc = null, actionvalue = null )
 	{
-		GMControl.Log( "Adding action " + actionList.length + " \"" + actionname + "\" with data " + actionvalue );
-		var Action = {};
-		Action.initname = actionname;
-		Action.name = actionname;
-		Action.value = actionvalue;
-		Action.hidden = 0;
-		Action.OnTriggered = null;
+		GMControl.Log( "Adding action \"" + actionname + "\" with data " + actionvalue );
+		action = actions[actionname];
+		if ( !action )
+			action = {};
+		
+		var _pos = actionList.indexOf( action );
+		if ( _pos >= 0 )
+			actionList.splice( _pos, 1 );
+		
+		action.initname = actionname;
+		action.name = actionname;
+		action.value = actionvalue;
+		action.hidden = 0;
+		action.OnTriggered = null;
 		if ( actionfunc )
-			Action.func = actionfunc;
+			action.func = actionfunc;
 		if ( actions[actionname] == null )
-			actionList.push( Action );
-		actions[actionname] = Action;
-		return Action;
+			actionList.push( action );
+		actions[actionname] = action;
+		return action;
 	}
 	
 	public function AddAction_Options( actionname = "option", actionfunc = null, options = null, startval = null )
@@ -942,13 +976,12 @@ public class GMBody extends GMObject
 		
 		for ( var i = 0; i < _showActions.length; ++i )
 		{
-			var Action = _showActions[i];
-			var _action = Action;
+			var _action = _showActions[i];
 			if ( typeof _action == "object" )
 			{
-				if ( OnRegisterAction( _action ) )
-					continue;
 				if ( _action.hidden )
+					continue;
+				if ( OnRegisterAction( _action ) )
 					continue;
 				_action = _action.name;
 			}
@@ -978,6 +1011,7 @@ public class GMBody extends GMObject
 		if ( actionname == null )
 		return;
 		action = actions[actionname];
+		curAction = action;
 		// var Action = actions[ actionname ];
 		if ( action )
 		{
@@ -1110,12 +1144,12 @@ public class GMBody extends GMObject
 		var hh = ( -( 1<<31 ) );
 		
 		_usenametag = ( nametag )
-		if ( ( nametag == 0 ) ) // || ( gm_flags & FLAG_HIDENAME ) )
+		if ( ( nametag == 0 ) || ( gm_flags & FLAG_HIDENAME ) )
 		{
 			_usenametag = 0;
 		}
 		else if ( !_usenametag )
-			hh = ( ( originY - y ) * scale ) + ( characterH * scale );
+			hh = ( ( originY - y ) * container.scaleY ) + ( characterH * container.scaleY );
 		
 		// ctrl.setHotSpot( xx, yy, hh );
 		
@@ -1168,6 +1202,15 @@ public class GMBody extends GMObject
 		}
 		
 		DrawEnd();
+		
+		if ( GMControl.debug )
+		{
+			var xx = 4 * image_xscale;
+			var ww = image_xscale / 2;
+			draw_set_color( c_red );
+			draw_line_width( x - xx, y, x + xx, y, ww );
+			draw_line_width( x, y - characterH, x, y, ww );
+		}
 	}
 	
 	override public function Draw()
@@ -1223,39 +1266,66 @@ public class GMBody extends GMObject
 	
 	public function AddMemory( key, defaultval = null, func = null )
 	{
-		var memval = ctrl.getMemory( key, null );
-		if ( memval != null )
-			defaultval = memval;
+		GM.debugTracker = "GMBody.AddMemory"
+		memory = {}
+		memory.name = key;
+		var memval;
+		if ( ctrl )
+			memval = ctrl.getMemory( key, null );
+		else
+		{
+			GMControl.Warn( "AddMemory: NO CTRL!" );
+		}
 		
-		GM.Log( "Adding memory \"" + key + "\", value: " + defaultval );
-		var Memory = {}
-		Memory.name = key;
-		Memory.value = defaultval;
-		Memory.func = func;
+		if ( memval == null )
+		{
+			memval = defaultval;
+		}
+		else
+		{
+			// defaultval = memval;
+		}
+		
+		GMControl.Log( "Adding memory \"" + key + "\", value: " + memval + " (default: " + defaultval + ")" );
+		
+		memory.value = memval;
+		memory.func = func;
 				
-		memories[key] = Memory;
-		memoryList.push( Memory );
+		memories[key] = memory;
+		memoryList.push( memory );
 		
 		var event = {};
 		event.type = ControlEvent.MEMORY_CHANGED;
-		event.name = Memory.name;
-		event.value = Memory.value;
+		event.name = memory.name;
+		event.value = memory.value;
 		
 		GMControl.GMControlEvent( event );
 		
-		return Memory;
+		GM.debugTracker = "After GMBody.AddMemory"
+		return memory;
 	}
 	
 	// Set a memory via its AddMemory name
 	public function SetMemory( name, value )
 	{
-		if ( typeof name == "object" )
+		if ( name is String )
+		{}
+		else
 			name = name.name;
-		var memory = memories[name];
+		memory = memories[name];
 		if ( !memory )
+		{
+			GMControl.Log( "memory " + name + " not found" );
 			return;
+		}
+		if ( !memory.dontlog )
+			GMControl.Log( memory.name + " = " + memory.value );
+		if ( memory.value == value )
+		{
+			
+		}
 		//ctrl.SetMemory( memory.name, value );
-		if ( ctrl.isConnected() && ( memory.value != value ) )
+		if ( ctrl.isConnected() )
 		{
 			ctrl.setMemory( memory.name, value );
 		}
@@ -1273,24 +1343,24 @@ public class GMBody extends GMObject
 	// Retrieve a memory from its AddMemory name
 	public function GetMemory( name, defaultval = 0 )
 	{
-		var Memory = memories[name];
-		if ( Memory )
-			return Memory.value;
+		memory = memories[name];
+		if ( memory )
+			return memory.value;
 	}
 	
 	public function OnMemoryChanged( key, value )
 	{
-		var Memory = memories[key];
+		memory = memories[key];
 		//GM.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
-		if ( Memory )
+		if ( memory )
 		{
-			Memory.value = value;
-			if ( Memory.func )
+			memory.value = value;
+			if ( memory.func )
 			{
-				if ( Memory.func.length == 0 )
-					Memory.func();
+				if ( memory.func.length == 0 )
+					memory.func();
 				else
-					Memory.func( value );
+					memory.func( value );
 			}
 		}
 	}

@@ -1,5 +1,4 @@
-﻿
-// GM
+﻿// GM
 // Main engine
 
 package gamemaker
@@ -20,7 +19,6 @@ import com.threerings.util.*;
 public class GM extends EventDispatcher
 {
 	public static const LOG_ENTRY = "gm:logEntry";
-	
 	
 	// Debug
 	public static var debug = false;
@@ -59,7 +57,7 @@ public class GM extends EventDispatcher
 	public static var isConnected = false;
 	
 	// Internal drawing
-	public static var internalstageitems = {};
+	public static var internalstageitems = { };
 	public static var _tempsymbols = [];
 	public static var _tempdrawsprites = [];
 	public static var internaldrawmatrix = new Matrix();
@@ -68,9 +66,9 @@ public class GM extends EventDispatcher
 	public static var internaldrawvalign = 0;
 	public static var internaldrawtextformat = new TextFormat();
 	public static var internalspritelist = [];
-	public static var internalspritemap = {};
+	public static var internalspritemap = { };
 	public static var internalsoundlist = [];
-	public static var internalsoundmap = {};
+	public static var internalsoundmap = { };
 	
 	
 	public static var internalrendertarget;
@@ -106,9 +104,9 @@ public class GM extends EventDispatcher
 	public static var view_x = 0;
 	public static var view_y = 0;
 	
-	
 	public function GM( _media, _width = null, _height = null )
 	{
+		debugTracker = "new GM()";
 		gm = this;
 		media = _media;
 		
@@ -137,6 +135,7 @@ public class GM extends EventDispatcher
 	
 	public static function Init( _media, _width = null, _height = null )
 	{
+		debugTracker = "GM.Init";
 		Log( "GM Init" );
 		GM.media = _media;
 		GM.root = _media;
@@ -146,10 +145,10 @@ public class GM extends EventDispatcher
 		if ( _height != null )
 			stageH = _height;
 		
-		media.cacheAsBitmap = false;
+		// media.cacheAsBitmap = false;
 		
 		container = new Sprite();
-		container.cacheAsBitmap = false; // must be false for effects to pass through (e.g blend modes)
+		container.cacheAsBitmap = false;
 		InternalSetDrawTarget( container );
 		
 		overlay = new Sprite();
@@ -157,6 +156,9 @@ public class GM extends EventDispatcher
 		
 		media.addChild( GM.container );
 		media.addChild( GM.overlay );
+		
+		if ( !GM.gm )
+			GM.gm = true;
 	}
 	
 	/*
@@ -292,7 +294,7 @@ public class GM extends EventDispatcher
 		
 		trace( "adding sprite " + spr.name );
 		
-		spr.CreateFromBitmap( frames );
+		spr.CreateFromBitmap( frames, true );
 		
 		internalspritelist.push( spr );
 		internalspritemap[sprname] = spr;
@@ -463,6 +465,11 @@ public class GM extends EventDispatcher
 	}
 	
 	public static function GMClicked( ev )
+	{
+		
+	}
+	
+	public static function GMMouse( ev )
 	{
 		
 	}
@@ -707,6 +714,7 @@ public class GM extends EventDispatcher
 	
 	public static function Graphics_TextureDraw( _bmd, _xoff, _yoff, _x, _y, _xscale, _yscale, _ang, _col, _alpha )
 	{
+		//var _bmd = _frame.bitmapdata;
 		if ( !_bmd )
 			return;
 		_col &= 0xFFFFFF;
@@ -768,6 +776,7 @@ public class GM extends EventDispatcher
 		}
 		else if ( hasscale )
 		{
+			// scale draw
 			g_Matrix.identity();
 			g_Matrix.scale( _xscale, _yscale );
 			g_Matrix.tx = _x + ( ox * _xscale );
@@ -836,6 +845,8 @@ public class GM extends EventDispatcher
 		var v1 = uvY;
 		var v2 = 1 - uvY;
 		
+		
+		
 		TextureDrawPos_uvtData[0] = u1;
 		TextureDrawPos_uvtData[1] = v1;
 		TextureDrawPos_uvtData[2] = u2;
@@ -879,6 +890,7 @@ public class GM extends EventDispatcher
 		GMObject._createy = _y;
 		trace( "adding instance " + o );
 		var inst = new o();
+		inst.object_index = o;
 		inst.x = _x;
 		inst.y = _y;
 		inst.xstart = _x;
@@ -918,7 +930,7 @@ public class GM extends EventDispatcher
 	
 	public static function InternalSpriteDraw( _sprite, _image, _x, _y, _xscale = 1, _yscale = 1, _angle = 0, _blend = 0xFFFFFF, _alpha = 1 )
 	{
-		// Todo - draw _subimg.bitmapdata with container.graphics instead
+		// OLD. no longer used
 		
 		if ( !_sprite || ( _sprite < 0 ) )
 			return;
@@ -1224,7 +1236,18 @@ class GMSprite
 	public var height = 0;
 	public var bounds;
 	
+	public var colkind = 0;
+	public var bboxmode = 0;
+	public var bbox_top = 0;
+	public var bbox_left = 0;
+	public var bbox_right = 0;
+	public var bbox_bottom = 0;
+	
+	public var autocrop = true;
+	
 	public var isBitmap = true;
+	
+	public var bitmap_frames = null;
 	
 	public function GMSprite()
 	{
@@ -1241,7 +1264,6 @@ class GMSprite
 			frame.bitmapdata.dispose();
 		}
 	}
-	
 	
 	public function CreateFromSymbol( symbol )
 	{
@@ -1275,18 +1297,47 @@ class GMSprite
 				if ( !symbol["numChildren"] )
 					continue;
 				++count;
-				GetImage( i );
+				var symbol = this.symbol;
+				var frame = {};
+				frame.index = i;
+				frame.x = 0;
+				frame.y = 0;
+				frame.w = width;
+				frame.h = height;
+				images[i] = frame;
+				if ( symbol )
+				{
+					var pre_x = symbol.x;
+					var pre_y = symbol.y;
+					// trace( "get bitmap data for " + name + ":" + i );
+					frame.symbol = symbol;
+					frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00000000 );
+					symbol.gotoAndStop( i + 1 );
+					var offset = new Matrix();
+					offset.tx = this.x;
+					offset.ty = this.y;
+					frame.bitmapdata.draw( symbol, offset );
+				}
+				if ( autocrop )
+					CropFrame( frame );
 			}
 		}
 	}
 	
-	public function CreateFromBitmap( frames )
+	public function CreateFromBitmap( frames, notyet = false )
 	{
 		GM.debugTracker = "GMSprite.CreateFromBitmap";
 		if ( frames.length < 1 )
 			return;
 		width = frames[0].bitmapData.width;
 		height = frames[0].bitmapData.height;
+		if ( notyet )
+		{
+			bitmap_frames = frames;
+			count = frames.length;
+			return;
+		}
+		count = 0;
 		for each ( var bitmap in frames )
 		{
 			var frame = {};
@@ -1297,41 +1348,24 @@ class GMSprite
 			frame.h = height;
 			images[count++] = frame;
 			frame.bitmapdata = bitmap.bitmapData;
-			CropFrame( frame );
+			if ( autocrop )
+				CropFrame( frame );
 		}
 	}
 	
 	public function GetImage( index )
 	{
+		if ( bitmap_frames != null )
+		{
+			CreateFromBitmap( bitmap_frames );
+			bitmap_frames = null;
+		}
+		
 		var i = Math.floor( index ) % this.count;
 		if ( i < 0 )
 			i += this.count;
+		// trace( i + "/" + this.count );
 		var frame = images[i];
-		if ( !frame )
-		{
-			var symbol = this.symbol;
-			frame = {};
-			frame.index = i;
-			frame.x = 0;
-			frame.y = 0;
-			frame.w = width;
-			frame.h = height;
-			images[i] = frame;
-			if ( symbol )
-			{
-				var pre_x = symbol.x;
-				var pre_y = symbol.y;
-				// trace( "get bitmap data for " + name + ":" + i );
-				frame.symbol = symbol;
-				frame.bitmapdata = new BitmapData( this.width, this.height, true, 0x00000000 );
-				symbol.gotoAndStop( i + 1 );
-				var offset = new Matrix();
-				offset.tx = this.x;
-				offset.ty = this.y;
-				frame.bitmapdata.draw( symbol, offset );
-			}
-			CropFrame( frame );
-		}
 		return frame;
 	}
 	
@@ -1339,7 +1373,7 @@ class GMSprite
 	{
 		if ( frame.cropped != null )
 			return;
-		trace( name + "_" + frame.index );
+		trace( "cropping " + name + "_" + frame.index );
 		frame.x = 0;
 		frame.y = 0;
 		frame.w = 0;
@@ -1356,10 +1390,16 @@ class GMSprite
 			frame.cropped = true;
 			frame.bitmapdata = new BitmapData( bounds.width, bounds.height, true, 0x00000000 );
 			frame.bitmapdata.copyPixels( bmd, bounds, new Point( 0, 0 ) );
+			bmd.dispose();
 			frame.x = bounds.x;
 			frame.y = bounds.y;
 			frame.w = bounds.width;
 			frame.h = bounds.height;
+			
+			bbox_left = Math.min( frame.x, bbox_left );
+			bbox_top = Math.min( frame.y, bbox_top );
+			bbox_right = Math.max( bbox_right, frame.x + frame.w );
+			bbox_bottom = Math.max( bbox_bottom, frame.y + frame.h );
 		}
 		else
 			frame.cropped = false;
@@ -1421,7 +1461,7 @@ class GMSprite
 			_subimg += this.count;
 		var image = this.GetImage( _subimg );
 		//var bmd = image.bitmapdata;
-		GM.Graphics_TextureDrawPos( image.bitmapdata, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+		GM.Graphics_TextureDrawPos( image, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
 	}
 	
 	public function DrawTiled(  )
@@ -1442,10 +1482,11 @@ class GMSurface
 	
 	public function GMSurface( ww, hh )
 	{
-		width = ww;
-		height = hh;
-		
+		width = 0;
+		height = 0;
 		surface.addchild( mask );
+		
+		Resize( ww, hh );
 	}
 	
 	public function Resize( ww, hh )
@@ -1454,20 +1495,9 @@ class GMSurface
 		mask.graphics.beginFill( 0, 1 );
 		mask.graphics.drawrect( 0, 0, ww, hh );
 		mask.graphics.endFill();
+		width = ww;
+		height = hh;
 	}
 }
 
-// Texture Item
 
-class GMTextureImage
-{
-	
-	public var bitmapdata;
-	public var bitmapdata_cache = {};
-	
-	public function GMTextureImage( bitmapdata )
-	{
-		this.bitmapdata = bitmapdata;
-	}
-	
-}

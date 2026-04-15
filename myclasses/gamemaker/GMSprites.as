@@ -20,7 +20,7 @@ public class GMSprites extends Sprite
 		
 	}
 	
-	public function CreateFromBitmaps( sprname:String, _x = 0, _y = 0 )
+	public function CreateFromBitmaps( sprname:String, _x = 0, _y = 0, data = null )
 	{
 		var maxFrames = 65535;
 		var frames = [];
@@ -44,15 +44,31 @@ public class GMSprites extends Sprite
 		if ( i < 1 )
 			return;
 		
-		return GM.AddSprite_Bitmap( sprname, _x, _y, frames );
+		var sprite = GM.AddSprite_Bitmap( sprname, _x, _y, frames );
+		
+		if ( data != null )
+		{
+			AddData( sprite, data, "type" );
+			AddData( sprite, data, "colkind" );
+			AddData( sprite, data, "coltolerance" );
+			AddData( sprite, data, "sepmasks" );
+			AddData( sprite, data, "bboxmode" );
+			AddData( sprite, data, "bbox_left" );
+			AddData( sprite, data, "bbox_top" );
+			AddData( sprite, data, "bbox_right" );
+			AddData( sprite, data, "bbox_bottom" );
+		}
+		return sprite;
 	}
 	
-	
-	public static function GenerateEmbedCode( source_file = "" )
+	public function AddData( dest, source, key )
 	{
-		var maxFiles = 65535;
-		
-		
+		try
+		{
+			if ( dest[key] != null )
+				source[key] = dest[key];
+		}
+		catch(e){}
 	}
 }
 

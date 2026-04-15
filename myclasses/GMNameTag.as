@@ -207,7 +207,7 @@ public class GMNameTag extends Sprite
 		if ( hotspot )
 		{
 			trace( hotspot );
-			ctrl.setHotSpot( hotspot[0], hotspot[1], 65500 );
+			ctrl.setHotSpot( hotspot[0], hotspot[1], 1<<31 );
 		}
 		else
 			trace( "Whirled entity: " + ent );

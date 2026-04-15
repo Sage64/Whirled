@@ -26,6 +26,8 @@ public class GMObject // extends Sprite
 	public var height = 0;
 	public var visible = true;
 	
+	public var object_index = -1;
+	
 	public static const global = GM.global;
 	
 	public static var timescale = 1;
@@ -118,15 +120,8 @@ public class GMObject // extends Sprite
 	
 	public function GMStep()
 	{
-		if ( gravity != 0 )
-		{
-			hspeed += dcos( gravity_direction ) * ( gravity * timescale );
-			vspeed -= dsin( gravity_direction) * ( gravity * timescale );
-		}
-		if ( hspeed != 0 )
-			x += ( hspeed * timescale );
-		if ( vspeed != 0 )
-			y += ( vspeed * timescale );
+		if ( true )
+			GMMovement();
 		
 		if ( true )
 			GMAlarms();
@@ -143,6 +138,20 @@ public class GMObject // extends Sprite
 			image_index = ( image_index % image_number );
 		}
 		
+	}
+	
+	// override to disable
+	public function GMMovement()
+	{
+		if ( gravity != 0 )
+		{
+			hspeed += dcos( gravity_direction ) * ( gravity * timescale );
+			vspeed -= dsin( gravity_direction) * ( gravity * timescale );
+		}
+		if ( hspeed != 0 )
+			x += ( hspeed * timescale );
+		if ( vspeed != 0 )
+			y += ( vspeed * timescale );
 	}
 	
 	public function GMAlarms()
@@ -214,10 +223,20 @@ public class GMObject // extends Sprite
 		GM.internaldrawvalign = _v;
 	}
 	
-	public static function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0 )
+	public static function draw_text( _x, _y, _text, _alpha = null )
 	{
-		GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle );
-		return;
+		draw_text_transformed( _x, _y, _text, 1, 1, 0, _alpha );
+	}
+	
+	public static function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0, _alpha = null )
+	{
+		
+		//GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle, _alpha );
+	}
+	
+	public static function font_add_sprite( _spr, _first, _prop, _sep )
+	{
+		
 	}
 	
 	
@@ -300,7 +319,7 @@ public class GMObject // extends Sprite
 	public static function point_direction( _x1, _y1, _x2, _y2 )
 	{
 		var xx = _x2 - _x1;
-		var yy = _y2 - _y1;
+		var yy = _y1 - _y2;
 		return Math.floor( ( Math.round( Math.atan2( yy, xx ) / ( 2 * Math.PI / 360 ) ) + 360) % 360 );
 	}
 	
@@ -378,6 +397,16 @@ public class GMObject // extends Sprite
 			return global[sprname];
 		GM.Log( "sprite_verify: cloning sprite " + sprname );
 		return GM.AddSprite_Sprite( sprname, _spr );
+	}
+	
+	// Function_String
+	
+	public function ord( _str )
+	{
+		if ( !_str || _str == "" )
+			return 0;
+		var code = _str.charCodeAt( 0 );
+		return code;
 	}
 	
 	// Function_Texture
@@ -501,20 +530,16 @@ public class GMObject // extends Sprite
 	
 	public static function get mouse_x()
 	{
-		if ( !GM.internalrendertarget )
-			return 0;
-		var _xx = GM.internalrendertarget.mouseX;
-		
-		return _xx;
+		if ( GM.internalrendertarget )
+			return GM.internalrendertarget.mouseX;
+		return GM.container.mouseX;
 	}
 	
 	public static function get mouse_y()
 	{
-		if ( !GM.internalrendertarget )
-			return 0;
-		var _yy = GM.internalrendertarget.mouseY;
-		
-		return _yy;
+		if ( GM.internalrendertarget )
+			return GM.internalrendertarget.mouseY;
+		return GM.container.mouseY;
 	}
 	
 	public static function window_has_focus()
@@ -619,7 +644,7 @@ public class GMObject // extends Sprite
 	
 	public function is_array( val )
 	{
-		return ( val && ( val.constructor == Array ) );
+		return ( val && ( val is Array ) );
 	}
 	
 	public function script_execute( scr, arg )
@@ -764,6 +789,8 @@ public class GMObject // extends Sprite
 		GM.internalrendertarget.addChild( _newcont );
 		GM.graphics = _newcont.graphics;
 		GM.g_BlendMode = bm;
+		//if ( bm == BlendMode.NORMAL )
+		//	_newcont.cacheAsBitmap = true;
 	}
 	
 	public static function gpu_set_fog( on, col = c_white, _start = 0, _end = 0 )
@@ -889,7 +916,6 @@ public class GMObject // extends Sprite
 		return GM.InternalAudioStop( _sound );
 	}
 }
-
 
 
 } // package

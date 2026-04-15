@@ -76,7 +76,7 @@ public class gml
 	
 	public static function lengthdir_y( dis, dir )
 	{
-		return dsin( dir ) * dis;
+		return -dsin( dir ) * dis;
 	}
 	
 	public static function point_direction( x1, y1, x2, y2 )
