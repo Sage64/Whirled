@@ -180,6 +180,8 @@ public class GMBody extends GMObject
 		AddMemory( "gm", 1 ); // is a "GM" avatar
 		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
+		AddMemory( "gm.version", 0 );
+		AddMemory( "gm.purchase_version", -1 );
 		
 		// mystates["gm_devmode"] = AddState( "DevMode", true );
 		// mystates["gm_devmode"].hidden = true;
@@ -301,13 +303,27 @@ public class GMBody extends GMObject
 	
 	public function SetVersion( version = 0 )
 	{
-		AddMemory( "gm.version", version );
-		AddMemory( "gm.purchase_version", version );
+		var _current = GetMemory( "gm.version" );
+		var _bought = GetMemory( "gm.purchase_version" );
 		
-		if ( version > GetMemory( "gm.version" ) )
+		if ( _bought == -1 )
+		{
+			SetMemory( "gm.purchase_version", version );
+			_bought = version;
+		}
+		
+		if ( version > _current )
 		{
 			GMControl.Log( "new version!" );
 		}
+		if ( version > _bought )
+		{
+			GMControl.Log( "you own version " + _bought );
+		}
+		
+		GMControl.Log( "purchase_version: " + _bought );
+		GMControl.Log( "current: " + _current );
+		GMControl.Log( "release: " + version );
 		SetMemory( "gm.version", version );
 	}
 	
@@ -418,12 +434,12 @@ public class GMBody extends GMObject
 		isSleeping = ctrl.isSleeping();
 		orientation = ctrl.getOrientation();
 		
-		direction = orientation - 90; //90 - orientation;
+		direction = orientation - 90;
 		
 		if ( GMControl.debug )
 		{
 			direction = point_direction( 0, 0, container.mouseX / container.scaleX, container.mouseY / container.scaleY );
-			trace( direction );
+			// trace( direction );
 			GMControl.debugMove = !GMControl.debugMove;
 			isMoving = GMControl.debugMove;
 		}
@@ -547,19 +563,19 @@ public class GMBody extends GMObject
 		POSITION
 	*/
 	
-	public function MoveTo( _x, _y, _z, _o = 0 )
+	public function MoveTo( _x, _y, _z, _dir = 0 )
 	{
 		if ( ctrl )
 		{
-			ctrl.setPixelLocation( _x, _y, _z, _o );
+			ctrl.setPixelLocation( _x, _y, _z, 90-_dir );
 		}
 	}
-	public function MoveTo_Speed( _spd, _x, _y, _z, _o = 0 )
+	public function MoveTo_Speed( _spd, _x, _y, _z, _dir = 0 )
 	{
 		if ( ctrl )
 		{
 			ctrl.setMoveSpeed( _spd );
-			ctrl.setPixelLocation( _x, _y, _z, _o );
+			MoveTo( _x, _y, _z, _dir );
 			ctrl.setMoveSpeed( moveSpeedReal );
 		}
 	}
@@ -1271,7 +1287,9 @@ public class GMBody extends GMObject
 		memory.name = key;
 		var memval;
 		if ( ctrl )
+		{
 			memval = ctrl.getMemory( key, null );
+		}
 		else
 		{
 			GMControl.Warn( "AddMemory: NO CTRL!" );
@@ -1280,13 +1298,14 @@ public class GMBody extends GMObject
 		if ( memval == null )
 		{
 			memval = defaultval;
+			GMControl.Log( "Adding memory \"" + key + "\", value: " + memval );
 		}
 		else
 		{
 			// defaultval = memval;
+			GMControl.Log( "Adding memory \"" + key + "\", value: " + memval + " (default: " + defaultval + ")" );
 		}
 		
-		GMControl.Log( "Adding memory \"" + key + "\", value: " + memval + " (default: " + defaultval + ")" );
 		
 		memory.value = memval;
 		memory.func = func;

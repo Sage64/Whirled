@@ -34,6 +34,7 @@ public class GM extends EventDispatcher
 	public static var root;
 	
 	public static var media;
+	public static var stage;
 	
 	public static var container; // primary surface
 	public static var overlay; // "HUD" surface ranging from 0,0 at the top-left to stageW/H at the bottom right
@@ -83,11 +84,14 @@ public class GM extends EventDispatcher
 	
 	public static var g_GlobalColorTransform = new ColorTransform();
 	
+	public static var g_Matrix = new Matrix();
+	
+	public static var g_pIOManager = GMIOManager;
 	public static var g_KeyDown = new Array( 256 );
 	public static var g_KeyPressed = new Array( 256 );
-	public static var g_KeyReleased = new Array( 256 );
+	public static var g_KeyUp = new Array( 256 );
 	
-	public static var g_Matrix = new Matrix();
+	//public static var g_pInstanceManager = new GMInstanceManager();
 	
 	// Globals
 	
@@ -139,6 +143,7 @@ public class GM extends EventDispatcher
 		Log( "GM Init" );
 		GM.media = _media;
 		GM.root = _media;
+		GM.stage = _media.stage;
 		
 		if ( _width != null )
 			stageW = _width;
@@ -160,7 +165,6 @@ public class GM extends EventDispatcher
 		if ( !GM.gm )
 			GM.gm = true;
 	}
-	
 	/*
 		EVENT PROCESSING
 	*/
@@ -438,30 +442,12 @@ public class GM extends EventDispatcher
 	
 	public static function GMKeyboardDown( ev )
 	{
-		var keycode = ev.keyCode;
-		var charcode = ev.charCode;
-		// GM.Log( "GMKeyboardDown: " + charcode );
-		
-		if ( keycode < 0 || keycode > 255 )
-			return;
-		if ( !g_KeyDown[keycode] )
-		{
-			//Log( "key down" );
-			g_KeyDown[keycode] = true;
-		}
+		return g_pIOManager.GMKeyboardDown( ev );
 	}
 	
 	public static function GMKeyboardUp( ev )
 	{
-		var keycode = ev.keyCode;
-		var charcode = ev.charCode;
-		if ( keycode < 0 || keycode > 255 )
-			return;
-		if ( g_KeyDown[keycode] )
-		{
-			//Log( "key up" );
-			g_KeyDown[keycode] = false;
-		}
+		return g_pIOManager.GMKeyboardUp( ev );
 	}
 	
 	public static function GMClicked( ev )
@@ -469,9 +455,14 @@ public class GM extends EventDispatcher
 		
 	}
 	
-	public static function GMMouse( ev )
+	public static function GMMouseDown( ev )
 	{
-		
+		return g_pIOManager.GMMouseDown( ev );
+	}
+	
+	public static function GMMouseUp( ev )
+	{
+		return g_pIOManager.GMMouseUp( ev );
 	}
 	
 	
@@ -566,6 +557,9 @@ public class GM extends EventDispatcher
 		
 		if ( controlPanel )
 			controlPanel.Step();
+		
+		g_pIOManager.StartStep();
+		
 		
 		for ( instance_index = instances.length - 1; instance_index >= 0; --instance_index )
 		{

@@ -13,12 +13,12 @@ import flash.filters.*;
 import flash.geom.*;
 import flash.text.*;
 
-import com.threerings.text.TextFieldUtil;
+import com.threerings.text.*;
 import com.whirled.*;
 
-public class GMObject // extends Sprite
+public class GMObject
 {
-	// public var parent;
+	public var parent;
 	public var name = "GMObject";
 	public var x = 0;
 	public var y = 0;
@@ -121,10 +121,9 @@ public class GMObject // extends Sprite
 	public function GMStep()
 	{
 		if ( true )
-			GMMovement();
+		GMMovement();
 		
-		if ( true )
-			GMAlarms();
+		GMAlarms();
 		
 		Step();
 		
@@ -137,7 +136,6 @@ public class GMObject // extends Sprite
 			}
 			image_index = ( image_index % image_number );
 		}
-		
 	}
 	
 	// override to disable
@@ -145,13 +143,13 @@ public class GMObject // extends Sprite
 	{
 		if ( gravity != 0 )
 		{
-			hspeed += dcos( gravity_direction ) * ( gravity * timescale );
-			vspeed -= dsin( gravity_direction) * ( gravity * timescale );
+			hspeed += dcos( gravity_direction ) * ( gravity );
+			vspeed -= dsin( gravity_direction) * ( gravity );
 		}
 		if ( hspeed != 0 )
-			x += ( hspeed * timescale );
+			x += ( hspeed );
 		if ( vspeed != 0 )
-			y += ( vspeed * timescale );
+			y += ( vspeed );
 	}
 	
 	public function GMAlarms()
@@ -208,367 +206,407 @@ public class GMObject // extends Sprite
 	
 	
 	// Function_Font
-	
-	public static function draw_set_font( _fnt )
 	{
-		GM.internaldrawfont = _fnt;
-	}
-	
-	public static function draw_set_halign( _h = fa_left )
-	{
-		GM.internaldrawhalign = _h;
-	}
-	public static function draw_set_valign( _v = fa_top )
-	{
-		GM.internaldrawvalign = _v;
-	}
-	
-	public static function draw_text( _x, _y, _text, _alpha = null )
-	{
-		draw_text_transformed( _x, _y, _text, 1, 1, 0, _alpha );
-	}
-	
-	public static function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0, _alpha = null )
-	{
+		public static function draw_set_font( _fnt )
+		{
+			GM.internaldrawfont = _fnt;
+		}
 		
-		//GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle, _alpha );
-	}
-	
-	public static function font_add_sprite( _spr, _first, _prop, _sep )
-	{
+		public static function draw_set_halign( _h = fa_left )
+		{
+			GM.internaldrawhalign = _h;
+		}
+		public static function draw_set_valign( _v = fa_top )
+		{
+			GM.internaldrawvalign = _v;
+		}
 		
+		public static function draw_text( _x, _y, _text, _alpha = null )
+		{
+			draw_text_transformed( _x, _y, _text, 1, 1, 0, _alpha );
+		}
+		
+		public static function draw_text_transformed( _x, _y, _text, _xscale = 1, _yscale = 1, _angle = 0, _alpha = null )
+		{
+			
+			//GM.InternalTextDraw( _x, _y, _text, _xscale, _yscale, _angle, _alpha );
+		}
+		
+		public static function font_add_sprite( _spr, _first, _prop, _sep )
+		{
+			
+		}
 	}
-	
 	
 	// Function_Graphics
 	
-	
 	// Function_Instance
-	
-	public function instance_destroy( _inst = null )
 	{
-		if ( _inst == null )
-			_inst = this;
-		return GM.InternalInstanceDestroy( _inst );
-	}
-	
-	public static function instance_exists( _obj )
-	{
-		if ( !_obj )
+		public function instance_destroy( _inst = null )
+		{
+			if ( _inst == null )
+				_inst = this;
+			return GM.InternalInstanceDestroy( _inst );
+		}
+		
+		public static function instance_exists( _obj )
+		{
+			if ( !_obj )
+				return false;
+			if ( _obj == 1 )
+				return true;
+			if ( _obj )
+			{
+				return _obj.exists;
+			}
 			return false;
-		if ( _obj == 1 )
-			return true;
-		if ( _obj )
-		{
-			return _obj.exists;
 		}
-		return false;
+		
+		// Set the "current" sprite for this object;
+		public function sprite_set( sprite_ref )
+		{
+			if ( sprite_ref == -1 )
+				sprite_ref = null;
+			if ( sprite_ref == sprite_current )
+			{
+				// trace( "no change" );
+				return;
+			}
+			
+			if ( sprite_current )
+			{
+				sprite_current = null;
+				image_number = 0;
+			}
+			
+			if ( sprite_ref )
+			{
+				sprite_current = sprite_ref;
+				image_number = sprite_ref.count;
+			}
+		}
 	}
 	
-	// Set the "current" sprite for this object;
-	public function sprite_set( sprite_ref )
+	// Function_IO
 	{
-		if ( sprite_ref == -1 )
-			sprite_ref = null;
-		if ( sprite_ref == sprite_current )
+		public static const vk_none = 0;
+		public static const mb_left = 1;
+		public static const mb_right = 2;
+		public static const mb_middle = 4;
+		public static const mb_side1 = 5;
+		public static const mb_side2 = 6;
+		// 
+		public static const vk_escape = 27;
+		public static const vk_space = 32;
+		public static const vk_pageup = 33;
+		public static const vk_pagedown = 34;
+		public static const vk_left = 37;
+		public static const vk_up = 38;
+		public static const vk_right = 39;
+		public static const vk_down = 40;
+		
+		public static const vk_anykey = 255;
+		
+		public static function io_clear()
 		{
-			// trace( "no change" );
-			return;
+			return ( GM.g_pIOManager.IO_Clear() );
 		}
 		
-		if ( sprite_current )
+		public static function keyboard_check( key = 0 )
 		{
-			sprite_current = null;
-			image_number = 0;
+			return ( GM.g_pIOManager.KeyDown[key] );
 		}
 		
-		if ( sprite_ref )
+		public static function keyboard_check_pressed( key = 0 )
 		{
-			sprite_current = sprite_ref;
-			image_number = sprite_ref.count;
+			return ( GM.g_pIOManager.KeyPressed[key] );
+		}
+		
+		public static function keyboard_check_released( key = 0 )
+		{
+			return ( GM.g_pIOManager.KeyUp[key] );
+		}
+		
+		public static function keyboard_check_direct( key = 0 )
+		{
+			return ( GM.g_pIOManager.KeyDown[key] );
+		}
+		
+		public static const mouse_check_button = keyboard_check;
+		public static const mouse_check_button_pressed = keyboard_check_pressed;
+		public static const mouse_check_button_released = keyboard_check_released;
+		
+		public static function get mouse_x()
+		{
+			if ( GM.internalrendertarget )
+				return GM.internalrendertarget.mouseX;
+			return GM.container.mouseX;
+		}
+		
+		public static function get mouse_y()
+		{
+			if ( GM.internalrendertarget )
+				return GM.internalrendertarget.mouseY;
+			return GM.container.mouseY;
+		}
+		
+		public static function window_has_focus()
+		{
+			try
+			{
+				if ( GM.media && GM.media.stage )
+				{
+					var focus = GM.media.stage.focus;
+					if ( focus == GMControl.popup_surface )
+						return true;
+					if ( focus == GM.media.stage )
+						return true;
+				}
+			}
+			catch(e)
+			{
+				return null;
+			}
+			return false;
+		}
+		
+		public static function window_mouse_get_x()
+		{
+			
+		}
+		
+		public static function window_mouse_get_y()
+		{
+			
 		}
 	}
 	
 	// Function_Layer
-	
-	public static function instance_create( _x, _y, _obj, _basis = null )
 	{
-		var inst = GM.AddInstance( _x, _y, _obj, _basis );
-		inst.Create();
-		return inst;
+		public static function instance_create( _x, _y, _obj, _basis = null )
+		{
+			var inst = GM.AddInstance( _x, _y, _obj, _basis );
+			inst.Create();
+			return inst;
+		}
+		
+		public static function instance_create_depth( _x = 0, _y = 0, _depth = 0, _obj = -1, _basis = null )
+		{
+			var inst = GM.AddInstance( _x, _y, _obj, _basis );
+			inst.depth = _depth;
+			inst.Create();
+			return inst;
+		}
+		
+		public static function instance_create_layer( _x = 0, _y = 0, _layer = 0, _obj = -1, _basis = null )
+		{
+			var inst = GM.AddInstance( _x, _y, _obj, _basis );
+			inst.Create();
+			return inst;
+		}
 	}
-	
-	public static function instance_create_depth( _x = 0, _y = 0, _depth = 0, _obj = -1, _basis = null )
-	{
-		var inst = GM.AddInstance( _x, _y, _obj, _basis );
-		inst.depth = _depth;
-		inst.Create();
-		return inst;
-	}
-	
-	public static function instance_create_layer( _x = 0, _y = 0, _layer = 0, _obj = -1, _basis = null )
-	{
-		var inst = GM.AddInstance( _x, _y, _obj, _basis );
-		inst.Create();
-		return inst;
-	}
-	
 	
 	// Function_Maths
-	
-	public static function point_direction( _x1, _y1, _x2, _y2 )
 	{
-		var xx = _x2 - _x1;
-		var yy = _y1 - _y2;
-		return Math.floor( ( Math.round( Math.atan2( yy, xx ) / ( 2 * Math.PI / 360 ) ) + 360) % 360 );
+		public static function point_direction( _x1, _y1, _x2, _y2 )
+		{
+			var xx = _x2 - _x1;
+			var yy = _y1 - _y2;
+			return Math.floor( ( Math.round( Math.atan2( yy, xx ) / ( 2 * Math.PI / 360 ) ) + 360) % 360 );
+		}
+		
+		public static function point_distance( _x1, _y1, _x2, _y2 )
+		{
+			var dx = _x2 - _x1;
+			var dy = _y2 - _y1;
+			return Math.sqrt( ( dx*dx ) + ( dy*dy ) );
+		}
 	}
-	
-	public static function point_distance( _x1, _y1, _x2, _y2 )
-	{
-		var dx = _x2 - _x1;
-		var dy = _y2 - _y1;
-		return Math.sqrt( ( dx*dx ) + ( dy*dy ) );
-	}
-	
 	
 	// Function_Sprite
-	
-	public static function sprite_get_name( _spr )
 	{
-		if ( _spr != null )
-			return _spr.name;
-		return "undefined";
-	}
-	
-	public static function sprite_get_width( _spr )
-	{
-		if ( _spr != null )
-			return _spr.width;
-		return 0;
-	}
-	
-	public static function sprite_get_height( _spr )
-	{
-		if ( _spr != null )
-			return _spr.height;
-		return 0;
-	}
-	
-	public static function sprite_get_number( _spr )
-	{
-		if ( _spr != null )
-			return _spr.count;
-		return 0;
-	}
-	
-	public static function sprite_get_xoffset( _spr )
-	{
-		if ( _spr != null )
-			return _spr.x;
-		return 0;
-	}
-	
-	public static function sprite_get_yoffset( _spr )
-	{
-		if ( _spr != null )
-			return _spr.y;
-		return 0;
-	}
-	
-	public static function sprite_create_from_surface( _surf, _x, _y, _w, _h, _removeback = false, _smooth = false, _xoff = 0, _yoff = 0 )
-	{
-		return;
-		var spr = {};
-		//var _spr = new GMSprite();
-		_spr.width = _w;
-		_spr.height = _h;
-		_spr.x = _xoff;
-		_spr.y = _yoff;
+		public static function sprite_get_name( _spr )
+		{
+			if ( _spr != null )
+				return _spr.name;
+			return "undefined";
+		}
 		
-	}
-	
-	// If this sprite exists but I don't have it, clone it (e.g remote sprite, added wrongly, etc)
-	public static function sprite_verify( _spr )
-	{
-		if ( !_spr )
-			return -1;
-		var sprname = sprite_get_name( _spr );
-		if ( global[sprname] )
-			return global[sprname];
-		GM.Log( "sprite_verify: cloning sprite " + sprname );
-		return GM.AddSprite_Sprite( sprname, _spr );
+		public static function sprite_get_width( _spr )
+		{
+			if ( _spr != null )
+				return _spr.width;
+			return 0;
+		}
+		
+		public static function sprite_get_height( _spr )
+		{
+			if ( _spr != null )
+				return _spr.height;
+			return 0;
+		}
+		
+		public static function sprite_get_number( _spr )
+		{
+			if ( _spr != null )
+				return _spr.count;
+			return 0;
+		}
+		
+		public static function sprite_get_xoffset( _spr )
+		{
+			if ( _spr != null )
+				return _spr.x;
+			return 0;
+		}
+		
+		public static function sprite_get_yoffset( _spr )
+		{
+			if ( _spr != null )
+				return _spr.y;
+			return 0;
+		}
+		
+		public static function sprite_create_from_surface( _surf, _x, _y, _w, _h, _removeback = false, _smooth = false, _xoff = 0, _yoff = 0 )
+		{
+			return;
+			var spr = {};
+			//var _spr = new GMSprite();
+			_spr.width = _w;
+			_spr.height = _h;
+			_spr.x = _xoff;
+			_spr.y = _yoff;
+			
+		}
+		
+		// If this sprite exists but I don't have it, clone it (e.g remote sprite, added wrongly, etc)
+		public static function sprite_verify( _spr )
+		{
+			if ( !_spr )
+				return -1;
+			var sprname = sprite_get_name( _spr );
+			if ( global[sprname] )
+				return global[sprname];
+			GM.Log( "sprite_verify: cloning sprite " + sprname );
+			return GM.AddSprite_Sprite( sprname, _spr );
+		}
 	}
 	
 	// Function_String
-	
-	public function ord( _str )
 	{
-		if ( !_str || _str == "" )
-			return 0;
-		var code = _str.charCodeAt( 0 );
-		return code;
+		public function ord( _str )
+		{
+			if ( !_str || _str == "" )
+				return 0;
+			var code = _str.charCodeAt( 0 );
+			return code;
+		}
 	}
 	
 	// Function_Texture
-	
-	public function draw_self()
 	{
-		var _inst = this;
-		var _spr = _inst.sprite_current;
-		if ( _spr == null || _spr < 0 )
-			return;
-		var _subimg = ( Math.floor( _inst.image_index ) % _spr.count );
-		if ( _subimg < 0 )
-			_subimg += _spr.count;
-		_spr.Draw( _subimg, _inst.x, _inst.y, _inst.image_xscale, _inst.image_yscale, _inst.image_angle, _inst.image_blend, _inst.image_alpha );
+		public function draw_self()
+		{
+			var _inst = this;
+			var _spr = _inst.sprite_current;
+			if ( _spr == null || _spr < 0 )
+				return;
+			var _subimg = ( Math.floor( _inst.image_index ) % _spr.count );
+			if ( _subimg < 0 )
+				_subimg += _spr.count;
+			_spr.Draw( _subimg, _inst.x, _inst.y, _inst.image_xscale, _inst.image_yscale, _inst.image_angle, _inst.image_blend, _inst.image_alpha );
+		}
+		
+		public function draw_sprite( _spr, _subimg, _x, _y )
+		{
+			if ( _spr == null || _spr < 0 )
+				return;
+			var _subimg = ( _subimg % _spr.count );
+			if ( _subimg < 0 )
+				_subimg += _spr.count;
+			_spr.DrawSimple( _subimg, _x, _y, GM.g_GlobalAlpha );
+		}
+		
+		public function draw_sprite_ext( _spr, _subimg, _x, _y, _xscale = 1, _yscale = 1, _ang = 0, _col = 0xFFFFFF, _alpha = null )
+		{
+			if ( _spr == null || _spr < 0 )
+				return;
+			_subimg = ( _subimg % _spr.count );
+			if ( _subimg < 0 )
+				_subimg += _spr.count;
+			if ( _alpha == null )
+				_alpha = GM.g_GlobalAlpha;
+			_spr.Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
+		}
+		
+		public function draw_sprite_pos( _spr, _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha = null )
+		{
+			if ( _spr == null || _spr < 0 )
+				return;
+			_subimg = ( _subimg % _spr.count );
+			if ( _subimg < 0 )
+				_subimg += _spr.count;
+			if ( _alpha == null )
+				_alpha = GM.g_GlobalAlpha;
+			_spr.DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
+		}
+		
+		public function draw_sprite_part_ext( _spr, _subimg, _left, _top, _width, _height, _x, _y, _xscale = 1, _yscale = 1, _col = 0xFFFFFF, _alpha = null )
+		{
+			if ( _spr == null || _spr < 0 )
+				return;
+			var _subimg = ( _subimg % _spr.count );
+			if ( _subimg < 0 )
+				_subimg += _spr.count;
+			if ( _alpha == null )
+				_alpha = GM.g_GlobalAlpha;
+			var _img = _spr.GetImage( _subimg );
+			var _bmd = _img.bitmapdata;
+			if ( !_bmd )
+				return;
+			GM.Graphics_DrawPart( _img, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha );
+		}
 	}
-	
-	public function draw_sprite( _spr, _subimg, _x, _y )
-	{
-		if ( _spr == null || _spr < 0 )
-			return;
-		var _subimg = ( _subimg % _spr.count );
-		if ( _subimg < 0 )
-			_subimg += _spr.count;
-		_spr.DrawSimple( _subimg, _x, _y, GM.g_GlobalAlpha );
-	}
-	
-	public function draw_sprite_ext( _spr, _subimg, _x, _y, _xscale = 1, _yscale = 1, _ang = 0, _col = 0xFFFFFF, _alpha = null )
-	{
-		if ( _spr == null || _spr < 0 )
-			return;
-		_subimg = ( _subimg % _spr.count );
-		if ( _subimg < 0 )
-			_subimg += _spr.count;
-		if ( _alpha == null )
-			_alpha = GM.g_GlobalAlpha;
-		_spr.Draw( _subimg, _x, _y, _xscale, _yscale, _ang, _col, _alpha );
-	}
-	
-	public function draw_sprite_pos( _spr, _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha = null )
-	{
-		if ( _spr == null || _spr < 0 )
-			return;
-		_subimg = ( _subimg % _spr.count );
-		if ( _subimg < 0 )
-			_subimg += _spr.count;
-		if ( _alpha == null )
-			_alpha = GM.g_GlobalAlpha;
-		_spr.DrawSimplePos( _subimg, _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4, _alpha );
-	}
-	
-	public function draw_sprite_part_ext( _spr, _subimg, _left, _top, _width, _height, _x, _y, _xscale = 1, _yscale = 1, _col = 0xFFFFFF, _alpha = null )
-	{
-		if ( _spr == null || _spr < 0 )
-			return;
-		var _subimg = ( _subimg % _spr.count );
-		if ( _subimg < 0 )
-			_subimg += _spr.count;
-		if ( _alpha == null )
-			_alpha = GM.g_GlobalAlpha;
-		var _img = _spr.GetImage( _subimg );
-		var _bmd = _img.bitmapdata;
-		if ( !_bmd )
-			return;
-		GM.Graphics_DrawPart( _img, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha );
-	}
-	
 	
 	// yyInstance
-	
-	public function set sprite_index( _ref )
 	{
-		// sprite_current = _ref;
-		sprite_set( _ref );
-	}
-	
-	public function get sprite_index()
-	{
-		return sprite_current;
-	}
-	
-	
-	public function get sprite_width()
-	{
-		return ( sprite_current ) ? ( sprite_current.width * image_xscale ) : 0;
-	}
-	
-	public function get sprite_height()
-	{
-		return ( sprite_current ) ? ( sprite_current.height * image_yscale ) : 0;
-	}
-	
-	
-	public function get sprite_xoffset()
-	{
-		return ( sprite_current ) ? ( sprite_current.x * image_xscale ) : 0;
-	}
-	
-	public function get sprite_yoffset()
-	{
-		return ( sprite_current ) ? ( sprite_current.y * image_yscale ) : 0;
-	}
-	
-	// yyIOManager
-	
-	public static function keyboard_check( key = 0 )
-	{
-		if ( key < 0 || key > 255 )
-			return false;
-		return ( GM.g_KeyDown[key] ) ? true : false;
-	}
-	
-	public static function io_clear()
-	{
-		for ( var i = 0; i < 256; ++i )
+		public function set sprite_index( _ref )
 		{
-			GM.g_KeyDown[i] = false;
-			GM.g_KeyPressed[i] = false;
-			GM.g_KeyReleased[i] = false;
+			// sprite_current = _ref;
+			sprite_set( _ref );
 		}
-	}
-	
-	public static function get mouse_x()
-	{
-		if ( GM.internalrendertarget )
-			return GM.internalrendertarget.mouseX;
-		return GM.container.mouseX;
-	}
-	
-	public static function get mouse_y()
-	{
-		if ( GM.internalrendertarget )
-			return GM.internalrendertarget.mouseY;
-		return GM.container.mouseY;
-	}
-	
-	public static function window_has_focus()
-	{
-		try
-		{
-			if ( GM.media && GM.media.stage )
-			{
-				var _focus = GM.media.stage.focus;
-				if ( _focus == GMControl.popup_surface )
-					return true;
-			}
-		}
-		catch(e)
-		{
-			return null;
-		}
-		return false;
-	}
-	
-	public static function window_mouse_get_x()
-	{
 		
+		public function get sprite_index()
+		{
+			return sprite_current;
+		}
+		
+		
+		public function get sprite_width()
+		{
+			return ( sprite_current ) ? ( sprite_current.width * image_xscale ) : 0;
+		}
+		
+		public function get sprite_height()
+		{
+			return ( sprite_current ) ? ( sprite_current.height * image_yscale ) : 0;
+		}
+		
+		
+		public function get sprite_xoffset()
+		{
+			return ( sprite_current ) ? ( sprite_current.x * image_xscale ) : 0;
+		}
+		
+		public function get sprite_yoffset()
+		{
+			return ( sprite_current ) ? ( sprite_current.y * image_yscale ) : 0;
+		}
 	}
 	
-	public static function window_mouse_get_y()
-	{
-		
-	}
+	
+	
+	
 	
 	
 	
@@ -919,6 +957,3 @@ public class GMObject // extends Sprite
 
 
 } // package
-
-
-
