@@ -8,6 +8,8 @@ import flash.utils.*;
 
 public class PlayerBody extends GMBody
 {
+	public var closePopupWhenDone = false;
+	
 	public var player;
 	public var character;
 	public var rewards = {};
@@ -16,6 +18,9 @@ public class PlayerBody extends GMBody
 	public var newClass = -1;
 	
 	public var gamewindow_obj;
+	public var joinclass_obj;
+	
+	public var taunting = false;
 	
 	public var mouseAim = true;
 	public var aim_mousex = 40;
@@ -35,55 +40,59 @@ public class PlayerBody extends GMBody
 	public function PlayerBody()
 	{
 		super();
-		
-		SetVersion( 0 );
-		
+		SetVersion( 0.2 );
+		// SetCreatorID( 2033 );
 		SetScale( 3 );
-		
-		nametag = 0;
-		
+		// nametag = 0;
 		global.delta_factor = 1;
-		
 		mystates["default"] = AddState( "Default" );
 		
-		// Rewards
-		mymemories["rewards"] = AddMemory( "ganggarrison.rewards", {}, OnRewards );
-		
-		if ( GetMemory( "gm.purchase_version" ) < 10 )
+		// Memories
 		{
-			AddAction( "[Toggle Reward: Gold Weapon]", Action_ToggleReward, "GW" );
+			AddMemory( "ganggarrison.rewards", {}, OnRewards );
+			AddMemory( "ganggarrison.class_select", CLASS_SCOUT, OnStateChanged );
+			AddMemory( "ganggarrison.team_select", TEAM_RED, OnStateChanged );
+			AddMemory( "ganggarrison.mouseaim", 1, OnSetMouseAim );
+			AddMemory( "ganggarrison.inputstate", [ 0, 0, 0 ], OnInputState );
+			memory.dontlog = true;
 		}
 		
-		myactions["input"] = AddAction( "[Open Input]", Action_InputPopup );
-		myactions["teammenu"] = AddAction( "[Change Team]", Action_TeamMenu );
-		myactions["classmenu"] = AddAction( "[Change Class]", Action_JoinClass );
-		if ( true )
+		// States
 		{
-			myactions["scout"] = AddAction( "[Runner]", Action_JoinClass, CLASS_SCOUT );
-			myactions["pyro"] = AddAction( "[Firebug]", Action_JoinClass, CLASS_PYRO );
-			myactions["soldier"] = AddAction( "[Rocketman]", Action_JoinClass, CLASS_SOLDIER );
-			myactions["heavy"] = AddAction( "[Overweight]", Action_JoinClass, CLASS_HEAVY );
-			myactions["demoman"] = AddAction( "[Detonator]", Action_JoinClass, CLASS_DEMOMAN );
-			myactions["medic"] = AddAction( "[Healer]", Action_JoinClass, CLASS_MEDIC );
-			myactions["engineer"] = AddAction( "[Constructor]", Action_JoinClass, CLASS_ENGINEER );
-			myactions["spy"] = AddAction( "[Infiltrator]", Action_JoinClass, CLASS_SPY );
-			myactions["sniper"] = AddAction( "[Rifleman]", Action_JoinClass, CLASS_SNIPER );
+			AddState( "Humiliated" );
+			state.humiliated = true;
+			AddState( "Taunting" );
+			state.taunting = true;
 		}
 		
-		
-		mystates["humiliated"] = AddState( "Humiliated" );
-		state.humiliated = true;
-		
-		myactions["jump"] = AddAction( "[Jump]", Action_Jump );
-		myactions["attack"] = AddAction( "[Fire]", Action_Shoot, 0 );
-		myactions["attack2"] = AddAction( "[Alt. Fire]", Action_Shoot, 1 );
-		myactions["taunt"] = AddAction( "[Taunt]", Action_Taunt );
-		
-		mymemories["class_select"] = AddMemory( "ganggarrison.class_select", CLASS_SCOUT, OnStateChanged );
-		mymemories["team_select"] = AddMemory( "ganggarrison.team_select", TEAM_RED, OnStateChanged );
-		
-		mymemories["inputstate"] = AddMemory( "ganggarrison.inputstate", [ 0, 0, 0 ], OnInputState );
-		memory.dontlog = true;
+		// Actions
+		{
+			if ( GetMemory( "gm.purchase_version" ) < 1 )
+			{
+				AddAction( "[Toggle Reward: Gold Weapon]", Action_ToggleReward, "GW" );
+			}
+			AddAction_ToggleMemory( "[Toggle Mouse Aim]", "ganggarrison.mouseaim"  );
+			AddAction( "[Open Input]", Action_InputPopup );
+			AddAction( "[Change Team]", Action_TeamMenu );
+			AddAction( "[Change Class]", Action_JoinClass );
+			if ( false )
+			{
+				myactions["joinclass scout"] = AddAction( "[Runner]", Action_JoinClass, CLASS_SCOUT );
+				myactions["joinclass pyro"] = AddAction( "[Firebug]", Action_JoinClass, CLASS_PYRO );
+				myactions["joinclass soldier"] = AddAction( "[Rocketman]", Action_JoinClass, CLASS_SOLDIER );
+				myactions["joinclass heavy"] = AddAction( "[Overweight]", Action_JoinClass, CLASS_HEAVY );
+				myactions["joinclass demoman"] = AddAction( "[Detonator]", Action_JoinClass, CLASS_DEMOMAN );
+				myactions["joinclass medic"] = AddAction( "[Healer]", Action_JoinClass, CLASS_MEDIC );
+				myactions["joinclass engineer"] = AddAction( "[Constructor]", Action_JoinClass, CLASS_ENGINEER );
+				myactions["joinclass spy"] = AddAction( "[Infiltrator]", Action_JoinClass, CLASS_SPY );
+				myactions["joinclass sniper"] = AddAction( "[Rifleman]", Action_JoinClass, CLASS_SNIPER );
+			}
+			AddAction( "[MEDIC!]", Action_ChatBubble, 45 );
+			AddAction( "[Jump]", Action_Jump );
+			AddAction( "[Fire]", Action_Shoot, 0 );
+			AddAction( "[Alt. Fire]", Action_Shoot, 1 );
+			AddAction( "[Taunt]", Action_Taunt );
+		}
 	}
 	
 	override public function Create()
@@ -92,6 +101,10 @@ public class PlayerBody extends GMBody
 		
 		global.gg2Font = font_add_sprite( global.gg2FontS, ord( "!" ), false, 0 );
 		
+		if ( GMControl.isControl )
+		{
+			Action_JoinClass();
+		}
 	}
 	
 	override public function OnStateChanged()
@@ -139,6 +152,7 @@ public class PlayerBody extends GMBody
 			else
 				character.humiliated = false;
 		}
+		taunting = ( curState && curState.taunting ) ? true : false;
 		
 		
 		SetViewOffset( 0, -32 );
@@ -147,7 +161,7 @@ public class PlayerBody extends GMBody
 	override public function OnUpdateLook()
 	{
 		super.OnUpdateLook();
-		if ( ( aimDirection == null ) && instance_exists( character ) )
+		if ( ( !mouseAim || ( aimDirection == null ) ) && instance_exists( character ) )
 		{
 			aim_mousex = character.x + ( 50 * ( hDir > 0 ? 1 : -1 ) );
 			aim_mousey = character.y - 5;
@@ -227,9 +241,13 @@ public class PlayerBody extends GMBody
 		OnStateChanged();
 	}
 	
+	public function OnSetMouseAim( data = null )
+	{
+		mouseAim = ( data ) ? true : false;
+	}
+	
 	public function GetClassObject( classId )
 	{
-		trace( classId );
 		switch ( classId )
 		{
 			case CLASS_SCOUT:
@@ -259,7 +277,10 @@ public class PlayerBody extends GMBody
 		aim_mousex_prev = aim_mousex;
 		aim_mousey_prev = aim_mousey;
 		aim_lerp = 0;
-		aim_dir = data[1];
+		if ( ( data is Array ) && ( data.length > 1 ) )
+		{
+			aim_dir = data[1];
+		}
 	}
 	
 	// Actions
@@ -269,6 +290,10 @@ public class PlayerBody extends GMBody
 		if ( !GMControl.isControl )
 			return;
 		var rewards = GetMemory( "ganggarrison.rewards" );
+		if ( rewards is Object )
+		{}
+		else
+			rewards = {};
 		rewards[reward] = ( rewards[reward] ? null : 1 );
 		SetMemory( "ganggarrison.rewards", rewards );
 	}
@@ -279,7 +304,8 @@ public class PlayerBody extends GMBody
 			return;
 		if ( !instance_exists( gamewindow_obj ) )
 			gamewindow_obj = instance_create_depth( 0, 0, 0, GameWindow );
-		GMControl.DoPopupObject( null, 600, 450 );
+		GMControl.DoPopupObject( 680, 400 );
+		closePopupWhenDone = false;
 	}
 	
 	public function Action_TeamMenu( data = null )
@@ -300,24 +326,44 @@ public class PlayerBody extends GMBody
 			return;
 		if ( data == null )
 		{
-			Action_InputPopup();
+			instance_destroy( joinclass_obj );
+			joinclass_obj = instance_create_depth( 0, 0, 0, ClassSelectController );
+			joinclass_obj.team = player.team;
+			// joinclass_obj.y = 120;
+			// joinclass_obj.alpha = 1;
+			GMControl.DoPopupObject( 680, 240 );
+			closePopupWhenDone = true;
 			return;
 		}
 		SetMemory( "ganggarrison.class_select", data );
 	}
 	
+	public function Action_ChatBubble( data = null )
+	{
+		if ( data == null )
+		{
+			
+		}
+	}
+	
 	public function Action_Jump( data = null )
 	{
+		if ( !instance_exists( character ) )
+			return;
 		
 	}
 	
 	public function Action_Shoot( data = null )
 	{
+		if ( !instance_exists( character ) )
+			return;
 		
 	}
 	
 	public function Action_Taunt( data = null )
 	{
+		if ( !instance_exists( character ) )
+			return;
 		with( character )
 		{
 			taunting = false;
@@ -355,15 +401,35 @@ internal const CHARACTER_ANIMATION_NORMAL = 0;
 internal const CHARACTER_ANIMATION_INTEL = 2;
 internal const CHARACTER_ANIMATION_LEN = 4;
 
-class GameWindow extends GMObject
+class GG2Object extends GMObject
+{
+	
+}
+
+class GameWindow extends GG2Object
 {
 	public var aimx = 0;
 	public var aimy = 0;
 	
+	public function GameWindow()
+	{
+		super();
+		
+		depth = -1000;
+	}
+	
 	override public function Step()
 	{
-		aimx = mouse_x; // GM.container.mouseX;
-		aimy = mouse_y; // GM.container.mouseY;
+		if ( GM.stage.focus == GMControl.popup_surface )
+		{
+			aimx = GMControl.popup_surface.mouseX - ( GMControl.popup_width / 2 ); // GM.container.mouseX;
+			aimy = GMControl.popup_surface.mouseY - ( GMControl.popup_height / 2 ); // GM.container.mouseY;
+		}
+		else
+		{
+			aimx = mouse_x;
+			aimy = mouse_y;
+		}
 	}
 	
 	override public function Draw()
@@ -378,21 +444,250 @@ class GameWindow extends GMObject
 		var ww = GMControl.popup_width;
 		var hh = GMControl.popup_height;
 		draw_set_color( c_black );
-		draw_set_alpha( 0.2 );
+		draw_set_alpha( 1 / 255 );
 		draw_rectangle( 0, 0, ww, hh, false );
-		
-		
 		draw_set_alpha( 1 );
+		
 		draw_set_color( c_white );
-		var xx = aimx;
-		var yy = aimy;
+		var xx = ( GMControl.popup_width / 2 ) + aimx;
+		var yy = ( GMControl.popup_height / 2 ) + aimy;
 		draw_sprite_ext( global.CrosshairS, 0, xx, yy, 1, 1, 0, c_white, 1 );
 	}
 }
 
-// 
+class ClassSelectController extends GG2Object
+{
+	public var team = TEAM_RED;
+	public var ui_mousex = 0;
+	public var ui_mousey = 0;
+	
+	public var alpha = 0.01;
+	
+	public var done = false;
+	public var newclass = -1;
+	public var mousedclass = -1;
+	
+	public var classorder = [
+		CLASS_SCOUT,
+		CLASS_PYRO,
+		CLASS_SOLDIER,
+		CLASS_HEAVY,
+		CLASS_DEMOMAN,
+		CLASS_MEDIC,
+		CLASS_ENGINEER,
+		CLASS_SPY,
+		CLASS_SNIPER,
+		CLASS_NONE,
+	]
+	
+	public var portraits = [
+		global.ScoutPortraitAnimationS,
+		global.PyroPortraitAnimationS,
+		global.SoldierPortraitAnimationS,
+		global.HeavyPortraitAnimationS,
+		global.DemomanPortraitAnimationS,
+		global.MedicPortraitAnimationS,
+		global.EngineerPortraitAnimationS,
+		global.SpyPortraitAnimationS,
+		global.SniperPortraitAnimationS,
+		global.RandomPortraitAnimationS,
+	]
+	
+	public var classCounter = new Array( 10 );
+	
+	public var drawx = [];
+	
+	public var portraitSprite = -1;
+	public var portraitIndex = 0;
+	public var portraitSpeed = ( 0.4 );
+	
+	public var xoffset = 0;
+	public var yoffset = 0;
+	
+	public function ClassSelectController()
+	{
+		super();
+		depth = -1001;
+		sprite_index = global.ClassSelectS;
+	}
+	
+	override public function Cleanup()
+	{
+		
+	}
+	
+	override public function Create()
+	{
+		y = -120;
+		drawx[0] = 24;
+		for ( var i = 1; i < 10; ++i )
+		{
+			drawx[i] = drawx[i-1] + ( ( ( i % 3 ) == 0 ) ? 52 : 40 );
+		}
+	}
+	
+	override public function Step()
+	{
+		var xx, yy, i;
+		
+		if ( done )
+		{
+			if ( alpha > 0.01 )
+				alpha = Math.pow( alpha, Math.pow( 1 / 0.7, global.delta_factor ) );
+			trace( alpha );
+			y -= ( 15 ) * global.delta_factor;
+			if ( alpha <= 0.01 || y < -120  )
+			{
+				instance_destroy();
+				if ( body.closePopupWhenDone )
+					GMControl.ClosePopup();
+				return;
+			}
+		}
+		else
+		{
+			if ( alpha < 0.99 )
+			{
+				alpha = Math.pow( alpha, ( Math.pow( 0.7, global.delta_factor ) ) );
+				if ( alpha > 0.99 )
+					alpha = 0.99;
+			}
+			if ( y < 120 )
+			{
+				y += ( 15 ) * global.delta_factor;
+				if ( y > 120 )
+					y = 120;
+			}
+		}
+		
+		xx = xoffset;
+		yy = yoffset;
+		
+		surface_set_target( GMControl.popup_surface )
+		ui_mousex = mouse_x;
+		ui_mousey = mouse_y;
+		surface_reset_target();
+		
+		newclass = -1;
+		
+		if ( ui_mousey < ( yy + 50 ) )
+		{
+			var x1, y1, x2, i;
+			for ( i = 0; i < 10; ++i )
+			{
+				x1 = xx + drawx[i];
+				x2 = x1 + 36;
+				if ( ( ui_mousex > x1 ) && ( ui_mousex < x2 ) )
+				{
+					newclass = i;
+				} 
+			}
+		}
+		if ( newclass != -1 )
+		{
+			var spr = portraits[newclass];
+			if ( spr != portraitSprite )
+			{
+				portraitSprite = spr;
+				portraitIndex = 0;
+			}
+			
+			if ( mouse_check_button_pressed( mb_left ) )
+			{
+				ChooseClass( classorder[newclass] );
+			}
+		}
+		
+		if ( portraitSprite != -1 )
+		{
+			var len;
+			len = ( sprite_get_number( portraitSprite ) );
+			portraitIndex += ( portraitSpeed ) * global.delta_factor;
+			portraitIndex = min( portraitIndex, ( len / 2 ) - 1 )
+		}
+		
+		if ( keyboard_check_pressed( 48 ) ) // 0
+		{
+			ChooseClass( 0 ); // random
+		}
+		else if ( keyboard_check_pressed( 81 ) ) // Q
+		{
+			
+		}
+		for ( i = 0; i < 9; ++i )
+		{
+			if ( keyboard_check_pressed( 49 + i ) )
+			{
+				ChooseClass( classorder[i] );
+				break;
+			}
+		}
+		
+	}
+	
+	override public function Draw()
+	{
+		surface_set_target( GMControl.popup_surface )
+		DrawMenu();
+		surface_reset_target();
+	}
+	
+	public function DrawMenu()
+	{
+		var xx, yy, xsize, ysize, i;
+		xx = x + xoffset;
+		yy = y + yoffset;
+		
+		xsize = GMControl.popup_width;
+		ysize = GMControl.popup_height;
+		
+		draw_set_alpha( ( alpha < 0.8 ) ? alpha : 0.8 );
+		draw_set_color( c_black );
+		draw_rectangle( 0, 0, xsize, ysize, false );
+		draw_set_alpha( 1 );
+		draw_set_color( c_white );
+		
+		draw_sprite_ext( global.ClassSelectBS, 0, x - 10, yy, max( 0, xsize + 20 ), 1, 0, c_white, alpha );
+		draw_sprite_ext( sprite_index, 0, xx + 400, yy, 1, 1, 0, c_white, alpha );
+		
+		var classId, classConstant;
+		
+		for ( i = 0; i < 9; ++i )
+		{
+			classId = classorder[i];
+			classConstant = classCounter[classId];
+			
+		}
+		
+		// xx = xoffset;
+		// yy = yoffset;
+		yy -= 120;
+		
+		if ( newclass != -1 )
+		{
+			var indexoffset = ( team == TEAM_BLUE ? 10 : 0 );
+			draw_sprite_ext( global.ClassSelectSpritesS, newclass + indexoffset, xx + drawx[newclass], yy, 1, 1, 0, c_white, alpha );
+		}
+		
+		if ( !done && portraitSprite != -1 )
+		{
+			var index = portraitIndex;
+			if ( team == TEAM_BLUE )
+				index += ( sprite_get_number( portraitSprite ) / 2 );
+			draw_sprite_ext( portraitSprite, index, xx + 230, yy + 128, 4, 4, 0, c_white, image_alpha );
+		}
+	}
+	
+	public function ChooseClass( classId = -1 )
+	{
+		if ( classId <= 0 )
+			classId = classorder[irandom( 9 )];
+		body.Action_JoinClass( classId );
+		done = true;
+	}
+}
 
-class GG2Entity extends GMObject
+class GG2Entity extends GG2Object
 {
 	public var team = TEAM_RED;
 	public var teamcolor = c_red;
@@ -466,6 +761,61 @@ class Player extends GG2Entity
 }
 
 
+// BUBBLE
+
+class SpeechBubbleO extends GG2Object
+{
+	public var owner;
+	public var fadeout = false;
+	public var bubbleAlpha = 0;
+	
+	public function SpeechBubbleO()
+	{
+		super();
+		sprite_index = global.BubbleS;
+		
+		visible = false;
+		image_speed = 0;
+	}
+	
+	override public function GMStep()
+	{
+	}
+	
+	override public function Step()
+	{
+		if ( !visible )
+			return;
+		
+		if ( fadeout )
+		{
+			bubbleAlpha -= 0.05 * global.delta_factor;
+			if ( bubbleAlpha <= 0 )
+			{
+				bubbleAlpha = 0;
+				fadeout = false;
+				visible = false;
+				return;
+			}
+		}
+		
+		if ( instance_exists( owner ) )
+		{
+			x = owner.x + 10;
+			y = owner.y - 18;
+			image_alpha = owner.image_alpha * bubbleAlpha;
+		}
+	}
+	
+	override public function Draw()
+	{
+		if ( image_index == 61 )
+			return;
+		else
+			draw_self();
+	}
+}
+
 
 // CHARACTERS
 
@@ -522,6 +872,7 @@ class Character extends GG2Entity
 	public var spriteLeanR;
 	public var spriteIntel;
 	public var spriteDead;
+	public var spriteCrouch;
 	public var humiliationPoses;
 	public var tauntsprite;
 	public var intelSprite;
@@ -542,6 +893,9 @@ class Character extends GG2Entity
 	// sniper
 	public var zoomed = false;
 	// spy
+	public var cloak = false;
+	public var cloakAlpha = 1;
+	public var cloakFlicker = false;
 	
 	// control
 	public var moveStatus = 0;
@@ -553,7 +907,6 @@ class Character extends GG2Entity
 	public var runPower = baseRunPower;
 	public var basemaxspeed;
 	public var highestbasemaxspeed = 9.735;
-	
 	
 	// controls
 	public var aimDirection = 0;
@@ -582,10 +935,18 @@ class Character extends GG2Entity
 	// weapon
 	public var currentWeapon;
 	
+	// bubble
+	public var bubble;
+	
+	// 
+	
 	public function Character()
 	{
 		super();
 		image_speed = 0;
+		
+		bubble = instance_create_depth( 0, 0, -2, SpeechBubbleO );
+		bubble.owner = this;
 		
 		if ( instance_exists( player ) )
 			team = player.team;
@@ -636,19 +997,36 @@ class Character extends GG2Entity
 		
 		var pre = className + teamName;
 		var suf = "S";
-		spriteStand = global[pre + "Stand" + suf];
-		spriteWalk = global[pre + "Walk" + suf];;
-		spriteRun = global[pre + "Run" + suf];
-		spriteJump = global[pre + "Jump" + suf];
-		spriteLeanL = global[pre + "LeanL" + suf];
-		spriteLeanR = global[pre + "LeanR" + suf];
-		spriteIntel = global[pre + "Intel" + suf];
-		spriteDead = global[pre + "Dead" + suf];
-		humiliationPoses = global[pre + "H" + suf];
-		tauntsprite = global[pre + ( goldTaunt ? "GoldWeaponTaunt" : "Taunt" ) + suf];
+		spriteStand = GetCharacterSprite( "Stand" );
+		spriteWalk = GetCharacterSprite( "Walk" )
+		spriteRun = GetCharacterSprite( "Run" );
+		spriteJump = GetCharacterSprite( "Jump" );
+		spriteLeanL = GetCharacterSprite( "LeanL" );
+		spriteLeanR =  GetCharacterSprite( "LeanR" );
+		spriteIntel =  GetCharacterSprite( "Intel" );
+		spriteDead =  GetCharacterSprite( "Dead" );
+		humiliationPoses =  GetCharacterSprite( "H" );
+		tauntsprite =  GetCharacterSprite( ( goldTaunt ? "GoldWeaponTaunt" : "Taunt" ) );
+		
+		// Sniper
+		pre = "Sniper" + teamName;
+		spriteCrouch =  GetCharacterSprite( "Crouch", "Sniper" );
 		
 		if ( instance_exists( currentWeapon ) )
 			currentWeapon.UpdateSprites();
+	}
+	
+	public function GetCharacterSprite( spriteName, className = null )
+	{
+		if ( className == null )
+			className = this.className;
+		var pre = ( className + teamName );
+		var suf = "S";
+		var sprite = global[pre + spriteName + suf];
+		if ( sprite )
+			return sprite;
+		
+		return sprite;
 	}
 	
 	override public function Step()
@@ -656,6 +1034,11 @@ class Character extends GG2Entity
 		CharacterBeginStep();
 		
 		aimDirection = body.aimDirection;//point_direction( x, y, body.aim_mousex, body.aim_mousey );
+		
+		if ( body.taunting )
+			taunting = true;
+		
+		CharacterStep();
 		
 		CharacterEndStep();
 		
@@ -670,16 +1053,36 @@ class Character extends GG2Entity
 	override public function GMMovement()
 	{
 		if ( false )
-		{
 			super.GMMovement();
-		}
 	}
 	
 	public function CharacterBeginStep()
 	{
+		var bby = y - ( sprite_yoffset ) + ( sprite_height );
+		
+		var obstacleBelow;
+		
+		onground = false;
+		obstacleBelow = false;
+		var onNonSurfacingGround = false;
+		
+		obstacleBelow = true;
+		
+		if ( vspeed >= 0 )
+		{
+			if ( obstacleBelow )
+			{
+				onground = true;
+				onNonSurfacingGround = true;
+				moveStatus = 0;
+				doubleJumpUsed = 0;
+			}
+		}	
+		
+		
+		
 		switch( moveStatus )
 		{
-			
 			
 			default:
 				if ( humiliated )
@@ -760,8 +1163,16 @@ class Character extends GG2Entity
 		{
 			animationImage += ( Math.min( Math.abs( hspeed ) , 8 ) * sign( hspeed ) * image_xscale ) * global.delta_factor / 20;
 			animationImage = ( animationImage + sprite_length ) % sprite_length;
-			//trace( animationImage );
 		}
+	}
+	
+	public function CharacterStep()
+	{
+		hspeed = min( abs( hspeed ), 15 ) * sign( hspeed );
+		vspeed = min( abs( vspeed ), 15 ) * sign( vspeed );
+		
+		timeUnscathed = min( timeUnscathed + ( 1 * global.delta_factor ), 10 * 30 );
+		
 	}
 	
 	public function CharacterEndStep()
@@ -786,7 +1197,16 @@ class Character extends GG2Entity
 		{
 			tauntindex += tauntspeed * 0.1 * global.delta_factor;
 			if ( tauntindex >= sprite_get_number( tauntsprite ) )
+			{
 				taunting = false;
+				tauntindex = 0;
+			}
+		}
+		
+		
+		if ( instance_exists( bubble ) )
+		{
+			bubble.Step();
 		}
 	}
 	
@@ -799,9 +1219,12 @@ class Character extends GG2Entity
 		var subimg = animationImage + animationOffset;
 		var overlayList = -1;
 		var noNewAnim = ( humiliated || className == "Querly" );
+		
+		equipmentOffset = 0;
+		
 		if ( zoomed )
 		{
-			sprite = global["Sniper" + teamName + "CrouchS"];
+			sprite = spriteCrouch;
 			animationImage = animationImage % 2;
 			overlayList = crouchOverlays;
 		}
@@ -830,6 +1253,8 @@ class Character extends GG2Entity
 					{
 						sprite = spriteRun;
 						overlayList = runOverlays;
+						if ( onground && ( Math.floor( animationImage ) % 2 ) == 0 )
+							equipmentOffset = -2;
 					}
 				}
 			}
@@ -839,7 +1264,7 @@ class Character extends GG2Entity
 		if ( !noNewAnim && !taunting && !stabbing && !omnomnomnom && ( sprite != sprite_index ) && ( sprite == spriteLeanL || sprite == spriteLeanR ) )
 			yoffset = 6;
 		
-		equipmentOffset = ( ( onground ) && ( sprite == spriteRun ) && ( ( Math.floor( animationImage ) % 2 ) == 0 ) ) ? -2 : 0;
+		//equipmentOffset = ( ( onground ) && ( sprite == spriteRun ) && ( ( Math.floor( animationImage ) % 2 ) == 0 ) ) ? -2 : 0;
 		overlayOffset = equipmentOffset;
 		
 		if ( !noNewAnim )
@@ -878,6 +1303,7 @@ class Character extends GG2Entity
 			if ( zoomed )
 				overlayOffset += 4;
 		}
+		
 		draw_characterpart_ext_overlay( sprite, overlays, gear, subimg, xx, yy, image_xscale, image_yscale, image_angle, image_blend, image_alpha, overlayOffset );
 		if ( drawWeapon )
 			currentWeapon.Draw();
