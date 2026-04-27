@@ -127,15 +127,24 @@ public class GMObject
 		
 		Step();
 		
-		if ( image_speed != 0 && ( image_number > 1 ) )
+		GMAnimate();
+	}
+	
+	public function GMAnimate()
+	{
+		if ( true )
 		{
-			image_index += ( image_speed );
-			if ( image_index >= image_number )
+			if ( image_index < image_number )
 			{
-				OnAnimationEnd();
+				image_index += ( image_speed );
+				if ( image_index >= image_number )
+					OnAnimationEnd();
+				return;
 			}
-			image_index = ( image_index % image_number );
+			image_index += ( image_speed );
+			return;
 		}
+		image_index += ( image_speed ); 
 	}
 	
 	// override to disable
@@ -578,6 +587,8 @@ public class GMObject
 		
 		public function get sprite_index()
 		{
+			if ( sprite_current == null )
+				return -1;
 			return sprite_current;
 		}
 		

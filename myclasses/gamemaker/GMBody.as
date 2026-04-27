@@ -23,17 +23,12 @@
 
 package gamemaker
 {
-//
 import flash.display.*
-//
 import flash.events.*;
-// 
 import flash.filters.*;
-// 
 import flash.geom.*;
-//
 import flash.text.*; 
-//
+import flash.ui.*;
 import flash.utils.Dictionary;
 import flash.utils.getTimer;
 
@@ -183,7 +178,7 @@ public class GMBody extends GMObject
 		AddMemory( "gm.version", 0 );
 		AddMemory( "gm.purchase_version", -1 );
 		
-		// mystates["gm_devmode"] = AddState( "DevMode", true );
+		// mystates["gm_devmode"] = AddState( "DevMode" );
 		// mystates["gm_devmode"].hidden = true;
 		
 		myactions["gm_devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
@@ -439,9 +434,11 @@ public class GMBody extends GMObject
 		if ( GMControl.debug )
 		{
 			direction = point_direction( 0, 0, container.mouseX / container.scaleX, container.mouseY / container.scaleY );
-			// trace( direction );
-			GMControl.debugMove = !GMControl.debugMove;
-			isMoving = GMControl.debugMove;
+			if ( keyboard_check_pressed( Keyboard.F ) )
+			{
+				GMControl.debugMove = !GMControl.debugMove;
+				isMoving = GMControl.debugMove;
+			}
 		}
 		if ( direction < 0 )
 			direction += 360;
@@ -716,8 +713,9 @@ public class GMBody extends GMObject
 	*/
 	
 	// basic state adding function
-	public function AddState( statename, hidden = false )
+	public function AddState( statename )
 	{
+		// var statename = args[0];
 		GMControl.Log( "Adding state \"" + statename + "\"" );
 		state = states[statename];
 		if ( !state )
@@ -737,13 +735,7 @@ public class GMBody extends GMObject
 		state.hideStates = null;
 		state.showActions = null;
 		state.hideActions = null;
-		state.hidden = hidden;
-		
-		state.IsHidden = function()
-		{
-			return hidden;
-		}
-		
+		state.hidden = false;
 		//
 		if ( curState == null )
 		{
@@ -863,7 +855,8 @@ public class GMBody extends GMObject
 		}
 		stateName = event.name;
 		GMControl.Log( "State set to " + stateName );
-		curState = GetState( stateName );
+		state = GetState( stateName );
+		curState = state;
 		trace( prevState );
 		if ( curState )
 		{
@@ -889,14 +882,6 @@ public class GMBody extends GMObject
 	public function OnStateChanged()
 	{
 		// override
-	}
-	
-	public function ApplyState()
-	{
-		stateName = GetStateName();
-		curState = GetState( stateName );
-		stateName = curState.name;
-		
 	}
 	
 	/*

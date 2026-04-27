@@ -64,7 +64,7 @@ public class GMIOManager
 			GM.g_KeyPressed[keycode] = true;
 			GM.g_KeyDown[keycode] = true;
 			updated = true;
-			trace( "key " + keycode + " down" );
+			//trace( "key " + keycode + " down" );
 		}
 	}
 	
@@ -86,7 +86,7 @@ public class GMIOManager
 			GM.g_KeyDown[keycode] = false;
 			GM.g_KeyUp[keycode] = true;
 			updated = true;
-			trace( "key " + keycode + " up" );
+			//trace( "key " + keycode + " up" );
 		}
 	}
 	
@@ -130,7 +130,7 @@ public class GMIOManager
 	
 	public static function IO_Clear()
 	{
-		trace( "IO_Clear()" );
+		//trace( "IO_Clear()" );
 		for ( var i = 0; i < MAX_KEYS; ++i )
 		{
 			// GM.g_KeyDown[i] = false;
@@ -150,7 +150,7 @@ public class GMIOManager
 		else
 			return;
 		
-		trace( "IO_StartStep()" );
+		//trace( "IO_StartStep()" );
 		
 		var pressed, down, released;
 		KeyDown.length = 0;

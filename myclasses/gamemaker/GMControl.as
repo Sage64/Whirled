@@ -342,6 +342,11 @@ public class GMControl extends ActorControl
 		var NewChar = characters[internalname];
 		if ( NewChar == null )
 			NewChar = AddCharacter( dispname, internalname );
+		else
+		{
+			GMControl.Warn( "Body " + dispname + " already exists!" );
+			return;
+		}
 		GMControl.Log( "Adding Body for character '" + dispname + "'" );
 		try
 		{
@@ -617,8 +622,8 @@ public class GMControl extends ActorControl
 	
 	public static function GMKeyboardDown( ev )
 	{
-		//if ( ev.keyCode == 78 ) // N
-		//	GMControl.debug = !GMControl.debug;
+		if ( ev.keyCode == 78 ) // N
+			GMControl.debug = !GMControl.debug;
 		if ( debug )
 			DebugKeyDown( ev );
 		return GM.GMKeyboardDown( ev );
@@ -735,6 +740,9 @@ public class GMControl extends ActorControl
 					GMControlEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
 					break;
 				case Keyboard.D:
+					GMControlEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
+					break;
+				case Keyboard.F:
 					GMControlEvent( new ControlEvent( ControlEvent.APPEARANCE_CHANGED ) );
 					break;
 			}
@@ -964,7 +972,7 @@ public class GMControl extends ActorControl
 				}
 			}
 			
-			if ( true && characterInit < characterList.length )
+			if ( true && ( characterInit < characterList.length ) )
 			{
 				CharacterInitStep();
 				media.gotoAndPlay( 2 );
