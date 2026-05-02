@@ -17,8 +17,6 @@
 	talking to you and just linked it
 	
 	Basic usage relies on extending your own body class from it
-	
-	see GM_ExampleBody.as
 */
 
 package gamemaker
@@ -36,7 +34,7 @@ import com.threerings.util.*
 import com.whirled.*;
 
 // 
-public class GMBody extends GMObject
+public class GMBody extends GMEntity
 {
 	public static const FLAG_HIDENAME = 1 << 0;
 	
@@ -46,22 +44,7 @@ public class GMBody extends GMObject
 	public var use_delta = true; 	// compensate for lag by increasing the timescale
 	
 	// Whirled - Init
-	
-	public var gm = GM;
-	public var media = GMControl.ctrl;
-	public var container = GMControl.container;
-	public var ctrl = GMControl.ctrl;
 	//public var body = this;
-	
-	public var _eventlisteners = {
-		list: [],
-		func: {}
-	 };
-	 
-	public var _eventqueue :Array = [];
-	
-	public var secure = false; // if true, don't share body ref through properties
-	public var customProps = {};
 	
 	public var isMoving = false;
 	public var wasMoving = false;
@@ -111,37 +94,22 @@ public class GMBody extends GMObject
 	public var prevState = null;
 	public var curAction = null;
 	
-	public var states = {}; // Maps.newMapOf( String );
+	public var states = {};
 	public var stateList :Array = [];
 	public var stateName = ""; // current state name
 	public var stateListCurrent :Array = [];
 	public var state; // current state being created by AddState
+	public var mystates = {}; // for creating aliases
 	
-	public var actions = {}; //Maps.newMapOf( String );
+	public var actions = {};
 	public var actionList :Array = [];
 	public var actionName = ""; // current action name
 	public var action; // the current action that caused the event
+	public var myactions = {}; // for creating aliases
 	
-	public var memories = {};
-	public var memoryList = [];
-	public var memory; // the current memory that caused the event
-	
-	// structs for simple state references, e.g mystates["attacking"] = AddState( "Swinging Sword" );
-	public var mystates = {};
-	public var myactions = {};
-	public var mymemories = {};
-	
-	
-	
-	// internal sprite manager
-	
-
 	// Custom nametag
 	public var nametag = null;
 	public var _usenametag;
-	
-	// Avatar common
-	public var scale = 1;
 	
 	// Gamemaker - OLD. Body now extends GMObject
 	/*
@@ -172,16 +140,14 @@ public class GMBody extends GMObject
 		SetMoveSpeed( 3 );
 		SetViewOffset( 0, 0 );
 		
-		AddMemory( "gm", 1 ); // is a "GM" avatar
 		AddMemory( "gm.flags", 0, GMFlagsChanged );
 		AddMemory( "gm.character", null, null );
-		AddMemory( "gm.version", 0 );
-		AddMemory( "gm.purchase_version", -1 );
 		
 		// mystates["gm_devmode"] = AddState( "DevMode" );
 		// mystates["gm_devmode"].hidden = true;
 		
 		myactions["gm_devpanel"] = AddAction( "[GM Control Panel]", Action_OpenControlPanel );
+		myactions["gm_devpanel"].hidden = true;
 		
 		myactions["gm_chatsent"] = AddAction("GMSentChat", GMSentChat, "GMChatSent with null message" );
 		myactions["gm_chatsent"].hidden = true;
@@ -193,7 +159,6 @@ public class GMBody extends GMObject
 		if ( true )
 		{
 			ctrl.registerCustomConfig( GMControl.OpenConfig );
-			myactions["gm_devpanel"].hidden = true;
 		}
 		
 		// Action_OpenControlPanel();
@@ -224,35 +189,6 @@ public class GMBody extends GMObject
 	/*
 		INIT PROCESS
 	*/
-	
-	public function GMControlEvent( event )
-	{
-		GMControl.Log( "Event: " + event.type + ": \"" + event.name + "\", " + event.value );
-		_eventqueue.push( event );
-	}
-	
-	private function GMProcessEvents()
-	{
-		GM.debugTracker = "GMBody.GMProcessEvents";
-		for ( var i = 0; i < _eventqueue.length; ++i )
-		{
-			var event = _eventqueue.shift();
-			if ( !event )
-				continue;
-			GM.debugTracker = "GMBody.GMProcessEvents ( event )";
-			var func = _eventlisteners.func[event.type];
-			if ( !func )
-				continue;
-			try
-			{
-				func( event );
-			}
-			catch(e)
-			{
-				GMControl.Caught(e);
-			}
-		}
-	}
 	
 	// Unsorted Events
 	public function OnSpeak() {}
@@ -296,32 +232,6 @@ public class GMBody extends GMObject
 		}
 	}
 	
-	public function SetVersion( version = 0 )
-	{
-		var _current = GetMemory( "gm.version" );
-		var _bought = GetMemory( "gm.purchase_version" );
-		
-		if ( _bought == -1 )
-		{
-			SetMemory( "gm.purchase_version", version );
-			_bought = version;
-		}
-		
-		if ( version > _current )
-		{
-			GMControl.Log( "new version!" );
-		}
-		if ( version > _bought )
-		{
-			GMControl.Log( "you own version " + _bought );
-		}
-		
-		GMControl.Log( "purchase_version: " + _bought );
-		GMControl.Log( "current: " + _current );
-		GMControl.Log( "release: " + version );
-		SetMemory( "gm.version", version );
-	}
-	
 	/*
 		DEBUG FUNCTIONS
 	*/
@@ -330,23 +240,6 @@ public class GMBody extends GMObject
 	public function DoBodyDebug()
 	{
 		
-	}
-	
-	
-	public function GetName()
-	{
-		if ( GMControl.entityID == null )
-			GMControl.entityID == ctrl.getMyEntityId();
-		if ( GMControl.entityID != null )
-		{
-			var _get = ctrl.getEntityProperty( EntityControl.PROP_NAME, GMControl.entityID )
-			if ( _get != null )
-			{
-				name = String( _get );
-				return name;
-			}
-		}
-		return name + ".GetName()Failed";
 	}
 	
 	public function SetNameTag( text = null )
@@ -366,12 +259,6 @@ public class GMBody extends GMObject
 			text = GetName();
 		nametag.SetText( text );
 		return nametag;
-	}
-	
-	// return custom data from getEntityProperty 
-	public function OnProperty( key = null )
-	{
-		return customProps[key];
 	}
 	
 	/*
@@ -469,7 +356,7 @@ public class GMBody extends GMObject
 		
 		if ( isMoving )
 		{
-			speed = moveSpeed;
+			speed = ctrl.getEntityProperty( EntityControl.PROP_MOVE_SPEED );
 			hspeed = hDir * speed;
 			vspeed = vDir * speed;
 			roomHMove = 0;
@@ -550,12 +437,6 @@ public class GMBody extends GMObject
 		ctrl.setOrientation( dir );
 	}
 	
-	public function SetScale ( amount )
-	{
-		scale = amount;
-		return GMControl.SetScale( amount );
-	}
-	
 	/*
 		POSITION
 	*/
@@ -590,29 +471,25 @@ public class GMBody extends GMObject
 		//	GMControl.Log( "moveSpeedReal = " + moveSpeedReal );
 	}
 	
-	public function GMEntityMoved( event )
+	override public function GMEntityMoved( event )
 	{
-		GMControl.debugTracker = "GMEntityMoved";
+		GMControl.debugTracker = "+GMEntityMoved";
 		if ( event == null )
 			return;
 		var Entity = GMControl.GetEntity( event.name );
 		if ( event.name == GMControl.entityID )
 		{
 			GMControl.debugTracker = "GMEntityMoved - self";
-			// I started to move
 			++movePathClicks;
 			currentPosition = GetPosition();
 			currentPositionReal = GetPositionReal();
-			
 			movePathStart = currentPosition;
 			movePathStartReal = movePathStart;
-			
 			if ( movePathStart == null )
 			{
 				GMControl.Warn( "no start pos! - potentially caused by starting a move immediately before changing rooms" );
 				return;
 			}
-			
 			if ( currentPosition != null )
 			{
 				movePathStartReal = ctrl.getRoomBounds();
@@ -623,10 +500,8 @@ public class GMBody extends GMObject
 					movePathStartReal[2] *= currentPosition[2];
 				}
 			}
-			
 			movePathDest = null;
 			movePathDestReal = null;
-			
 			if ( event.value == null  )
 			{
 				// I arrived at my destination
@@ -635,10 +510,6 @@ public class GMBody extends GMObject
 			}
 			else
 			{
-				// I started moving.
-				// Applies each time you spam click while moving too
-				// so the OnMoveStart event is fired in its own check
-				// as an appearance update rather than here
 				movePathDest = event.value;
 				movePathDestReal = ctrl.getRoomBounds();
 				if ( movePathDestReal != null && movePathDest != null )
@@ -659,24 +530,10 @@ public class GMBody extends GMObject
 		}
 		else
 		{
-			GMControl.debugTracker = "GMEntityMoved - Other";
-			// Someone else moved
-			if ( event.value == null )
-			{
-				// they stopped moving
-				OnOtherMoveStop( event.name );
-			}
-			else
-			{
-				// they started moving
-				OnOtherMoveStart( event.name, event.value );
-			}
+			super.GMEntityMoved( event );
 		}
-		GMControl.debugTracker = "GMEntityMoved - After";
+		GMControl.debugTracker = "-GMEntityMoved";
 	}
-	
-	public function OnOtherStartMove( _id ) {}
-	public function OnOtherStopMove( _id ) {}
 	
 	public function GMMoved( x1, y1, x2, y2 )
 	{
@@ -688,11 +545,6 @@ public class GMBody extends GMObject
 	
 	public function OnMoveStart() {}
 	public function OnMoveStop() {}
-	
-	public function OnOtherMoveStart( _id, _dest ) {}
-	public function OnOtherMoveStop( _id ) {}
-	
-	
 	
 	public function GetPosition()
 	{
@@ -1249,7 +1101,7 @@ public class GMBody extends GMObject
 		return GMControl.SetViewOffset( xx, yy );
 	}
 	
-	// 
+	// old
 
 	
 	public function OnSpriteChanged()
@@ -1261,131 +1113,6 @@ public class GMBody extends GMObject
 	{
 		// override
 	}
-	
-	// Interaction
-	
-	
-	public function AddMemory( key, defaultval = null, func = null )
-	{
-		GM.debugTracker = "GMBody.AddMemory"
-		memory = {}
-		memory.name = key;
-		var memval;
-		if ( ctrl )
-		{
-			memval = ctrl.getMemory( key, null );
-		}
-		else
-		{
-			GMControl.Warn( "AddMemory: NO CTRL!" );
-		}
-		
-		if ( memval == null )
-		{
-			memval = defaultval;
-			GMControl.Log( "Adding memory \"" + key + "\", value: " + memval );
-		}
-		else
-		{
-			// defaultval = memval;
-			GMControl.Log( "Adding memory \"" + key + "\", value: " + memval + " (default: " + defaultval + ")" );
-		}
-		
-		
-		memory.value = memval;
-		memory.func = func;
-				
-		memories[key] = memory;
-		memoryList.push( memory );
-		
-		var event = {};
-		event.type = ControlEvent.MEMORY_CHANGED;
-		event.name = memory.name;
-		event.value = memory.value;
-		
-		GMControl.GMControlEvent( event );
-		
-		GM.debugTracker = "After GMBody.AddMemory"
-		return memory;
-	}
-	
-	// Set a memory via its AddMemory name
-	public function SetMemory( name, value )
-	{
-		if ( name is String )
-		{}
-		else
-			name = name.name;
-		memory = memories[name];
-		if ( !memory )
-		{
-			GMControl.Log( "memory " + name + " not found" );
-			return;
-		}
-		if ( !memory.dontlog )
-			GMControl.Log( memory.name + " = " + memory.value );
-		if ( memory.value == value )
-		{
-			
-		}
-		//ctrl.SetMemory( memory.name, value );
-		if ( ctrl.isConnected() )
-		{
-			ctrl.setMemory( memory.name, value );
-		}
-		else
-		{
-			memory.value = value;
-			var event = {};
-			event.type = ControlEvent.MEMORY_CHANGED;
-			event.name = memory.name;
-			event.value = memory.value;
-			GMControl.GMControlEvent( event );
-		}
-	}
-	
-	// Retrieve a memory from its AddMemory name
-	public function GetMemory( name, defaultval = 0 )
-	{
-		memory = memories[name];
-		if ( memory )
-			return memory.value;
-	}
-	
-	public function OnMemoryChanged( key, value )
-	{
-		memory = memories[key];
-		//GM.Log( "Memory \"" + key + "\" set to \"" + value + "\"" );
-		if ( memory )
-		{
-			memory.value = value;
-			if ( memory.func )
-			{
-				if ( memory.func.length == 0 )
-					memory.func();
-				else
-					memory.func( value );
-			}
-		}
-	}
-	
-	public function BroadcastMessage( message = "", data = null )
-	{
-		ctrl.sendMessage( message, data );
-	}
-	
-	public function OnReceiveMessage( message )
-	{
-		
-	}
-	
-	public function OnReceiveSignal( message )
-	{
-		
-	}
-	
-	
-	
 	
 } // class
 

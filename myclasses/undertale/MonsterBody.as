@@ -12,7 +12,11 @@ internal class MonsterBody extends UndertaleBody
 	{
 		super();
 		
+		// AddAction( "NPC - []", Action_ );
+		// AddAction( "Enemy - [Hurt 50]", Action_Hurt, 50 );
 	}
+	
+	
 	
 	override public function OnStateChanged()
 	{
@@ -23,6 +27,16 @@ internal class MonsterBody extends UndertaleBody
 	{
 		super.OnUpdateLook();
 		
+	}
+	
+	// 
+	
+	
+	
+	
+	public function Action_Hurt( data = null )
+	{
+		var damage = ( data ) ? data : 0;	
 	}
 }
 }

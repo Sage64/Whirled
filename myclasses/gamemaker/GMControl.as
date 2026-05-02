@@ -21,11 +21,22 @@ import com.whirled.*;
 import com.threerings.*;
 import com.threerings.util.*;
 
+// Avatar
+[Event(name="avatarSpoke", type="com.whirled.ControlEvent")]
+[Event(name="actionTriggered", type="com.whirled.ControlEvent")]
+// Furni
+[Event(name="hoverOver", type="com.whirled.ControlEvent")]
+[Event(name="hoverOut", type="com.whirled.ControlEvent")]
+
 public class GMControl extends ActorControl
 {
 	public static const PROP_CHARACTER = "gm:character";
 	public static const PROP_STATE = "gm:state";
 	
+	public static const TYPE_BACKDROP = "backdrop";
+	
+	public static const BODY_ENTERED = "bodyEntered";
+	public static const BODY_LEFT = "bodyLeft";
 	
 	public static var initdone;
 	
@@ -35,8 +46,6 @@ public class GMControl extends ActorControl
 	public static var debugMove = true;
 	public static var hasErrored = false;
 	
-	public static var isBitmap = true;
-	
 	public static var curCharacter;
 	public static var characterList = [];
 	public static var characters = {};
@@ -45,8 +54,9 @@ public class GMControl extends ActorControl
 	public static var root;
 	public static var media;
 	public static var container;
-	public static var ctrl; // the specific instance of GMControl created for the actor
-	public static var body;
+	public static var ctrl; // the specific instance of GMControl created for the entity
+	public static var object; // the object instance this control is for
+	public static var body; // the actor body this controls
 	public var gm;
 	
 	public static var popup_instance; // will be instance_destroy'd when a popup opens
@@ -101,11 +111,12 @@ public class GMControl extends ActorControl
 	
 	public static var popupPanel = null;
 	
-	public function GMControl( media )
+	public function GMControl( media, type = null, stageW = 600, stageH = 450 )
 	{
 		GM.debugTracker = "new GMControl()";
 		GMControl.media = media;
 		GMControl.ctrl = this;
+		entityType = type;
 		GMControl.isConnected = ctrl.isConnected();
 		
 		this.gm = GM;
@@ -114,7 +125,7 @@ public class GMControl extends ActorControl
 		
 		if ( !initdone )
 		{
-			Init( media );
+			Init( media, type, stageW, stageH );
 		}
 		
 		// InitWhirled();
@@ -143,7 +154,7 @@ public class GMControl extends ActorControl
 		INIT
 	*/
 	
-	public static function Init( media, stageW = 600, stageH = 450 )
+	public static function Init( media, type = null, stageW = 600, stageH = 450 )
 	{
 		GM.debugTracker = "GMControl.Init";
 		if ( !GM.gm )
@@ -152,7 +163,7 @@ public class GMControl extends ActorControl
 		{
 			try
 			{
-				GMControl.ctrl = new GMControl( media );
+				GMControl.ctrl = new GMControl( media, type );
 			}
 			catch(e)
 			{
@@ -182,7 +193,18 @@ public class GMControl extends ActorControl
 		}
 		catch(e)
 		{
-			GM.Warn( "GMControl: Security violation adding input listeners" );
+			GM.Warn( "GMControl: Security violation adding input listeners to popup_surface" );
+		}
+		
+		// FurniControl
+		try
+		{
+			media.root.addEventListener( MouseEvent.ROLL_OVER, handleMouseRoll );
+			media.root.addEventListener( MouseEvent.ROLL_OUT, handleMouseRoll );
+		}
+		catch(e)
+		{
+			GM.Warn( "GMControl: Security violation adding FurniControl listeners" );
 		}
 		
 		// GMControl.container = new Sprite();
@@ -202,6 +224,7 @@ public class GMControl extends ActorControl
 	public static function InitInputListeners( target )
 	{
 		GM.debugTracker = "GMControl.InitInputListeners";
+		GM.Log( "GMControl: Adding Input Listeners" );
 		AddEventListener( target, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
 		AddEventListener( target, KeyboardEvent.KEY_UP, GMKeyboardUp );
 		AddEventListener( target, MouseEvent.CLICK, GMClicked );
@@ -251,7 +274,10 @@ public class GMControl extends ActorControl
 		
 		entityID = ctrl.getMyEntityId();
 		GM.Log( "entityID = " + entityID );
-		entityType = ctrl.getEntityProperty( PROP_TYPE );
+		if ( !entityType )
+			entityType = ctrl.getEntityProperty( PROP_TYPE );
+		if ( !entityType )
+			entityType = TYPE_AVATAR;
 		GM.Log( "PROP_TYPE = " + entityType );
 		switch( entityType )
 		{
@@ -310,6 +336,14 @@ public class GMControl extends ActorControl
 		
 	}
 	
+	// Add an object
+	public static function AddObject( obj )
+	{
+		object = GM.AddInstance( 0, 0, obj );
+		
+		return object;
+	}
+	
 	// Add a character
 	// 
 	public static function AddCharacter( dispname, internalname )
@@ -351,6 +385,7 @@ public class GMControl extends ActorControl
 		try
 		{
 			body = new bodyclass();
+			object = body;
 		}
 		catch(e)
 		{
@@ -426,19 +461,26 @@ public class GMControl extends ActorControl
 		var Entity = GMControl.GetEntity( event.name );
 		if ( Entity )
 			GM.Log( Entity.name + ": " + event.value );
-		if ( !body )
+		if ( !object )
 			return;
 		if ( event.name == entityID )
 		{
 			// I spoke
-			body.TriggerAction( "GMSentChat", event.value );
+			if ( body )
+				body.TriggerAction( "GMSentChat", event.value );
+			switch ( event.value )
+			{
+				case "!getpos":
+					Log( ctrl.getEntityProperty( PROP_LOCATION_LOGICAL ) );
+					break;
+			}
 		}
 		else
 		{
 			// Someone/something else spoke
 		}
 		
-		body.OnChat( event.name, event.value );
+		object.OnChat( event.name, event.value );
 	}
 	
 	public static function GMEntityMoved( event )
@@ -466,8 +508,8 @@ public class GMControl extends ActorControl
 			Entity.isMoving = _moving;
 			Entity.GetPosition();
 		}
-		if ( body )
-			body.GMEntityMoved( event );
+		if ( object )
+			object.GMEntityMoved( event );
 	}
 	
 	public static function GMEntityJoined( event )
@@ -495,19 +537,19 @@ public class GMControl extends ActorControl
 	
 	public static function GMReceiveMessage( event )
 	{
-		if ( !body )
+		if ( !object )
 			return;
 		var message = event.name;
 		
 		if ( event.type == ControlEvent.SIGNAL_RECEIVED )
 		{
 			GM.Log( "Received Signal: " + event.name + ", " + event.value );
-			body.OnReceiveSignal( message );
+			object.OnReceiveSignal( message );
 		}
 		if ( event.type == ControlEvent.MESSAGE_RECEIVED )
 		{
 			GM.Log( "Received Message: " + event.name + ", " + event.value );
-			body.OnReceiveMessage( message );
+			object.OnReceiveMessage( message );
 		}
 	}
 	
@@ -523,9 +565,9 @@ public class GMControl extends ActorControl
 	
 	public static function GMAvatarSpoke( event )
 	{ 
-		if ( !body )
+		if ( !object )
 			return;
-		body.OnSpeak();
+		object.OnSpeak();
 	}
 	
 	public static function GMUpdateLook( event )
@@ -579,9 +621,14 @@ public class GMControl extends ActorControl
 					return ( curCharacter ) ? curCharacter.internalname : "unknown";
 				case "body":
 				case "gm:body":
-					if ( body.secure )
+					if ( !body || body.secure )
 						return null;
 					return ( body );
+				case "object":
+				case "gm:object":
+					if ( !object || object.secure )
+						return null
+					return ( object );
 				case PROP_DIMENSIONS:
 				case PROP_HOTSPOT:
 				case PROP_LOCATION_LOGICAL:
@@ -594,19 +641,18 @@ public class GMControl extends ActorControl
 					return ctrl.getEntityProperty( key, entityId );
 			}
 			var val;
-			if ( body )
+			// Body OnProperty
+			if ( object )
 			{
-				val = body.OnProperty( key );
+				val = object.OnProperty( key );
 				if ( val != null )
 					return val;
 			}
+			// Custom props
 			val = customProps[key];
 			if ( val != null )
 				return val;
-			
-			if ( val != null )
-				return val;
-			// Check memories;
+			// Memories;
 			val = ctrl.GetMemory( key );
 			if ( val != null )
 				return val;
@@ -636,9 +682,9 @@ public class GMControl extends ActorControl
 	
 	public static function GMClicked( ev = null )
 	{
-		with( GMObject )
+		with( GMFunctions )
 		{
-			if ( !window_has_focus() )
+			//if ( !window_has_focus() )
 			{
 				//io_clear();
 			}
@@ -653,6 +699,7 @@ public class GMControl extends ActorControl
 	
 	public static function GMMouseDown( ev = null )
 	{
+		trace( "GMMouseDown" );
 		GMClicked( null );
 		return GM.GMMouseDown( ev );
 	}
@@ -687,7 +734,7 @@ public class GMControl extends ActorControl
 							if ( _getstate )
 							{
 								GM.g_pIOManager.IO_Clear();
-								GMObject.io_clear();
+								GMFunctions.io_clear();
 								body.TriggerAction( _getstate );
 							}
 						}
@@ -934,7 +981,8 @@ public class GMControl extends ActorControl
 	{
 		Log( "CharacterInitDone" );
 		// GMControl.media.addChild( container );
-		body.Ready();
+		if ( body )
+			body.Ready();
 	}
 	
 	public static function SwitchCharacter( char )
@@ -946,7 +994,11 @@ public class GMControl extends ActorControl
 		if ( char )
 		{
 			body = char.body;
-			body.Ready();
+			if ( body )
+			{
+				object = body;
+				body.Ready();
+			}
 		}
 	}
 	
@@ -1002,15 +1054,15 @@ public class GMControl extends ActorControl
 	{
 		GM.debugTracker = "GMControl.GMStep";
 		
-		if ( body )
-			body.GMStep();
+		if ( object )
+			object.GMStep();
 	}
 	
 	public static function GMDraw()
 	{
 		GM.debugTracker = "GMControl.GMDraw";
-		if ( body )
-			body.GMDraw();
+		if ( object )
+			object.GMDraw();
 		
 		if ( false )
 		{
@@ -1052,6 +1104,7 @@ public class GMControl extends ActorControl
 		
 		if ( isActor )
 		{
+			
 		}
 		else
 		{
@@ -1076,6 +1129,9 @@ public class GMControl extends ActorControl
 		// by the view x/y offsets
 		// this offset seems to be restricted by whirled in one way, so is offset massively by default
 		// 
+		
+		if ( !isActor )
+			return;
 		
 		var offx = ( ( viewXOffset ) * _scale );
 		var offy = ( ( viewYOffset ) * _scale );
@@ -1152,6 +1208,10 @@ public class GMControl extends ActorControl
 			body.RegisterActions();
 			body.RegisterStates();
 		}
+		else if ( object )
+		{
+			object.OnMemoryChanged( event.name, event.value );
+		}
 	}
 	
 	/*
@@ -1203,6 +1263,8 @@ public class GMControl extends ActorControl
 		o["getStates_v1"] = getStates_v1;
 		// Pet
 		o["receivedChat_v2"] = receivedChat_v2;
+		// Furni
+		o["mouseHover_v1"] = mouseHover_v1;
 	}
 	
 	override protected function gotInitProps( o :Object ) :void
@@ -1284,6 +1346,24 @@ public class GMControl extends ActorControl
 		return int( getEntityProperty( PROP_MEMBER_ID ) );
 	}
 	
+	/*
+		FurniControl
+	*/
+	
+	public function showPage( token :String ) :Boolean
+	{
+		return callHostCode( "showPage_v1", token );
+	}
+	
+	public static function mouseHover_v1 ( over )
+	{
+		ctrl.dispatchCtrlEvent( over ? ControlEvent.HOVER_OVER : ControlEvent.HOVER_OUT );
+	}
+	
+	public static function handleMouseRoll( event )
+	{
+		mouseHover_v1( event.type == MouseEvent.ROLL_OVER );
+	}
 }
 }
 
@@ -1401,8 +1481,8 @@ class GMRemoteEntity// extends EntityControl
 		// g.beginFill( 0x00FF00 );
 		// g.drawRect( x1 / 4, y1 / 4, ( x1 + xsize ) / 4, ( y1 + ysize ) / 4 );
 		// g.endFill();
-		GMObject.draw_set_color( 0x00FF00 );
-		GMObject.draw_rectangle( x, z, ( x + xsize ), ( z + zsize ) );
+		GMFunctions.draw_set_color( 0x00FF00 );
+		GMFunctions.draw_rectangle( x, z, ( x + xsize ), ( z + zsize ) );
 	}
 	
 	// 
@@ -1439,7 +1519,7 @@ class GMRemoteEntity// extends EntityControl
 			location[0] = x;
 			location[1] = y;
 			location[2] = z;
-			return true;
+			return pos;
 		}
 	}
 	

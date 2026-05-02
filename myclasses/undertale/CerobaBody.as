@@ -551,6 +551,7 @@ class obj_ceroba_battle extends GMObject
 	
 	override public function Draw()
 	{
+		var frame = ( current_time / 1000 ) * 10;
 		var x = this.x - ( offset_x );
 		var y = this.y - ( offset_y );
 		
@@ -582,6 +583,7 @@ class obj_ceroba_battle extends GMObject
 			}
 			var drawmask = false;
 			var drawhair = false;
+			var drawsideburns = false;
 			
 			if ( sprite_index == ( global.spr_ceroba_p2_1 ) )
 			{
@@ -594,8 +596,13 @@ class obj_ceroba_battle extends GMObject
 				drawhair = true;
 				drawmask = true;
 			}
-			else if ( ( sprite_index == global.spr_ceroba_p2_idle_reveal ) && ( image_index >= 16 ) )
-				drawhair = true;
+			else if ( ( sprite_index == global.spr_ceroba_p2_idle_reveal ) )
+			{
+				if ( image_index < 2 )
+					drawsideburns = true;
+				else if ( image_index >= 16 )
+					drawhair = true;
+			}
 			
 			if ( drawhair )
 			{
@@ -606,20 +613,25 @@ class obj_ceroba_battle extends GMObject
 			if ( sprite_index == global.spr_ceroba_phase_2_head )
 			{
 				// Phase 2b
-				var frame = ( current_time / 1000 );
 				
 				mask_offset += ( mask_y - ( mask_y * image_yscale ) );
 				
-				draw_monster_part_ext( cape_2, frame * 10, x + cape_2_x, y + ( cape_2_y - ( cape_2_y * ( image_yscale - 1 ) ) ), _xsc, _ysc, image_angle, blend, image_alpha );
-				draw_monster_part_ext( staff, frame * 10, x + staff_x, y + staff_y + ( 100 * ( image_yscale - 1 ) ), _xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( cape_2, frame, x + cape_2_x, y + ( cape_2_y - ( cape_2_y * ( image_yscale - 1 ) ) ), _xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( staff, frame, x + staff_x, y + staff_y + ( 100 * ( image_yscale - 1 ) ), _xsc, _ysc, image_angle, blend, image_alpha );
 				draw_monster_part_ext( legs, 0, x + legs_x, y + ( legs_y - ( legs_y * ( image_yscale - 1 ) ) ), _xsc, _ysc, image_angle, blend, image_alpha );
 				draw_monster_part_ext( head, 0, x + head_x, y + head_y + mask_offset, _xsc, _ysc, image_angle, blend, image_alpha );
-				draw_monster_part_ext( sideburn, frame * 10, x + sideburn_1_x, y + sideburn_1_y + mask_offset, -_xsc, _ysc, image_angle, blend, image_alpha );
-				draw_monster_part_ext( sideburn, frame * 10, x + sideburn_2_x, y + sideburn_2_y + mask_offset, _xsc, _ysc, image_angle, blend, image_alpha );
-				draw_monster_part_ext( cape_1, frame * 10, x + cape_1_x, y + ( cape_1_y - ( cape_1_y * ( image_yscale - 1 ) ) ), _xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( sideburn, frame, x + sideburn_1_x, y + sideburn_1_y + mask_offset, -_xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( sideburn, frame, x + sideburn_2_x, y + sideburn_2_y + mask_offset, _xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( cape_1, frame, x + cape_1_x, y + ( cape_1_y - ( cape_1_y * ( image_yscale - 1 ) ) ), _xsc, _ysc, image_angle, blend, image_alpha );
 			}
 			else
 				draw_sprite_ext( sprite_index, image_index, x, y, image_xscale, image_yscale, image_angle, blend, image_alpha );
+			
+			if ( drawsideburns )
+			{
+				draw_monster_part_ext( sideburn, frame, x + sideburn_1_x, y + sideburn_1_y + mask_offset, -_xsc, _ysc, image_angle, blend, image_alpha );
+				draw_monster_part_ext( sideburn, frame, x + sideburn_2_x, y + sideburn_2_y + mask_offset, _xsc, _ysc, image_angle, blend, image_alpha );
+			}
 			
 			if ( drawmask )
 			{
@@ -709,7 +721,15 @@ class obj_ceroba_battle extends GMObject
 		
 		if ( fadein < 1 )
 		{
-			var factor = 1; // ( phase == 1 ) ? 1 : 3;
+			var factor = ( phase == 1 ) ? 1 : 3;
+			
+			if ( mask_frame < 12 )
+			{
+				mask_frame += ( 10 / 30 );
+				if ( mask_frame > 12 )
+					mask_frame = 12;
+			}
+			
 			if ( floatin < 1 )
 			{
 				floatin += ( 1 / 30 ) * factor;
@@ -719,21 +739,19 @@ class obj_ceroba_battle extends GMObject
 				}
 				y = lerp( 0, -float_height, sin( floatin * ( Math.PI / 2 ) ) );
 			}
-			else if ( mask_frame < 12 )
-			{
-				mask_frame += ( 10 / 30 );
-				if ( mask_frame > 12 )
-					mask_frame = 12;
-			}
 			else
 			{
-				if ( ( fadein_wait < 30 ) && ( factor == 1 ) )
-					fadein_wait += ( 1 );
+				if ( ( fadein_wait < 1 ) )
+					fadein_wait += ( 1 * factor );
 				else
 				{
-					fadein += ( 1 / 30 ) * factor;
+					fadein += ( 1 / 30 );
 					if ( fadein >= 1 )
+					{
 						fadein = 1;
+						if ( mask_frame < 12 || floatin < 1 )
+							fadein -= 0.0001;
+					}
 				}
 			}
 		}

@@ -16,7 +16,7 @@ import com.whirled.*;
 import com.threerings.*;
 import com.threerings.util.*;
 
-public class GM extends EventDispatcher
+public class GM extends GMFunctions
 {
 	public static const LOG_ENTRY = "gm:logEntry";
 	
@@ -96,7 +96,7 @@ public class GM extends EventDispatcher
 	// Globals
 	
 	
-	public static var global = {};
+	//public static var global = {};
 	
 	public static var instances = [];
 	public static var instance_index = 0;
@@ -164,6 +164,8 @@ public class GM extends EventDispatcher
 		
 		if ( !GM.gm )
 			GM.gm = true;
+		
+		g_pIOManager.Init();
 	}
 	/*
 		EVENT PROCESSING
@@ -283,7 +285,7 @@ public class GM extends EventDispatcher
 		}
 	}
 	
-	public static function AddSprite_Bitmap( sprname, _x, _y, frames )
+	public static function AddSprite_Bitmap( sprname, frames, _x = 0, _y = 0 )
 	{
 		var spr = internalspritemap[sprname];
 		if ( spr )
@@ -1132,9 +1134,9 @@ public class GM extends EventDispatcher
 			internaldrawtextformat.font = "_sans";
 			internaldrawtextformat.size = 12;
 		}
-		if ( internaldrawhalign == GMObject.fa_center )
+		if ( internaldrawhalign == fa_center )
 			internaldrawtextformat.align = TextFormatAlign.CENTER;
-		else if ( internaldrawhalign == GMObject.fa_right )
+		else if ( internaldrawhalign == fa_right )
 			internaldrawtextformat.align = TextFormatAlign.RIGHT;
 		
 		_symbol.text = _text;
@@ -1321,6 +1323,10 @@ class GMSprite
 	public function CreateFromBitmap( frames, notyet = false )
 	{
 		GM.debugTracker = "GMSprite.CreateFromBitmap";
+		if ( frames is Array )
+		{}
+		else
+			frames = [ frames ];
 		if ( frames.length < 1 )
 			return;
 		width = frames[0].bitmapData.width;

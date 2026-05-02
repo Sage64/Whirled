@@ -44,7 +44,7 @@ public class GMSprites extends Sprite
 		if ( i < 1 )
 			return;
 		
-		var sprite = GM.AddSprite_Bitmap( sprname, _x, _y, frames );
+		var sprite = GM.AddSprite_Bitmap( sprname, frames, _x, _y );
 		
 		if ( data != null )
 		{

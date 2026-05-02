@@ -25,19 +25,30 @@ public class GMIOManager
 	
 	public function GMIOManager()
 	{
-		try
+		Init();
+	}
+	
+	public static function Init()
+	{
+		trace( "GMIOManager Init" );
+		var _targets = [ GM.container ];
+		for each ( var target in _targets )
 		{
-			InitInputListeners( GM.media.stage );
-		}
-		catch(e)
-		{
-			GM.Warn( "IOManager: Security violation adding input listeners" );
+			try
+			{
+				InitInputListeners( target );
+			}
+			catch(e)
+			{
+				GM.Warn( "IOManager: Security violation adding input listeners to " + target );
+			}
 		}
 	}
 	
 	public static function InitInputListeners( target )
 	{
 		GM.debugTracker = "GMControl.InitInputListeners";
+		GM.Log( "Adding input listeners to " + target );
 		GM.AddEventListener( target, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
 		GM.AddEventListener( target, KeyboardEvent.KEY_UP, GMKeyboardUp );
 		GM.AddEventListener( target, MouseEvent.MOUSE_DOWN, GMMouseDown );
@@ -149,8 +160,6 @@ public class GMIOManager
 			updated = false;
 		else
 			return;
-		
-		//trace( "IO_StartStep()" );
 		
 		var pressed, down, released;
 		KeyDown.length = 0;

@@ -114,14 +114,14 @@ public class PlayerBody extends GMBody
 		newTeam = GetMemory( "ganggarrison.team_select" );
 		newClass = GetMemory( "ganggarrison.class_select" );
 		
+		if ( GMControl.isControl && !instance_exists( gamewindow_obj ) )
+			gamewindow_obj = instance_create_depth( 0, 0, 0, GameWindow );
+		
 		if ( !instance_exists( player ) )
 			player = instance_create_depth( 0, 0, 0, Player );
 		global.paramPlayer = player;
 		player.team = newTeam;
 		player.rewards = GetMemory( "ganggarrison.rewards" );
-		
-		if ( !instance_exists( gamewindow_obj ) )
-			gamewindow_obj = instance_create_depth( 0, 0, 0, GameWindow );
 		
 		var classObj = GetClassObject( newClass );
 		
@@ -211,17 +211,7 @@ public class PlayerBody extends GMBody
 	
 	override public function Draw()
 	{
-		if ( false && GMControl.isControl )
-		{
-			var _sc = ( 1 / ( GM.overlay.transform.concatenatedMatrix.a ) ) * 2;
-			var _xx = GM.container.x - GM.overlay.x;
-			var _yy = GM.container.y - GM.overlay.y;
-			surface_set_target( GM.overlay );
-			_xx += ( aim_mousex * container.scaleX );
-			_yy += ( aim_mousey * container.scaleY );
-			draw_sprite_ext( global.CrosshairS, 0, _xx, _yy, _sc, _sc, 0, c_white, 1 );
-			surface_reset_target();
-		}
+		
 	}
 	
 	// 
@@ -408,6 +398,7 @@ class GG2Object extends GMObject
 
 class GameWindow extends GG2Object
 {
+	public var showCursor = false;
 	public var aimx = 0;
 	public var aimy = 0;
 	
@@ -422,11 +413,13 @@ class GameWindow extends GG2Object
 	{
 		if ( GM.stage.focus == GMControl.popup_surface )
 		{
+			showCursor = true;
 			aimx = GMControl.popup_surface.mouseX - ( GMControl.popup_width / 2 ); // GM.container.mouseX;
 			aimy = GMControl.popup_surface.mouseY - ( GMControl.popup_height / 2 ); // GM.container.mouseY;
 		}
 		else
 		{
+			showCursor = false;
 			aimx = mouse_x;
 			aimy = mouse_y;
 		}
@@ -437,6 +430,17 @@ class GameWindow extends GG2Object
 		surface_set_target( GMControl.popup_surface );
 		DrawMenu();
 		surface_reset_target();
+		if ( showCursor )
+		{
+			var _sc = ( 1 / ( GM.overlay.transform.concatenatedMatrix.a ) ) * 2;
+			var _xx = GM.container.x - GM.overlay.x;
+			var _yy = GM.container.y - GM.overlay.y;
+			surface_set_target( GM.overlay );
+			_xx += ( aimx * GM.container.scaleX );
+			_yy += ( aimy * GM.container.scaleY );
+			draw_sprite_ext( global.CrosshairS, 0, _xx, _yy, _sc, _sc, 0, c_white, 1 );
+			surface_reset_target();
+		}
 	}
 	
 	public function DrawMenu()
@@ -447,11 +451,13 @@ class GameWindow extends GG2Object
 		draw_set_alpha( 1 / 255 );
 		draw_rectangle( 0, 0, ww, hh, false );
 		draw_set_alpha( 1 );
-		
-		draw_set_color( c_white );
-		var xx = ( GMControl.popup_width / 2 ) + aimx;
-		var yy = ( GMControl.popup_height / 2 ) + aimy;
-		draw_sprite_ext( global.CrosshairS, 0, xx, yy, 1, 1, 0, c_white, 1 );
+		if ( showCursor )
+		{
+			draw_set_color( c_white );
+			var xx = ( GMControl.popup_width / 2 ) + aimx;
+			var yy = ( GMControl.popup_height / 2 ) + aimy;
+			draw_sprite_ext( global.CrosshairS, 0, xx, yy, 1, 1, 0, c_white, 1 );
+		}
 	}
 }
 
@@ -1212,16 +1218,18 @@ class Character extends GG2Entity
 	
 	override public function Draw()
 	{
+		CharacterDraw( x, y );
+	}
+	
+	public function CharacterDraw( xx, yy )
+	{
 		var xx = x;
 		var yy = y;
-		
 		var sprite = sprite_index;
 		var subimg = animationImage + animationOffset;
 		var overlayList = -1;
-		var noNewAnim = ( humiliated || className == "Querly" );
-		
+		var noNewAnim = ( humiliated || classId == CLASS_QUOTE );
 		equipmentOffset = 0;
-		
 		if ( zoomed )
 		{
 			sprite = spriteCrouch;
@@ -1259,26 +1267,18 @@ class Character extends GG2Entity
 				}
 			}
 		}
-		
 		var yoffset = 0;
 		if ( !noNewAnim && !taunting && !stabbing && !omnomnomnom && ( sprite != sprite_index ) && ( sprite == spriteLeanL || sprite == spriteLeanR ) )
 			yoffset = 6;
-		
 		//equipmentOffset = ( ( onground ) && ( sprite == spriteRun ) && ( ( Math.floor( animationImage ) % 2 ) == 0 ) ) ? -2 : 0;
 		overlayOffset = equipmentOffset;
-		
 		if ( !noNewAnim )
 			animationOffset = 0;
-		
 		var drawWeapon = instance_exists( currentWeapon );
-		
 		equipmentOffset += yoffset;
-		
 		yy += yoffset;
-		
 		var overlays = overlayList;
 		var gear = gearList;
-		
 		if ( taunting )
 		{
 			sprite = tauntsprite;
