@@ -79,7 +79,7 @@ public class CerobaBody extends MonsterBody
 				flip = 0;
 				SetScale( 3 );
 				SetViewOffset( 0, -55 );
-				characterH = 54;
+				characterH = 56;
 			}
 			ceroba.run = ( state.run ) ? true : false;
 			if ( state.sprite )

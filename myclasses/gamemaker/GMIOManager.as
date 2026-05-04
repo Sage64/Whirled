@@ -1,4 +1,4 @@
-// IOManager
+﻿// IOManager
 package gamemaker
 {
 
@@ -31,17 +31,10 @@ public class GMIOManager
 	public static function Init()
 	{
 		trace( "GMIOManager Init" );
-		var _targets = [ GM.container ];
+		var _targets = [ GM.container, GM.media.stage ];
 		for each ( var target in _targets )
 		{
-			try
-			{
-				InitInputListeners( target );
-			}
-			catch(e)
-			{
-				GM.Warn( "IOManager: Security violation adding input listeners to " + target );
-			}
+			InitInputListeners( target );
 		}
 	}
 	
@@ -49,12 +42,29 @@ public class GMIOManager
 	{
 		GM.debugTracker = "GMControl.InitInputListeners";
 		GM.Log( "Adding input listeners to " + target );
-		GM.AddEventListener( target, KeyboardEvent.KEY_DOWN, GMKeyboardDown );
-		GM.AddEventListener( target, KeyboardEvent.KEY_UP, GMKeyboardUp );
-		GM.AddEventListener( target, MouseEvent.MOUSE_DOWN, GMMouseDown );
-		GM.AddEventListener( target, MouseEvent.MOUSE_UP, GMMouseUp );
-		GM.AddEventListener( target, MouseEvent.RIGHT_MOUSE_DOWN, GMMouseDown );
-		GM.AddEventListener( target, MouseEvent.RIGHT_MOUSE_UP, GMMouseUp );
+		var _events = [
+			[ KeyboardEvent.KEY_DOWN, GMKeyboardDown ],
+			[ KeyboardEvent.KEY_UP, GMKeyboardUp ],
+			[ MouseEvent.MOUSE_DOWN, GMMouseDown ],
+			[ MouseEvent.MOUSE_UP, GMMouseUp ],
+			[ "releaseOutside", GMMouseUp ],
+			[ MouseEvent.RIGHT_MOUSE_DOWN, GMMouseDown ],
+			[ MouseEvent.RIGHT_MOUSE_UP, GMMouseUp ],
+			[ MouseEvent.MIDDLE_MOUSE_DOWN, GMMouseDown ],
+			[ MouseEvent.MIDDLE_MOUSE_UP, GMMouseUp ],
+			[ MouseEvent.MOUSE_WHEEL, GMMouseWheel ]
+		];
+		for each ( var event in _events )
+		{
+			try
+			{
+				GM.AddEventListener( target, event[0], event[1] );
+			}
+			catch(e)
+			{
+				GM.Warn( "Security violation adding event listener" );
+			}
+		}
 	}
 	
 	public static function GMKeyboardDown( ev )
@@ -103,6 +113,11 @@ public class GMIOManager
 	
 	public static function GMMouseDown( ev )
 	{
+		var focus = ev.target;
+		if ( ev.target == GM.media.stage )
+			focus = GM.container;
+		GM.media.stage.focus = focus; // GM.container;
+		//trace( GM.media.stage.focus );
 		var keycode = 1; // MOUSE_LEFT
 		switch ( ev.type )
 		{
@@ -133,10 +148,33 @@ public class GMIOManager
 			case MouseEvent.MIDDLE_MOUSE_UP:
 				keycode = 4;
 				break;
+			case "releaseOutside":
+				OnKeyUp( 1 );
+				OnKeyUp( 2 );
+				OnKeyUp( 4 );
+				return false;
 		}
 		ev.preventDefault();
 		OnKeyUp( keycode );
 		return false;
+	}
+	
+	public static function GMMouseWheel( ev )
+	{
+		GM.Log( "mouse wheel" );
+		if ( !ev )
+			return;
+		var keycode = 0;
+		if ( ev.delta > 0 )
+			keycode = 10;
+		else if ( ev.delta < 0 )
+			keycode = 11;
+		
+		if ( keycode != 0 )
+		{
+			OnKeyDown( keycode );
+			OnKeyUp( keycode );
+		}
 	}
 	
 	public static function IO_Clear()

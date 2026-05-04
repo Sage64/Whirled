@@ -154,6 +154,7 @@ public class GM extends GMFunctions
 		
 		container = new Sprite();
 		container.cacheAsBitmap = false;
+		container.focusRect = false;
 		InternalSetDrawTarget( container );
 		
 		overlay = new Sprite();
@@ -174,6 +175,8 @@ public class GM extends GMFunctions
 	// Add an event listener
 	public static function AddEventListener( inst, event, func )
 	{
+		if ( !event )
+			return;
 		Log( "Listening for " + event );
 		// the function to be called by this event
 		_eventlisteners.func[event] = func;
@@ -186,7 +189,7 @@ public class GM extends GMFunctions
 	public static function GMEvent( event )
 	{
 		_eventqueue.push( event );
-		Log( "Event: " + event.type );// + ": \"" + event.name + "\", " + event.value );
+		// Log( "Event: " + event.type );// + ": \"" + event.name + "\", " + event.value );
 	}
 	
 	public static  function GMProcessEvents()
@@ -534,7 +537,6 @@ public class GM extends GMFunctions
 				sym.y = container.y - ( 1024 );
 			}
 			
-			
 			container.graphics.clear();
 			overlay.graphics.clear();
 			
@@ -588,7 +590,7 @@ public class GM extends GMFunctions
 	{
 		if ( internalrenderstack.length > 0 )
 			internalrenderstack = [];
-		GMObject.surface_set_target( container );
+		GMFunctions.surface_set_target( container );
 		debugTracker = "GM.GMDraw Instances";
 		
 		for ( instance_index = 0; instance_index < instances.length; ++instance_index )
@@ -606,17 +608,10 @@ public class GM extends GMFunctions
 				Caught(e);
 			}
 		}
-		GMObject.surface_reset_target();
+		GMFunctions.surface_reset_target();
 		
 		if ( GMControl.ctrl )
 			GMControl.GMDraw();
-		
-		if ( false && errorsCaught > 0 )
-		{
-			GMObject.surface_set_target( overlay );
-			
-			GMObject.surface_reset_target();
-		}
 	}
 	
 	/*

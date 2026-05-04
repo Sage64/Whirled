@@ -34,6 +34,7 @@ public class MinecraftWorld extends GMEntity
 
 import gamemaker.*;
 import minecraft.*;
+import flash.display.*;
 
 internal const SCALE = 5;
 
@@ -199,6 +200,7 @@ class Chunk extends GMFunctions
 	public var chunkx = 0;
 	public var chunky = 0;
 	
+	public var redraw = true;
 	
 	public var bg_container;
 	public var fg_container;
@@ -213,6 +215,21 @@ class Chunk extends GMFunctions
 		this.chunky = chunky;
 		for ( var i = 0; i < CHUNK_SIZE; ++i )
 			blocks[i] = new Array( CHUNK_SIZE );
+		
+		
+		bg_container = new Sprite();
+		bg_container.focusRect = false;
+		GM.container.addChild( bg_container );
+		
+		fg_container = new Sprite();
+		fg_container.focusRect = false;
+		GM.container.addChild( fg_container );
+	}
+	
+	public function Cleanup()
+	{
+		bg_container.parent.removeChild( bg_container );
+		fg_container.parent.removeChild( fg_container );
 	}
 	
 	public function Generate()
@@ -226,28 +243,44 @@ class Chunk extends GMFunctions
 				// trace( blocks[xx][yy] );
 			}
 		}
+		redraw = true;
 	}
 	
 	public function Draw()
 	{
+		if ( redraw )
+		{
+			var _x = 0; // this.x;
+			var _y = 0; // this.y;
+			surface_set_target( bg_container );
+			for ( var yy = 0; yy < CHUNK_SIZE; ++yy )
+			{
+				var y1 = _x + ( yy * BLOCK_SIZE );
+				if ( y1 >= ( GM.stageH / 5 ) )
+					continue;
+				for ( var xx = 0; xx < CHUNK_SIZE; ++xx )
+				{
+					var x1 = _y + ( xx * BLOCK_SIZE );
+					var _block = blocks[xx][yy];
+					if ( !_block )
+						continue;
+					var spr = _block;
+					draw_sprite_ext( spr, 0, x1, y1, 1, 1, 0, c_white, 1 );
+				}
+			}
+			surface_reset_target();
+			redraw = false;
+		}
+		
+		bg_container.x = this.x;
+		bg_container.y = this.y;
+		fg_container.x = this.x;
+		fg_container.y = this.y;
+		
 		// draw_set_color( c_yellow );
 		// draw_line( this.x, this.y, this.x + ( BLOCK_SIZE * CHUNK_SIZE ), this.y );
 		// draw_set_color( c_lime );
-		for ( var yy = 0; yy < CHUNK_SIZE; ++yy )
-		{
-			var y1 = this.y + ( yy * BLOCK_SIZE );
-			if ( y1 >= ( GM.stageH / 5 ) )
-				continue;
-			for ( var xx = 0; xx < CHUNK_SIZE; ++xx )
-			{
-				var x1 = this.x + ( xx * BLOCK_SIZE );
-				var _block = blocks[xx][yy];
-				if ( !_block )
-					continue;
-				var spr = _block;
-				draw_sprite_ext( spr, 0, x1, y1, 1, 1, 0, c_white, 1 );
-			}
-		}
+		
 	}
 }
 
@@ -279,11 +312,25 @@ class UI extends GMObject
 	{
 		
 	}
+	
+	override public function Step()
+	{
+		if ( false )
+		{
+			
+		}
+		else if ( instance_exists( hotbar ) )
+		{
+			hotbar.DoInput();
+		}
+		
+	}
 }
 
 class UI_Hotbar extends GMObject
 {
 	public var slot = 4;
+	public var edge = -8;
 	
 	public var spr_hotbar_selection = global["gui/sprites/hud/hotbar_selection"];
 	
@@ -300,42 +347,59 @@ class UI_Hotbar extends GMObject
 		var xx = this.x;
 		var yy = this.y;
 		
-		xx += ( ( 1 + ( 20 * slot ) ) * image_xscale );
+		xx += ( ( 1 + ( 20 * slot ) ) * image_xscale ) - ( image_xscale * 2 );
 		yy += ( 24 );
 		
-		draw_sprite_ext( spr_hotbar_selection, 0, xx - ( image_xscale * 2 ), yy - ( image_yscale ), image_xscale, -image_yscale, image_angle, image_blend, image_alpha );
+		draw_sprite_ext( spr_hotbar_selection, 0, xx, yy - ( image_yscale ), image_xscale, -image_yscale, image_angle, image_blend, image_alpha );
 	}
 	
 	//
 	
 	override public function Step()
 	{
-		var mx = mouse_x;
-		var my = mouse_y;
+		var mx = mouse_x, my = mouse_y;
 		
-		if ( mx < x )
+		if ( mx < ( x - edge ) )
 		{
-			x = mx;
+			x = mx + edge;
 		}
-		else if ( mx > ( x + sprite_width ) )
+		else if ( mx > ( x + sprite_width + edge ) )
 		{
-			x = ( mx - sprite_width );
+			x = ( mx - sprite_width ) - edge;
 		}
-		
-		if ( ( my <= ( y + sprite_height ) ) && mouse_check_button( mb_left ) )
+	}
+	
+	public function DoInput()
+	{
+		var mx = mouse_x, my = mouse_y;
+		if ( ( my <= ( y + sprite_height ) ) && ( mouse_check_button( mb_left ) || mouse_check_button( mb_middle ) ) )
 		{
-			slot = Math.floor( ( mx - this.x - 1 ) / 20 );
-			if ( slot < 0 )
-				slot = 0;
-			else if ( slot > MAX_SLOT )
-				slot = MAX_SLOT;
+			SetSlot( Math.floor( ( mx - this.x - 1 ) / 20 ) );
+			if ( true )
+			{
+				// GMControl.DoPopup(  );
+			}
 		}
-		
 		for ( var i = 49; i < 58; ++i )
 		{
 			if ( keyboard_check_pressed( i ) )
-				slot = i - 49;
-		} 
+				SetSlot( i - 49 );
+		}
+		if ( mouse_wheel_up() )
+			SetSlot( slot - 1 );
+		if ( mouse_wheel_down() )
+			SetSlot( slot + 1 );
+	}
+	
+	public function SetSlot( i )
+	{
+		if ( i < 0 )
+			i = 0;
+		if ( i > MAX_SLOT )
+			i = MAX_SLOT;
+		if ( i == slot )
+			return;
+		slot = i;
 	}
 }
 

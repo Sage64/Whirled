@@ -4,7 +4,7 @@
 // Control object, combines all control types into one
 
 /*
-	GMControl is used in place of AvatarControl/PetControl etc
+	GMControl is used in place of AvatarControl/PetControl/FurniControl etc
 */
 
 package gamemaker
@@ -189,7 +189,7 @@ public class GMControl extends ActorControl
 		
 		try
 		{
-			InitInputListeners( popup_surface );
+			GM.g_pIOManager.InitInputListeners( popup_surface );
 		}
 		catch(e)
 		{
@@ -221,6 +221,7 @@ public class GMControl extends ActorControl
 		}
 	}
 	
+	// old
 	public static function InitInputListeners( target )
 	{
 		GM.debugTracker = "GMControl.InitInputListeners";
@@ -1312,22 +1313,22 @@ public class GMControl extends ActorControl
 		callHostCode( "setPreferredY_v1", pixels );
 	}
 	
-	protected function avatarSpoke_v1()
+	public function avatarSpoke_v1()
 	{
 		dispatchCtrlEvent( ControlEvent.AVATAR_SPOKE );
 	}
 	
-	protected function getActions_v1()
+	public function getActions_v1()
 	{
 		return _actions;
 	}
 	
-	protected function getStates_v1()
+	public function getStates_v1()
 	{
 		return _states;
 	}
 	
-	protected function verifyActionsOrStates( val, isAction = false )
+	public function verifyActionsOrStates( val, isAction = false )
 	{
 		
 		return;

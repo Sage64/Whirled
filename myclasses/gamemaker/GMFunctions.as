@@ -236,6 +236,8 @@ public class GMFunctions extends EventDispatcher
 		public static const mb_middle = 4;
 		public static const mb_side1 = 5;
 		public static const mb_side2 = 6;
+		public static const mb_wheelup = 10;
+		public static const mb_wheeldown = 11;
 		// 
 		public static const vk_escape = 27;
 		public static const vk_space = 32;
@@ -277,6 +279,16 @@ public class GMFunctions extends EventDispatcher
 		public static const mouse_check_button_pressed = keyboard_check_pressed;
 		public static const mouse_check_button_released = keyboard_check_released;
 		
+		public static function mouse_wheel_up()
+		{
+			return ( GM.g_pIOManager.KeyPressed[10] );
+		}
+		
+		public static function mouse_wheel_down()
+		{
+			return ( GM.g_pIOManager.KeyPressed[11] );
+		}
+		
 		public static function get mouse_x()
 		{
 			if ( GM.internalrendertarget )
@@ -295,10 +307,14 @@ public class GMFunctions extends EventDispatcher
 		{
 			try
 			{
-				if ( GM.media && GM.media.stage )
+				if ( GM.media ) // && GM.media.stage )
 				{
 					var focus = GM.media.stage.focus;
 					if ( focus == GMControl.popup_surface )
+						return true;
+					if ( focus == GM.container )
+						return true;
+					if ( focus == GM.media )
 						return true;
 					if ( focus == GM.media.stage )
 						return true;
@@ -559,6 +575,21 @@ public class GMFunctions extends EventDispatcher
 			if ( !_bmd )
 				return;
 			GM.Graphics_DrawPart( _img, _left, _top, _width, _height, _x, _y, _xscale, _yscale, _col, _alpha );
+		}
+	}
+	
+	// Surface
+	{
+		public static function surface_set_target( _surf )
+		{
+			GM.internalrenderstack.push( GM.internalrendertarget );
+			GM.InternalSetDrawTarget( _surf );
+		}
+		
+		public static function surface_reset_target()
+		{
+			var target = ( GM.internalrenderstack.length > 0 ) ? GM.internalrenderstack.pop() : GM.container;
+			GM.InternalSetDrawTarget( target );
 		}
 	}
 	

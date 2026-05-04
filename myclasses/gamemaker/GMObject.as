@@ -285,20 +285,6 @@ public class GMObject extends GMFunctions
 		GM.view_y = _y;
 	}
 	
-	// Surf
-	
-	public static function surface_set_target( _surf )
-	{
-		GM.internalrenderstack.push( GM.internalrendertarget );
-		GM.InternalSetDrawTarget( _surf );
-	}
-	
-	public static function surface_reset_target()
-	{
-		var target = ( GM.internalrenderstack.length > 0 ) ? GM.internalrenderstack.pop() : GM.container;
-		GM.InternalSetDrawTarget( target );
-	}
-	
 	public function array_create( len, val = 0 )
 	{
 		var array = new Array( len );
