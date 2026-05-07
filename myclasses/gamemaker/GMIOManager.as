@@ -67,10 +67,24 @@ public class GMIOManager
 		}
 	}
 	
+	public static function IsPriorityKey( keycode )
+	{
+		if ( true ) // is whirled
+		{
+			if ( keycode == 115 ) // F4 - See through players
+				return true;
+			if ( keycode == 116 ) // F5 - See through furniture
+				return true;
+		}
+		if ( keycode == 122 ) // F11
+			return true;
+		return false;
+	}
+	
 	public static function GMKeyboardDown( ev )
 	{
 		var keycode = ev.keyCode;
-		if ( keycode == 122 ) // F11
+		if ( IsPriorityKey( keycode ) )
 			return true;
 		else
 			ev.preventDefault();
@@ -93,7 +107,7 @@ public class GMIOManager
 	{
 		var keycode = ev.keyCode;
 		// var charcode = ev.charCode;
-		if ( keycode == 122 ) // F11
+		if ( IsPriorityKey( keycode ) )
 			return;
 		ev.preventDefault();
 		OnKeyUp( keycode );
@@ -161,7 +175,6 @@ public class GMIOManager
 	
 	public static function GMMouseWheel( ev )
 	{
-		GM.Log( "mouse wheel" );
 		if ( !ev )
 			return;
 		var keycode = 0;

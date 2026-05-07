@@ -118,6 +118,7 @@ public class GMBody extends GMEntity
 	public function GMBody( base_fps = 30 )
 	{
 		super();
+		GM.Log( "Create GMBody" );
 		
 		image_speed = 0;
 		
@@ -127,8 +128,6 @@ public class GMBody extends GMEntity
 		container = GMControl.container;
 		ctrl = GMControl.ctrl;
 		this.body = this;
-		
-		GMControl.Log( "Creating" );
 		
 		this.stepStartTime = getTimer();
 		this.stepEndTime = this.stepStartTime;
@@ -203,7 +202,7 @@ public class GMBody extends GMEntity
 	// Registers states and makes sure it looks correct immediately
 	public function Ready()
 	{
-		GMControl.debugTracker = "GMBody.Ready()";
+		GM.debugTracker = "GMBody.Ready()";
 		GMControl.Log( "Ready()" );
 		
 		timescale = timescale_fps / 30;
@@ -473,13 +472,13 @@ public class GMBody extends GMEntity
 	
 	override public function GMEntityMoved( event )
 	{
-		GMControl.debugTracker = "+GMEntityMoved";
+		GM.debugTracker = "+GMEntityMoved";
 		if ( event == null )
 			return;
 		var Entity = GMControl.GetEntity( event.name );
 		if ( event.name == GMControl.entityID )
 		{
-			GMControl.debugTracker = "GMEntityMoved - self";
+			GM.debugTracker = "GMEntityMoved - self";
 			++movePathClicks;
 			currentPosition = GetPosition();
 			currentPositionReal = GetPositionReal();
@@ -532,7 +531,7 @@ public class GMBody extends GMEntity
 		{
 			super.GMEntityMoved( event );
 		}
-		GMControl.debugTracker = "-GMEntityMoved";
+		GM.debugTracker = "-GMEntityMoved";
 	}
 	
 	public function GMMoved( x1, y1, x2, y2 )
@@ -628,7 +627,7 @@ public class GMBody extends GMEntity
 	
 	public function GetState( statename = null )
 	{
-		GMControl.debugTracker = "GetState";
+		GM.debugTracker = "GetState";
 		var _getstate = statename;
 		if ( statename != null )
 		{
@@ -699,7 +698,7 @@ public class GMBody extends GMEntity
 	
 	public function GMStateChanged( event )
 	{
-		GMControl.debugTracker = "GMStateChanged (did you forget to account for curState/prevState being null?)";
+		GM.debugTracker = "GMStateChanged (did you forget to account for curState/prevState being null?)";
 		if ( !event )
 		{
 			GMControl.Warn( "no event" );
@@ -723,7 +722,7 @@ public class GMBody extends GMEntity
 		}
 		else
 		{
-			GMControl.debugTracker = "GMStateChanged - OnStateChanged";
+			GM.debugTracker = "GMStateChanged - OnStateChanged";
 			OnStateChanged();
 			OnUpdateLook();
 		}
@@ -953,14 +952,11 @@ public class GMBody extends GMEntity
 		GM.debugTracker = "GMBody.GMStep";
 		
 		// Timer
-		stepStartTime = getTimer();
+		stepStartTime = GM.stepStartTime;
 		timescale_delta = Math.min( 30.0, ( ( stepStartTime - lastms ) / 1000 ) * timescale_fps );
 		if ( use_delta )
 			timescale = timescale_delta;
 		lastms = stepStartTime;
-		
-		current_time = ( stepStartTime );
-		GMObject.current_time = current_time;
 		
 		GMProcessEvents();
 		

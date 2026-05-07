@@ -117,7 +117,6 @@ public class GMControl extends ActorControl
 		GMControl.media = media;
 		GMControl.ctrl = this;
 		entityType = type;
-		GMControl.isConnected = ctrl.isConnected();
 		
 		this.gm = GM;
 		
@@ -249,10 +248,12 @@ public class GMControl extends ActorControl
 		
 		GM.ctrl = ctrl;
 		
-		if ( !ctrl.isConnected() )
+		GMControl.isConnected = ctrl.isConnected();
+		GM.Log( "isConnected(): " + isConnected );
+		if ( !isConnected )
 		{
+			GMControl.isConnected = false;
 			// Always run in debug mode if not connected to whirled
-			GM.Log( "isConnected(): false" );
 			GM.Log( "Debug Mode" );
 			debug = true;
 			GMGotControl();
@@ -266,14 +267,10 @@ public class GMControl extends ActorControl
 				GMControl.Warn( "tried to add keyboard to stage (security violation)" );
 			} 
 		}
-		else
-		{
-			GM.Log( "isConnected(): true" );
-		}
 		
 		ctrl.registerPropertyProvider( GMPropertyProvider );
 		
-		entityID = ctrl.getMyEntityId();
+		entityID = ( GMControl.isConnected ) ? ctrl.getMyEntityId() : "test_id";
 		GM.Log( "entityID = " + entityID );
 		if ( !entityType )
 			entityType = ctrl.getEntityProperty( PROP_TYPE );
@@ -295,7 +292,7 @@ public class GMControl extends ActorControl
 				break;
 		}
 		
-		if ( isActor )
+		if ( isActor || isFurni )
 		{
 			entity = GetEntity( entityID );
 			memberID = entity.GetProperty( PROP_MEMBER_ID );
@@ -484,73 +481,31 @@ public class GMControl extends ActorControl
 		object.OnChat( event.name, event.value );
 	}
 	
-	public static function GMEntityMoved( event )
-	{
-		var _moving = ( event.value ) ? true : false;
-		var Entity = GetEntity( event.name );
-		if ( Entity )
-		{
-			if ( _moving )
-			{
-				var bounds = ctrl.getRoomBounds();
-				if ( bounds )
-				{
-					var x = bounds[0];
-					var y = bounds[1];
-					var z = bounds[2];
-					x *= event.value[0];
-					y *= event.value[1];
-					z *= event.value[2];
-					Entity.destination[0] = x;
-					Entity.destination[1] = y;
-					Entity.destination[2] = z;
-				}
-			}
-			Entity.isMoving = _moving;
-			Entity.GetPosition();
-		}
-		if ( object )
-			object.GMEntityMoved( event );
-	}
-	
-	public static function GMEntityJoined( event )
-	{
-		//GM.Log( "EntityJoined: " + event.name );
-		var Entity = GMControl.GetEntity( event.name );
-	}
-	public static function GMEntityLeft( event )
-	{
-		// GM.Log( "EntityLeft: " + event.name );
-		var Entity = remoteEntities[event.name];
-		if ( Entity != null )
-		{
-			GM.Log( "Removing RemoteEntity " + event.name + " (" + Entity.name + ")" );
-			Entity.Cleanup();
-			remoteEntities[event.name] = null;
-			var pos = remoteEntitiesList.indexOf( Entity );
-			if ( pos < 0 )
-			{}
-			else
-				remoteEntitiesList.splice( pos, 1 );
-		}
-	}
-	
-	
 	public static function GMReceiveMessage( event )
 	{
 		if ( !object )
 			return;
+		var type = event.type;
 		var message = event.name;
+		var data = event.value;
 		
-		if ( event.type == ControlEvent.SIGNAL_RECEIVED )
+		switch( message )
 		{
-			GM.Log( "Received Signal: " + event.name + ", " + event.value );
-			object.OnReceiveSignal( message );
+			case "gm:announce":
+				GetEntity( data );
 		}
-		if ( event.type == ControlEvent.MESSAGE_RECEIVED )
+		
+		if ( type == ControlEvent.SIGNAL_RECEIVED )
 		{
-			GM.Log( "Received Message: " + event.name + ", " + event.value );
-			object.OnReceiveMessage( message );
+			GM.Log( "Received Signal: " + message + ", " + data );
+			object.OnReceive( message, data );
+			object.OnReceiveSignal( message, data );
+		}
+		else if ( type == ControlEvent.MESSAGE_RECEIVED )
+		{
+			GM.Log( "Received Message: " + message + ", " + data );
+			object.OnReceive( message, data );
+			object.OnReceiveMessage( message, data );
 		}
 	}
 	
@@ -945,6 +900,10 @@ public class GMControl extends ActorControl
 				remoteEntities[ _entityid ] = Entity;
 				remoteEntitiesList.push( Entity );
 				GMControl.Log( "new GMRemoteEntity( " + _entityid + " ); - " + Entity.name + " (" + Entity.type + ") entities: " + remoteEntitiesList.length );
+				if ( object )
+				{
+					object.OnGetEntity( Entity );
+				}
 			}
 			catch( e )
 			{
@@ -952,6 +911,57 @@ public class GMControl extends ActorControl
 			}
 		}
 		return Entity;
+	}
+	
+	public static function GMEntityMoved( event )
+	{
+		var _moving = ( event.value ) ? true : false;
+		var Entity = GetEntity( event.name );
+		if ( Entity )
+		{
+			if ( _moving )
+			{
+				var bounds = ctrl.getRoomBounds();
+				if ( bounds )
+				{
+					var x = bounds[0];
+					var y = bounds[1];
+					var z = bounds[2];
+					x *= event.value[0];
+					y *= event.value[1];
+					z *= event.value[2];
+					Entity.destination[0] = x;
+					Entity.destination[1] = y;
+					Entity.destination[2] = z;
+				}
+			}
+			Entity.isMoving = _moving;
+			Entity.GetPosition();
+		}
+		if ( object )
+			object.GMEntityMoved( event );
+	}
+	
+	public static function GMEntityJoined( event )
+	{
+		//GM.Log( "EntityJoined: " + event.name );
+		var Entity = GMControl.GetEntity( event.name );
+	}
+	public static function GMEntityLeft( event )
+	{
+		// GM.Log( "EntityLeft: " + event.name );
+		var Entity = remoteEntities[event.name];
+		if ( Entity != null )
+		{
+			GM.Log( "Removing RemoteEntity " + event.name + " (" + Entity.name + ")" );
+			Entity.Cleanup();
+			remoteEntities[event.name] = null;
+			var pos = remoteEntitiesList.indexOf( Entity );
+			if ( pos < 0 )
+			{}
+			else
+				remoteEntitiesList.splice( pos, 1 );
+		}
 	}
 	
 	/*
@@ -986,6 +996,7 @@ public class GMControl extends ActorControl
 			body.Ready();
 	}
 	
+	// Unused
 	public static function SwitchCharacter( char )
 	{
 		if ( body )
@@ -1376,9 +1387,7 @@ import flash.media.*;
 import com.threerings.*;
 import com.whirled.*;
 
-
-
-class GMPopupSurface extends Sprite
+class GMPopupSurface extends GMContainer
 {
 	public var surface_w = 0;
 	public var surface_h = 0;
@@ -1387,7 +1396,6 @@ class GMPopupSurface extends Sprite
 	{
 		super();
 		name = "GMPopupSurface";
-		focusRect = false;
 	}
 	
 	

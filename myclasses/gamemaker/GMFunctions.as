@@ -4,6 +4,7 @@ package gamemaker
 import gamemaker.*;
 import flash.display.*;
 import flash.events.*;
+import flash.geom.*;
 public class GMFunctions extends EventDispatcher
 {
 	public static const global = {};
@@ -40,6 +41,49 @@ public class GMFunctions extends EventDispatcher
 	{
 		super();
 		
+	}
+	
+	// BuiltIn
+	{
+		public static function get current_time()
+		{
+			return GM.stepStartTime;
+		}
+	}
+	
+	// Function_Container
+	{
+		public static function container_create( _parent = null )
+		{
+			if ( !_parent )
+				_parent = GM.container;
+			
+			var container = new GMContainer();
+			_parent.addChild( container );
+			return container;
+		}
+		
+		public static function container_destroy( container )
+		{
+			if ( !container.parent )
+				return;
+			container.parent.removeChild( container );
+		}
+		
+		public static function container_clear( container )
+		{
+			container.graphics.clear();
+		}
+		
+		public static function container_blend( container, blend = 0xFFFFFF )
+		{
+			if ( !container )
+				return;
+			var r = ( ( blend >> 16 ) & 0xFF );
+			var b = ( ( blend >> 8 ) & 0xFF );
+			var g = ( ( blend ) & 0xFF );
+			container.transform.colorTransform = new ColorTransform( r / 255, g / 255, b / 255 );
+		}
 	}
 	
 	
@@ -307,18 +351,17 @@ public class GMFunctions extends EventDispatcher
 		{
 			try
 			{
-				if ( GM.media ) // && GM.media.stage )
-				{
-					var focus = GM.media.stage.focus;
-					if ( focus == GMControl.popup_surface )
-						return true;
-					if ( focus == GM.container )
-						return true;
-					if ( focus == GM.media )
-						return true;
-					if ( focus == GM.media.stage )
-						return true;
-				}
+				if ( !GM.media ) // && GM.media.stage )
+					return null;
+				var focus = GM.media.stage.focus;
+				if ( focus == GMControl.popup_surface )
+					return true;
+				if ( focus == GM.container )
+					return true;
+				if ( focus == GM.media )
+					return true;
+				if ( focus == GM.media.stage )
+					return true;
 			}
 			catch(e)
 			{
@@ -330,11 +373,30 @@ public class GMFunctions extends EventDispatcher
 		public static function window_mouse_get_x()
 		{
 			
+			return mouse_x;
 		}
 		
 		public static function window_mouse_get_y()
 		{
 			
+			return mouse_y;
+		}
+		
+		public static function popup_has_focus()
+		{
+			try
+			{
+				if ( !GM.media )
+					return null;
+				var focus = GM.media.stage.focus;
+				if ( focus == GMControl.popup_surface )
+					return true;
+			}
+			catch(e)
+			{
+				return null;
+			}
+			return false;
 		}
 	}
 	
@@ -342,6 +404,7 @@ public class GMFunctions extends EventDispatcher
 	{
 		public static function instance_create( _x, _y, _obj, _basis = null )
 		{
+			GMObject._createdepth = 0;
 			var inst = GM.AddInstance( _x, _y, _obj, _basis );
 			inst.Create();
 			return inst;
@@ -349,8 +412,8 @@ public class GMFunctions extends EventDispatcher
 		
 		public static function instance_create_depth( _x = 0, _y = 0, _depth = 0, _obj = -1, _basis = null )
 		{
+			GMObject._createdepth = _depth;
 			var inst = GM.AddInstance( _x, _y, _obj, _basis );
-			inst.depth = _depth;
 			inst.Create();
 			return inst;
 		}

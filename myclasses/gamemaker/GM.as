@@ -108,6 +108,8 @@ public class GM extends GMFunctions
 	public static var view_x = 0;
 	public static var view_y = 0;
 	
+	public static var stepStartTime = 0;
+	
 	public function GM( _media, _width = null, _height = null )
 	{
 		debugTracker = "new GM()";
@@ -152,16 +154,15 @@ public class GM extends GMFunctions
 		
 		// media.cacheAsBitmap = false;
 		
-		container = new Sprite();
-		container.cacheAsBitmap = false;
-		container.focusRect = false;
+		container = container_create( media ); // new Sprite();
+		// container.cacheAsBitmap = false;
+		// container.focusRect = false;
+		// media.addChild( GM.container );
 		InternalSetDrawTarget( container );
 		
-		overlay = new Sprite();
-		overlay.cacheAsBitmap = false;
-		
-		media.addChild( GM.container );
-		media.addChild( GM.overlay );
+		overlay = container_create( media ); //new Sprite();
+		// overlay.cacheAsBitmap = false;
+		// media.addChild( GM.overlay );
 		
 		if ( !GM.gm )
 			GM.gm = true;
@@ -557,7 +558,11 @@ public class GM extends GMFunctions
 	public static function GMStep()
 	{
 		debugTracker = "GM.GMStep";
+		
+		stepStartTime = getTimer();
+		
 		var i = 0;
+		
 		
 		if ( controlPanel )
 			controlPanel.Step();

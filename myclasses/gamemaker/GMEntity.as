@@ -38,9 +38,12 @@ public class GMEntity extends GMObject
 	public function GMEntity()
 	{
 		super();
+		GM.Log( "Create GMEntity" );
+		// 
 		AddMemory( "gm", 1 ); // is a "GM" entity
 		AddMemory( "gm.version", 0 );
 		AddMemory( "gm.purchase_version", -1 );
+		Broadcast( "gm:announce", GMControl.entityID );
 	}
 	
 	// 
@@ -53,13 +56,13 @@ public class GMEntity extends GMObject
 	
 	public function GMProcessEvents()
 	{
-		GM.debugTracker = "GMBody.GMProcessEvents";
+		GM.debugTracker = "GMEntity.GMProcessEvents";
 		for ( var i = 0; i < _eventqueue.length; ++i )
 		{
 			var event = _eventqueue.shift();
 			if ( !event )
 				continue;
-			GM.debugTracker = "GMBody.GMProcessEvents ( event )";
+			GM.debugTracker = "GMEntity.GMProcessEvents ( event )";
 			var func = _eventlisteners.func[event.type];
 			if ( !func )
 				continue;
@@ -72,6 +75,11 @@ public class GMEntity extends GMObject
 				GMControl.Caught(e);
 			}
 		}
+	}
+	
+	public function HasControl()
+	{
+		return ( GMControl.isControl );
 	}
 	
 	public function SetScale ( amount )
@@ -122,6 +130,17 @@ public class GMEntity extends GMObject
 		SetMemory( "gm.version", version );
 	}
 	
+	// Called when a remote entity is first created from GetEntity()
+	public function OnGetEntity( entity )
+	{
+		
+	}
+	
+	public function GetProperty( key )
+	{
+		return ctrl.getEntityProperty( key );
+	}
+	
 	// return custom data from getEntityProperty 
 	public function OnProperty( key = null )
 	{
@@ -132,14 +151,14 @@ public class GMEntity extends GMObject
 	
 	public function GMEntityMoved( event )
 	{
-		GMControl.debugTracker = "+GMEntityMoved";
+		GM.debugTracker = "+GMEntityMoved";
 		if ( event == null )
 			return;
 		if ( event.name == GMControl.entityID )
 			return;
-		GMControl.debugTracker = "GMEntityMoved - Other";
+		GM.debugTracker = "GMEntityMoved - Other";
 		var res = ( event.value == null ) ? OnOtherMoveStop( event.name ) : OnOtherMoveStart( event.name, event.value );
-		GMControl.debugTracker = "-GMEntityMoved";
+		GM.debugTracker = "-GMEntityMoved";
 	}
 	
 	public function OnOtherMoveStart( _id, _dest ) {}
@@ -149,7 +168,7 @@ public class GMEntity extends GMObject
 	
 	public function AddMemory( key, defaultval = null, func = null )
 	{
-		GM.debugTracker = "GMBody.AddMemory"
+		GM.debugTracker = "GMEntity.AddMemory"
 		memory = {}
 		memory.name = key;
 		var memval;
@@ -187,7 +206,7 @@ public class GMEntity extends GMObject
 		
 		GMControl.GMControlEvent( event );
 		
-		GM.debugTracker = "After GMBody.AddMemory"
+		GM.debugTracker = "After GMEntity.AddMemory"
 		return memory;
 	}
 	
@@ -251,17 +270,28 @@ public class GMEntity extends GMObject
 		}
 	}
 	
-	public function BroadcastMessage( message = "", data = null )
+	public function Broadcast( message = "", data = null )
 	{
-		ctrl.sendMessage( message, data );
+		trace( "Broadcast: " + message );
+		ctrl.callHostCode( "sendSignal_v1", message, data );
+		//ctrl.sendMessage( message, data );
+		if ( !GMControl.isConnected )
+		{
+			GMControlEvent( new ControlEvent( ControlEvent.SIGNAL_RECEIVED, message, data ) );
+		}
 	}
 	
-	public function OnReceiveMessage( message )
+	public function OnReceive( message, data = null )
 	{
 		
 	}
 	
-	public function OnReceiveSignal( message )
+	public function OnReceiveMessage( message, data = null )
+	{
+		
+	}
+	
+	public function OnReceiveSignal( message, data = null )
 	{
 		
 	}

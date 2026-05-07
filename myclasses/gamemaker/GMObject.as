@@ -31,10 +31,9 @@ public class GMObject extends GMFunctions
 	public static var timescale = 1;
 	public static var timescale_delta = 1;
 	
-	public static var current_time = 0;
-	
 	public static var _createx;
 	public static var _createy;
+	public static var _createdepth;
 	
 	public var body;
 	public var id = this;
@@ -76,6 +75,7 @@ public class GMObject extends GMFunctions
 	{
 		this.x = _createx;
 		this.y = _createy;
+		this.depth = _createdepth;
 		this.xstart = x;
 		this.ystart = y;
 		
